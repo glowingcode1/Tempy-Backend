@@ -3489,3 +3489,387 @@
 {"time":"2026-07-03T06:01:39.187Z","level":"INFO","pid":10114,"message":"HTTP server listening","port":"4019","env":"dev"}
 {"time":"2026-07-03T06:01:39.204Z","level":"INFO","pid":10114,"message":"MongoDB connection opened — running bootstrap"}
 {"time":"2026-07-03T06:01:39.206Z","level":"INFO","pid":10114,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T12:21:02.878Z","level":"INFO","pid":16530,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T12:21:02.963Z","level":"INFO","pid":16530,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T12:21:02.964Z","level":"INFO","pid":16530,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:16:19.928Z","level":"INFO","pid":18808,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:16:19.943Z","level":"INFO","pid":18808,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:16:19.946Z","level":"INFO","pid":18808,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:20:27.359Z","level":"INFO","pid":18993,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:20:27.370Z","level":"INFO","pid":18993,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:20:27.372Z","level":"INFO","pid":18993,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:20:34.886Z","level":"INFO","pid":19042,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:20:34.909Z","level":"INFO","pid":19042,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:20:34.913Z","level":"INFO","pid":19042,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:23:36.029Z","level":"INFO","pid":19139,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:23:36.041Z","level":"INFO","pid":19139,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:23:36.043Z","level":"INFO","pid":19139,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:23:50.695Z","level":"INFO","pid":19198,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:23:50.705Z","level":"INFO","pid":19198,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:23:50.707Z","level":"INFO","pid":19198,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:23:59.084Z","level":"INFO","pid":19249,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:23:59.095Z","level":"INFO","pid":19249,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:23:59.097Z","level":"INFO","pid":19249,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:24:27.816Z","level":"INFO","pid":19363,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:24:27.825Z","level":"INFO","pid":19363,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:24:27.827Z","level":"INFO","pid":19363,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:44:22.750Z","level":"INFO","pid":20012,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:44:22.844Z","level":"INFO","pid":20012,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:44:22.846Z","level":"INFO","pid":20012,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:44:37.187Z","level":"INFO","pid":20072,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:44:37.222Z","level":"INFO","pid":20072,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:44:37.224Z","level":"INFO","pid":20072,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:44:40.390Z","level":"INFO","pid":20111,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:44:40.397Z","level":"INFO","pid":20111,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:44:40.399Z","level":"INFO","pid":20111,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:44:42.277Z","level":"INFO","pid":20147,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:44:42.285Z","level":"INFO","pid":20147,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:44:42.288Z","level":"INFO","pid":20147,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:44:44.418Z","level":"INFO","pid":20179,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:44:44.435Z","level":"INFO","pid":20179,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:44:44.440Z","level":"INFO","pid":20179,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:49:54.197Z","level":"INFO","pid":20281,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:49:54.223Z","level":"INFO","pid":20281,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:49:54.224Z","level":"INFO","pid":20281,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:49:56.066Z","level":"INFO","pid":20319,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:49:56.074Z","level":"INFO","pid":20319,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:49:56.075Z","level":"INFO","pid":20319,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:50:09.195Z","level":"INFO","pid":20377,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:50:09.234Z","level":"INFO","pid":20377,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:50:09.236Z","level":"INFO","pid":20377,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:50:17.252Z","level":"INFO","pid":20422,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:50:17.260Z","level":"INFO","pid":20422,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:50:17.262Z","level":"INFO","pid":20422,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:50:25.372Z","level":"INFO","pid":20497,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:50:25.380Z","level":"INFO","pid":20497,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:50:25.382Z","level":"INFO","pid":20497,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:50:30.809Z","level":"INFO","pid":20538,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:50:30.819Z","level":"INFO","pid":20538,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:50:30.821Z","level":"INFO","pid":20538,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:50:34.929Z","level":"INFO","pid":20569,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:50:34.939Z","level":"INFO","pid":20569,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:50:34.941Z","level":"INFO","pid":20569,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:50:41.927Z","level":"INFO","pid":20613,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:50:41.936Z","level":"INFO","pid":20613,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:50:41.937Z","level":"INFO","pid":20613,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:53:37.485Z","level":"INFO","pid":20700,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:53:37.498Z","level":"INFO","pid":20700,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:53:37.500Z","level":"INFO","pid":20700,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:53:39.701Z","level":"INFO","pid":20740,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:53:39.712Z","level":"INFO","pid":20740,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:53:39.713Z","level":"INFO","pid":20740,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:54:24.607Z","level":"INFO","pid":20836,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:54:24.618Z","level":"INFO","pid":20836,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:54:24.620Z","level":"INFO","pid":20836,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:54:26.995Z","level":"INFO","pid":20870,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:54:27.003Z","level":"INFO","pid":20870,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:54:27.005Z","level":"INFO","pid":20870,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:54:29.565Z","level":"INFO","pid":20902,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:54:29.574Z","level":"INFO","pid":20902,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:54:29.576Z","level":"INFO","pid":20902,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:55:31.235Z","level":"INFO","pid":21000,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:55:31.245Z","level":"INFO","pid":21000,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:55:31.248Z","level":"INFO","pid":21000,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:55:33.327Z","level":"INFO","pid":21041,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:55:33.339Z","level":"INFO","pid":21041,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:55:33.341Z","level":"INFO","pid":21041,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:56:05.464Z","level":"INFO","pid":21083,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:56:05.504Z","level":"INFO","pid":21083,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:56:05.506Z","level":"INFO","pid":21083,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T13:59:01.632Z","level":"INFO","pid":21206,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T13:59:01.652Z","level":"INFO","pid":21206,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T13:59:01.654Z","level":"INFO","pid":21206,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:50:56.362Z","level":"INFO","pid":22190,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:50:56.372Z","level":"INFO","pid":22190,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:50:56.374Z","level":"INFO","pid":22190,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:50:59.352Z","level":"INFO","pid":22228,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:50:59.371Z","level":"INFO","pid":22228,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:50:59.376Z","level":"INFO","pid":22228,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:51:01.144Z","level":"INFO","pid":22260,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:51:01.158Z","level":"INFO","pid":22260,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:51:01.160Z","level":"INFO","pid":22260,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:51:16.585Z","level":"INFO","pid":22330,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:51:16.595Z","level":"INFO","pid":22330,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:51:16.596Z","level":"INFO","pid":22330,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:51:29.883Z","level":"INFO","pid":22388,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:51:29.891Z","level":"INFO","pid":22388,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:51:29.892Z","level":"INFO","pid":22388,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:51:32.638Z","level":"INFO","pid":22427,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:51:32.647Z","level":"INFO","pid":22427,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:51:32.649Z","level":"INFO","pid":22427,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:51:37.323Z","level":"INFO","pid":22469,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:51:37.331Z","level":"INFO","pid":22469,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:51:37.334Z","level":"INFO","pid":22469,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:51:39.305Z","level":"INFO","pid":22501,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:51:39.313Z","level":"INFO","pid":22501,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:51:39.315Z","level":"INFO","pid":22501,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:52:41.600Z","level":"INFO","pid":22582,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:52:41.624Z","level":"INFO","pid":22582,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:52:41.627Z","level":"INFO","pid":22582,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:52:54.091Z","level":"INFO","pid":22646,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:52:54.104Z","level":"INFO","pid":22646,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:52:54.107Z","level":"INFO","pid":22646,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T14:53:00.354Z","level":"INFO","pid":22688,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T14:53:00.363Z","level":"INFO","pid":22688,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T14:53:00.365Z","level":"INFO","pid":22688,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:03:09.239Z","level":"INFO","pid":23100,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:03:09.284Z","level":"INFO","pid":23100,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:03:09.287Z","level":"INFO","pid":23100,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:06:29.664Z","level":"INFO","pid":23244,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:06:29.725Z","level":"INFO","pid":23244,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:06:29.727Z","level":"INFO","pid":23244,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:07:07.399Z","level":"INFO","pid":23474,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:07:07.423Z","level":"INFO","pid":23474,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:07:07.424Z","level":"INFO","pid":23474,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:11:40.553Z","level":"INFO","pid":23681,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:11:40.576Z","level":"INFO","pid":23681,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:11:40.578Z","level":"INFO","pid":23681,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:13:16.560Z","level":"INFO","pid":23754,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:13:16.570Z","level":"INFO","pid":23754,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:13:16.571Z","level":"INFO","pid":23754,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:14:32.894Z","level":"INFO","pid":24006,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:14:32.913Z","level":"INFO","pid":24006,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:14:32.916Z","level":"INFO","pid":24006,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:27:08.456Z","level":"INFO","pid":24424,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:27:08.557Z","level":"INFO","pid":24424,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:27:08.559Z","level":"INFO","pid":24424,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:27:28.081Z","level":"INFO","pid":24875,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:27:28.173Z","level":"INFO","pid":24875,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:27:28.175Z","level":"INFO","pid":24875,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:27:32.059Z","level":"INFO","pid":24937,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:27:32.069Z","level":"INFO","pid":24937,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:27:32.071Z","level":"INFO","pid":24937,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:27:37.142Z","level":"INFO","pid":25013,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:27:37.157Z","level":"INFO","pid":25013,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:27:37.160Z","level":"INFO","pid":25013,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:27:41.832Z","level":"INFO","pid":25066,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:27:41.841Z","level":"INFO","pid":25066,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:27:41.843Z","level":"INFO","pid":25066,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:28:17.210Z","level":"INFO","pid":25206,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:28:17.218Z","level":"INFO","pid":25206,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:28:17.220Z","level":"INFO","pid":25206,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:28:23.410Z","level":"INFO","pid":25285,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:28:23.424Z","level":"INFO","pid":25285,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:28:23.426Z","level":"INFO","pid":25285,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:28:24.945Z","level":"INFO","pid":25332,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:28:24.955Z","level":"INFO","pid":25332,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:28:24.959Z","level":"INFO","pid":25332,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:28:29.966Z","level":"INFO","pid":25410,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:28:29.975Z","level":"INFO","pid":25410,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:28:29.977Z","level":"INFO","pid":25410,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:28:40.669Z","level":"INFO","pid":25501,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:28:40.679Z","level":"INFO","pid":25501,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:28:40.681Z","level":"INFO","pid":25501,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:28:41.532Z","level":"INFO","pid":25550,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:28:41.540Z","level":"INFO","pid":25550,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:28:41.542Z","level":"INFO","pid":25550,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:28:50.497Z","level":"INFO","pid":25611,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:28:50.521Z","level":"INFO","pid":25611,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:28:50.523Z","level":"INFO","pid":25611,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:29:03.026Z","level":"INFO","pid":25699,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:29:03.035Z","level":"INFO","pid":25699,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:29:03.037Z","level":"INFO","pid":25699,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:29:06.314Z","level":"INFO","pid":25734,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:29:06.331Z","level":"INFO","pid":25734,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:29:06.336Z","level":"INFO","pid":25734,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:29:08.142Z","level":"INFO","pid":25774,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:29:08.152Z","level":"INFO","pid":25774,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:29:08.154Z","level":"INFO","pid":25774,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:29:10.355Z","level":"INFO","pid":25823,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:29:10.365Z","level":"INFO","pid":25823,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:29:10.367Z","level":"INFO","pid":25823,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:29:12.663Z","level":"INFO","pid":25880,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:29:12.674Z","level":"INFO","pid":25880,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:29:12.676Z","level":"INFO","pid":25880,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:29:23.630Z","level":"INFO","pid":25966,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:29:23.641Z","level":"INFO","pid":25966,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:29:23.643Z","level":"INFO","pid":25966,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:29:28.957Z","level":"INFO","pid":26007,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:29:28.965Z","level":"INFO","pid":26007,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:29:28.966Z","level":"INFO","pid":26007,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:30:49.663Z","level":"INFO","pid":26065,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:30:49.714Z","level":"INFO","pid":26065,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:30:49.718Z","level":"INFO","pid":26065,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:30:54.408Z","level":"INFO","pid":26115,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:30:54.416Z","level":"INFO","pid":26115,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:30:54.418Z","level":"INFO","pid":26115,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:31:00.694Z","level":"INFO","pid":26189,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:31:00.710Z","level":"INFO","pid":26189,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:31:00.714Z","level":"INFO","pid":26189,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:31:08.340Z","level":"INFO","pid":26234,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:31:08.349Z","level":"INFO","pid":26234,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:31:08.351Z","level":"INFO","pid":26234,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:32:54.698Z","level":"INFO","pid":26325,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:32:54.714Z","level":"INFO","pid":26325,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:32:54.720Z","level":"INFO","pid":26325,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:32:56.173Z","level":"INFO","pid":26371,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:32:56.181Z","level":"INFO","pid":26371,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:32:56.182Z","level":"INFO","pid":26371,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:33:17.671Z","level":"INFO","pid":26513,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:33:17.685Z","level":"INFO","pid":26513,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:33:17.687Z","level":"INFO","pid":26513,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:33:18.944Z","level":"INFO","pid":26550,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:33:18.953Z","level":"INFO","pid":26550,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:33:18.954Z","level":"INFO","pid":26550,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:39:08.647Z","level":"INFO","pid":29934,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:39:08.679Z","level":"INFO","pid":29934,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:39:08.684Z","level":"INFO","pid":29934,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:40:17.685Z","level":"INFO","pid":30014,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:40:17.694Z","level":"INFO","pid":30014,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:40:17.695Z","level":"INFO","pid":30014,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:40:21.713Z","level":"INFO","pid":30059,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:40:21.720Z","level":"INFO","pid":30059,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:40:21.722Z","level":"INFO","pid":30059,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:40:26.610Z","level":"INFO","pid":30103,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:40:26.617Z","level":"INFO","pid":30103,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:40:26.619Z","level":"INFO","pid":30103,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:40:31.225Z","level":"INFO","pid":30149,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:40:31.234Z","level":"INFO","pid":30149,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:40:31.236Z","level":"INFO","pid":30149,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:42:53.000Z","level":"INFO","pid":30408,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:42:53.076Z","level":"INFO","pid":30408,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:42:53.078Z","level":"INFO","pid":30408,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:01.707Z","level":"INFO","pid":30463,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:01.721Z","level":"INFO","pid":30463,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:01.723Z","level":"INFO","pid":30463,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:19.461Z","level":"INFO","pid":30550,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:19.469Z","level":"INFO","pid":30550,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:19.470Z","level":"INFO","pid":30550,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:24.918Z","level":"INFO","pid":30593,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:24.928Z","level":"INFO","pid":30593,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:24.930Z","level":"INFO","pid":30593,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:27.474Z","level":"INFO","pid":30635,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:27.483Z","level":"INFO","pid":30635,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:27.485Z","level":"INFO","pid":30635,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:30.748Z","level":"INFO","pid":30678,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:30.757Z","level":"INFO","pid":30678,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:30.762Z","level":"INFO","pid":30678,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:32.163Z","level":"INFO","pid":30713,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:32.170Z","level":"INFO","pid":30713,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:32.172Z","level":"INFO","pid":30713,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:35.181Z","level":"INFO","pid":30753,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:35.189Z","level":"INFO","pid":30753,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:35.191Z","level":"INFO","pid":30753,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:40.875Z","level":"INFO","pid":30794,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:40.884Z","level":"INFO","pid":30794,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:40.885Z","level":"INFO","pid":30794,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:45.630Z","level":"INFO","pid":30834,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:45.638Z","level":"INFO","pid":30834,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:45.642Z","level":"INFO","pid":30834,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:48.146Z","level":"INFO","pid":30869,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:48.166Z","level":"INFO","pid":30869,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:48.169Z","level":"INFO","pid":30869,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:50.176Z","level":"INFO","pid":30910,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:50.183Z","level":"INFO","pid":30910,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:50.184Z","level":"INFO","pid":30910,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:52.854Z","level":"INFO","pid":30943,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:52.862Z","level":"INFO","pid":30943,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:52.863Z","level":"INFO","pid":30943,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:43:57.334Z","level":"INFO","pid":30983,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:43:57.343Z","level":"INFO","pid":30983,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:43:57.345Z","level":"INFO","pid":30983,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:44:00.608Z","level":"INFO","pid":31023,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:44:00.619Z","level":"INFO","pid":31023,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:44:00.620Z","level":"INFO","pid":31023,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:44:04.748Z","level":"INFO","pid":31057,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:44:04.760Z","level":"INFO","pid":31057,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:44:04.762Z","level":"INFO","pid":31057,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:44:08.413Z","level":"INFO","pid":31097,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:44:08.422Z","level":"INFO","pid":31097,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:44:08.423Z","level":"INFO","pid":31097,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:44:12.247Z","level":"INFO","pid":31139,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:44:12.257Z","level":"INFO","pid":31139,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:44:12.258Z","level":"INFO","pid":31139,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:44:23.470Z","level":"INFO","pid":31184,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:44:23.480Z","level":"INFO","pid":31184,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:44:23.482Z","level":"INFO","pid":31184,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:44:52.802Z","level":"INFO","pid":31282,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:44:52.818Z","level":"INFO","pid":31282,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:44:52.820Z","level":"INFO","pid":31282,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:00.097Z","level":"INFO","pid":31329,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:00.105Z","level":"INFO","pid":31329,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:00.107Z","level":"INFO","pid":31329,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:03.881Z","level":"INFO","pid":31367,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:03.894Z","level":"INFO","pid":31367,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:03.897Z","level":"INFO","pid":31367,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:20.909Z","level":"INFO","pid":31428,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:20.930Z","level":"INFO","pid":31428,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:20.934Z","level":"INFO","pid":31428,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:28.295Z","level":"INFO","pid":31477,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:28.304Z","level":"INFO","pid":31477,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:28.306Z","level":"INFO","pid":31477,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:32.036Z","level":"INFO","pid":31518,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:32.084Z","level":"INFO","pid":31518,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:32.086Z","level":"INFO","pid":31518,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:35.696Z","level":"INFO","pid":31558,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:35.707Z","level":"INFO","pid":31558,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:35.710Z","level":"INFO","pid":31558,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:37.081Z","level":"INFO","pid":31592,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:37.090Z","level":"INFO","pid":31592,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:37.092Z","level":"INFO","pid":31592,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:40.306Z","level":"INFO","pid":31638,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:40.320Z","level":"INFO","pid":31638,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:40.324Z","level":"INFO","pid":31638,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:45:42.458Z","level":"INFO","pid":31678,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:45:42.473Z","level":"INFO","pid":31678,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:45:42.475Z","level":"INFO","pid":31678,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:46:00.565Z","level":"INFO","pid":31720,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:46:00.576Z","level":"INFO","pid":31720,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:46:00.578Z","level":"INFO","pid":31720,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:46:14.907Z","level":"INFO","pid":31766,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:46:14.916Z","level":"INFO","pid":31766,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:46:14.917Z","level":"INFO","pid":31766,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:46:20.949Z","level":"INFO","pid":31812,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:46:20.958Z","level":"INFO","pid":31812,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:46:20.959Z","level":"INFO","pid":31812,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:48:42.106Z","level":"INFO","pid":32037,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:48:42.146Z","level":"INFO","pid":32037,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:48:42.157Z","level":"INFO","pid":32037,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:49:47.117Z","level":"INFO","pid":32112,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:49:47.138Z","level":"INFO","pid":32112,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:49:47.140Z","level":"INFO","pid":32112,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:51:28.489Z","level":"INFO","pid":32183,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:51:28.504Z","level":"INFO","pid":32183,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:51:28.506Z","level":"INFO","pid":32183,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:51:33.255Z","level":"INFO","pid":32223,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:51:33.262Z","level":"INFO","pid":32223,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:51:33.264Z","level":"INFO","pid":32223,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:51:37.639Z","level":"INFO","pid":32264,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:51:37.648Z","level":"INFO","pid":32264,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:51:37.650Z","level":"INFO","pid":32264,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:03.694Z","level":"INFO","pid":32313,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:03.704Z","level":"INFO","pid":32313,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:03.705Z","level":"INFO","pid":32313,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:04.982Z","level":"INFO","pid":32352,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:04.989Z","level":"INFO","pid":32352,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:04.990Z","level":"INFO","pid":32352,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:12.781Z","level":"INFO","pid":32393,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:12.788Z","level":"INFO","pid":32393,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:12.790Z","level":"INFO","pid":32393,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:25.655Z","level":"INFO","pid":32439,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:25.663Z","level":"INFO","pid":32439,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:25.665Z","level":"INFO","pid":32439,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:35.492Z","level":"INFO","pid":32486,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:35.515Z","level":"INFO","pid":32486,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:35.521Z","level":"INFO","pid":32486,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:39.681Z","level":"INFO","pid":32527,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:39.689Z","level":"INFO","pid":32527,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:39.690Z","level":"INFO","pid":32527,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:43.509Z","level":"INFO","pid":32567,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:43.518Z","level":"INFO","pid":32567,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:43.519Z","level":"INFO","pid":32567,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:47.852Z","level":"INFO","pid":32607,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:47.878Z","level":"INFO","pid":32607,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:47.884Z","level":"INFO","pid":32607,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:52.574Z","level":"INFO","pid":32648,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:52.583Z","level":"INFO","pid":32648,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:52.585Z","level":"INFO","pid":32648,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:52:56.199Z","level":"INFO","pid":32681,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:52:56.207Z","level":"INFO","pid":32681,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:52:56.208Z","level":"INFO","pid":32681,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:53:13.849Z","level":"INFO","pid":32753,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:53:13.862Z","level":"INFO","pid":32753,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:53:13.865Z","level":"INFO","pid":32753,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-03T15:53:15.411Z","level":"INFO","pid":32793,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-03T15:53:15.421Z","level":"INFO","pid":32793,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-03T15:53:15.423Z","level":"INFO","pid":32793,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}

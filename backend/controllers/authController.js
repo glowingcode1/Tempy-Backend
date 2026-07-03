@@ -21,9 +21,7 @@ const validator = require("validator");
 const crypto = require("crypto");
 const { registerUserUtility } = require("./authUtil");
 const { validatePhoneNumber } = require("../helperUtils/validationsUtil");
-const UsersOnboardingResponsesModel = require("../roles/admin/onboardingAndFilters/usersOnboardingResponses/UsersOnboardingResponsesModel");
-const CoachOnboardingResponses = require("../roles/admin/onboardingAndFilters/coachOnboardingResponses/CoachOnboardingResponsesModel");
-const { SubAdmin } = require("../roles/admin/subAdmins/SubAdmins");
+
 
 const createAdmin = async (req, res) => {
   try {
@@ -295,24 +293,7 @@ const login = async (req, res) => {
         translationKey: "user_type_mismatch",
       });
     }
-    const orignalUserType = user.accountState.userType;
-    const orignalSubAdminId = user._id;
-    let permissions = [];
-    if (user.accountState.userType === "subAdmin") {
-      const subAdmin = await SubAdmin.findOne({ user: user._id });
-      if (!subAdmin) {
-        return sendResponse({
-          res,
-          statusCode: 404,
-          translationKey: "user_not_found", // Use your translation key for user not found
-        });
-      }
-      user.orignalUserType = user.accountState.userType;
-      user.accountState.userType = "admin";
-      user._id = subAdmin.creator;
-      permissions = subAdmin.permissions;
-      
-    }
+
     // Restrict admin login
     if (user.accountState.userType === "admin") {
       const adminCreationToken = req.header("x-admin-access-token");
@@ -372,12 +353,7 @@ const login = async (req, res) => {
 
     // Ensure toJSON method is applied to strip out sensitive data
     const userObject = user.toJSON();
-    if (orignalUserType === "subAdmin") {
-      userObject.orignalUserType = orignalUserType;
-      userObject.orignalSubAdminId = orignalSubAdminId;
-      userObject.permissions = permissions;
-      user.orignalSubAdminId= orignalSubAdminId;
-    }
+
     const token = user.generateAuthToken();
  
 
@@ -766,16 +742,7 @@ const verifyOtp = async (req, res) => {
 
     let response = formatUserResponse(updatedUser, token);
 
-    let onboardesAsCoach = false;
-    let onboardedAsAthlete = false;
-    onboardedAsAthlete = await UsersOnboardingResponsesModel.findOne({
-      user: user._id,
-    });
-    onboardesAsCoach = await CoachOnboardingResponses.findOne({
-      coach: user._id,
-    });
-    response.onboardedAsCoach = onboardesAsCoach ? true : false;
-    response.onboardedAsAthlete = onboardedAsAthlete ? true : false;
+
 
     return sendResponse({
       res,
@@ -1261,16 +1228,7 @@ const socialAuth = async (req, res) => {
       await session.commitTransaction();
       session.endSession();
 
-    let onboardesAsCoach = false;
-    let onboardedAsAthlete = false;
-    onboardedAsAthlete = await UsersOnboardingResponsesModel.findOne({
-      user: existingUser._id,
-    });
-    onboardesAsCoach = await CoachOnboardingResponses.findOne({
-      user: existingUser._id,
-    });
-    response.onboardedAsCoach = onboardesAsCoach ? true : false;
-    response.onboardedAsAthlete = onboardedAsAthlete ? true : false;
+
 
       return sendResponse({
         res,

@@ -26,73 +26,70 @@ const getJobs = async ({
   skip,
   userType,
   requester,
+  latitude,   // user's latitude
+  longitude,  // user's longitude
+  km,         // radius in kilometers
 }) => {
   const provideServicesToUser = await findUserById(requester);
-  // Permission object on the requester, e.g.
-  // { careHome: false, careHomes: true, hospitals: true, ... }
   const servicePermissions = provideServicesToUser?.provideServicesTo || {};
-  // Keep only the userTypes whose permission is true
   const allowedUserTypes = Object.keys(servicePermissions).filter(
     (key) => servicePermissions[key] === true,
   );
-  const pipeline = [];
-  if (user) {
-    pipeline.push({
-      $match: {
-        user: new mongoose.Types.ObjectId(user),
-      },
-    });
-  }
 
-  if (status) {
+  const pipeline = [];
+
+  // Base filters shared by both geo and non-geo modes
+  const baseMatch = {
+    ...(user && { user: new mongoose.Types.ObjectId(user) }),
+    ...(status ? { status } : { status: { $ne: "deleted" } }),
+  };
+
+  const hasGeo =
+    latitude != null &&
+    longitude != null &&
+    km != null &&
+    !isNaN(Number(latitude)) &&
+    !isNaN(Number(longitude)) &&
+    !isNaN(Number(km));
+
+  if (hasGeo) {
+    // $geoNear MUST be the first stage; filters go inside `query`
     pipeline.push({
-      $match: {
-        status,
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [Number(longitude), Number(latitude)], // [lng, lat]
+        },
+        key: "location",
+        distanceField: "distanceInMeters", // distance added to each job
+        spherical: true,
+        maxDistance: Number(km) * 1000, // km -> meters
+        query: baseMatch,
       },
     });
   } else {
-    pipeline.push({
-      $match: {
-        status: { $ne: "deleted" },
-      },
-    });
+    pipeline.push({ $match: baseMatch });
   }
+
   pipeline.push({
     $lookup: {
       from: "users",
       let: { userId: "$user" },
       pipeline: [
-        {
-          $match: {
-            $expr: {
-              $eq: ["$_id", "$$userId"],
-            },
-          },
-        },
-        {
-          $project: {
-            name: 1,
-            email: 1,
-            profileIcon: 1,
-            accountState: 1,
-          },
-        },
+        { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
+        { $project: { name: 1, email: 1, profileIcon: 1, accountState: 1 } },
       ],
       as: "user",
     },
   });
 
   pipeline.push({
-    $unwind: {
-      path: "$user",
-      preserveNullAndEmptyArrays: true,
-    },
+    $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
   });
+
   // Only show jobs whose owner's userType the requester is permitted to see
   pipeline.push({
-    $match: {
-      "user.accountState.userType": { $in: allowedUserTypes },
-    },
+    $match: { "user.accountState.userType": { $in: allowedUserTypes } },
   });
 
   if (keyword) {
@@ -100,28 +97,17 @@ const getJobs = async ({
       [{ schema: Job.schema }],
       keyword,
     );
-
     if (Object.keys(keywordMatch).length) {
-      pipeline.push({
-        $match: keywordMatch,
-      });
+      pipeline.push({ $match: keywordMatch });
     }
   }
 
-  pipeline.push({
-    $sort: {
-      createdAt: -1,
-    },
-  });
+  pipeline.push({ $sort: { createdAt: -1 } });
 
   pipeline.push({
     $facet: {
       data: [{ $skip: skip }, ...(limit === 0 ? [] : [{ $limit: limit }])],
-      totalFiltered: [
-        {
-          $count: "count",
-        },
-      ],
+      totalFiltered: [{ $count: "count" }],
     },
   });
 
@@ -135,40 +121,17 @@ const getJobs = async ({
   };
 
   const [total, active, inactive, deleted] = await Promise.all([
-    Job.countDocuments({
-      ...countFilter,
-      status: { $ne: "deleted" },
-    }),
-
-    Job.countDocuments({
-      ...countFilter,
-      status: "active",
-    }),
-
-    Job.countDocuments({
-      ...countFilter,
-      status: "inactive",
-    }),
-    Job.countDocuments({
-      ...countFilter,
-      status: "deleted",
-    }),
+    Job.countDocuments({ ...countFilter, status: { $ne: "deleted" } }),
+    Job.countDocuments({ ...countFilter, status: "active" }),
+    Job.countDocuments({ ...countFilter, status: "inactive" }),
+    Job.countDocuments({ ...countFilter, status: "deleted" }),
   ]);
 
   const meta = generateMeta(page, limit, totalFiltered);
+  meta.JobsCount = { total, active, inactive, deleted };
 
-  meta.JobsCount = {
-    total,
-    active,
-    inactive,
-    deleted,
-  };
-
-  return {
-    Jobs,
-    meta,
-  };
-};;
+  return { Jobs, meta };
+};
 
 const findJobById = async (id) => {
   return Job.findById(id).lean().populate("user", "name email profileIcon");

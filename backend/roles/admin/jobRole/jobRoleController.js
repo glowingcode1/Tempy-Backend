@@ -6,39 +6,45 @@ const {
   getReadableErrorMessage,
   convertTimezoneToUtc,
 } = require("../../../helperUtils/responseUtil");
+const moment = require("moment");
+const JobRoleService = require("./jobRoleService");
 
-const HelpCenterService = require("./helpCenterService");
-
-const createHelpCenter = async (req, res) => {
-  let { image, title, article, type } = req.body;
-
+const createJobRole = async (req, res) => {
+  let {department,title  } = req.body;
+  let user = req.user._id;
   if (
     !validateParams(req, res, {
-      rawData: ["image", "title", "article", "type"],
+      rawData: ["department", "title"],
     })
   )
     return;
 
   let data = {
-    image,
-    title,
-    article,
-    type,
+    user,
+    department,
+    title
   };
   try {
-    const HelpCenter = await HelpCenterService.createHelpCenter(data);
-    if (!HelpCenter) {
+    const jobRole = await JobRoleService.createJobRole(data);
+    if (!jobRole) {
       return sendResponse({
         res,
         statusCode: 400,
-        translationKey: "HelpCenter_creation_failed",
+        translationKey: "JobRole_creation_failed",
+      });
+    }
+    if (jobRole && jobRole.error) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: jobRole.error,
       });
     }
     return sendResponse({
       res,
       statusCode: 201,
-      translationKey: "HelpCenter_created_successfully",
-      data: HelpCenter,
+      translationKey: "JobRole_created_successfully",
+      data: jobRole,
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -50,28 +56,27 @@ const createHelpCenter = async (req, res) => {
     });
   }
 };
-const getHelpCenters = async (req, res) => {
+
+const getJobRole = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  const { keyword, status = "active", date, range } = req.query;
+  let { keyword, status, user } = req.query;
+
   try {
-    const userId = req.user._id;
     const timezone = req.user.timezone;
-    const { HelpCenters, meta } = await HelpCenterService.getHelpCenters({
+    const { jobRole, meta } = await JobRoleService.getJobRole({
       timezone,
       page,
       limit,
       keyword,
       status,
-      userId,
-      date,
-      range,
+      user,
     });
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "HelpCenters_fetched_successfully",
-      data: HelpCenters,
+      translationKey: "JobRole_fetched_successfully",
+      data: jobRole,
       meta,
     });
   } catch (error) {
@@ -84,18 +89,47 @@ const getHelpCenters = async (req, res) => {
     });
   }
 };
-const updateHelpCenter = async (req, res) => {
+const updateJobRole = async (req, res) => {
   const { id } = req.params;
-  let { image, title, article, type } = req.body;
+  let { shift, job, JobRole, note, status } = req.body;
+  const isAgency = req.user.userType === "agency";
+  const allowedStatusesAgency = ["withdraw"];
+
+  if (isAgency && status && !allowedStatusesAgency.includes(status)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "the_status_is_not_allowed_for_agency",
+    });
+  }
+  if (Boolean(job) !== Boolean(shift)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "both_job_and_shift_are_required",
+    });
+  }
+
+  if (
+    !validateParams(req, res, {
+      pathParams: ["id"],
+      objectIdFields: ["id"],
+    })
+  )
+    return;
+  
+  const user = req.user._id;
 
   let data = {
-    image,
-    title,
-    article,
-    type,
+    user,
+    shift,
+    job,
+    JobRole,
+    note,
+    status,
   };
   try {
-    const updated = await HelpCenterService.updateHelpCenter(id, data);
+    const updated = await JobRoleService.updateJobRole(id, data);
     if (updated && updated.error) {
       return sendResponse({
         res,
@@ -108,14 +142,14 @@ const updateHelpCenter = async (req, res) => {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "Reservation_not_found",
+        translationKey: "JobRole_not_found",
       });
     }
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "Reservation_updated_successfully",
+      translationKey: "JobRole_updated_successfully",
       data: updated,
     });
   } catch (error) {
@@ -129,7 +163,45 @@ const updateHelpCenter = async (req, res) => {
   }
 };
 
-const deleteHelpCenter = async (req, res) => {
+const getJobRoleDetails = async (req, res) => {
+  const { id } = req.params;
+  const timezone = req.user.timezone;
+
+  if (
+    !validateParams(req, res, {
+      pathParams: ["id"],
+      objectIdFields: ["id"],
+    })
+  )
+    return;
+
+  try {
+    const job = await JobRoleService.getJobRoleDetails(id, timezone);
+    if (!job) {
+      return sendResponse({
+        res,
+        statusCode: 404,
+        translationKey: "JobRole_not_found",
+      });
+    }
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "JobRole_fetched_successfully",
+      data: job,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+const deleteJobRole = async (req, res) => {
   const { id } = req.params;
 
   if (
@@ -141,19 +213,19 @@ const deleteHelpCenter = async (req, res) => {
     return;
 
   try {
-    const deleted = await HelpCenterService.deleteHelpCenter(id);
+    const deleted = await JobRoleService.deleteJobRole(id);
     if (!deleted) {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "HelpCenter_not_found",
+        translationKey: "JobRole_not_found",
       });
     }
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "HelpCenter_deleted_successfully",
+      translationKey: "JobRole_deleted_successfully",
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -165,49 +237,10 @@ const deleteHelpCenter = async (req, res) => {
     });
   }
 };
-
-const getHelpCenterDetails = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const HelpCenter = await HelpCenterService.getHelpCenterDetails(id);
-    if (HelpCenter && HelpCenter.error) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: HelpCenter.error,
-      });
-    }
-
-    if (!HelpCenter) {
-      return sendResponse({
-        res,
-        statusCode: 404,
-        translationKey: "HelpCenter_not_found",
-      });
-    }
-
-    return sendResponse({
-      res,
-      statusCode: 200,
-      translationKey: "HelpCenter_fetched_successfully",
-      data: HelpCenter,
-    });
-  } catch (error) {
-    const readableError = getReadableErrorMessage(error);
-    return sendResponse({
-      res,
-      statusCode: readableError.statusCode,
-      translationKey: readableError.message,
-      error,
-    });
-  }
-};
-
 module.exports = {
-  createHelpCenter,
-  getHelpCenters,
-  updateHelpCenter,
-  deleteHelpCenter,
-  getHelpCenterDetails,
+  createJobRole,
+  getJobRole,
+  updateJobRole,
+  deleteJobRole,
+  getJobRoleDetails,
 };

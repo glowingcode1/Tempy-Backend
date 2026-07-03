@@ -23,9 +23,9 @@ const JobRateLimiter = createRateLimiter("Jobs");
 router.post("/", roleMiddleware(["admin","careHome"]), JobRateLimiter, createJob);
 
 // Get all Jobs with pagination
-router.get("/", roleMiddleware(["admin","careHome","agency"]), JobRateLimiter, getJobs);
+router.get("/", roleMiddleware(["admin","careHome","agency","employee"]), JobRateLimiter, getJobs);
 // Get a specific Job by ID
-router.get("/:id", roleMiddleware(["admin", "careHome"]), JobRateLimiter, getJobDetails);
+router.get("/:id", roleMiddleware(["admin", "careHome","agency","employee"]), JobRateLimiter, getJobDetails);
 
 
 // Update an existing Job

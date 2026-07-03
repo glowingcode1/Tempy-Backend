@@ -20,18 +20,18 @@ const BidRateLimiter = createRateLimiter("Bid");
 
 // Routes for Bid Management
 // Create a new Bid
-router.post("/", roleMiddleware(["admin","agency"]), BidRateLimiter, createBid);
+router.post("/", roleMiddleware(["admin","agency","employee"]), BidRateLimiter, createBid);
 
 // Get all Bid with pagination
-router.get("/", roleMiddleware(["admin","agency"]), BidRateLimiter, getBid);
+router.get("/", roleMiddleware(["admin","agency","employee"]), BidRateLimiter, getBid);
 // Get a specific Bid by ID
-router.get("/:id", roleMiddleware(["admin","agency"]), BidRateLimiter, getBidDetails);
+router.get("/:id", roleMiddleware(["admin","agency","employee"]), BidRateLimiter, getBidDetails);
 
 
 // Update an existing Bid
-router.put("/:id", roleMiddleware(["admin","agency"]), updateBid);
+router.put("/:id", roleMiddleware(["admin","agency","employee"]), updateBid);
 
 // Delete a Bid
-router.delete("/:id", roleMiddleware(["admin","agency"]), deleteBid);
+router.delete("/:id", roleMiddleware(["admin","agency","employee"]), deleteBid);
 
 module.exports = router;

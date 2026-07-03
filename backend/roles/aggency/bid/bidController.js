@@ -74,8 +74,10 @@ const createBid = async (req, res) => {
 const getBid = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user } = req.query;
+
   const isAgency = req.user.userType === "agency";
-  if (isAgency) {
+  const isEmployee = req.user.userType === "employee";
+  if (isAgency||isEmployee) {
     user = req.user._id;
   }
   try {

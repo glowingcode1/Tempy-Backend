@@ -610,7 +610,10 @@ userSchema.index(
   }
 );
 
-userSchema.index({ location: "2dsphere" });
+userSchema.index(
+  { location: "2dsphere" },
+  { partialFilterExpression: { "location.type": { $exists: true } } }
+);
 userSchema.index({ createdAt: 1, "accountState.status": 1 });
 
 const User = mongoose.model("User", userSchema);

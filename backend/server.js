@@ -1,4 +1,5 @@
 /**
+ * 
  * ------------------------------------------------
  * Unified Logging (FIRST – before anything else)
  * ------------------------------------------------
@@ -167,7 +168,8 @@ app.use("/api/v1", globalLimiter);
  * ------------------------------------------------
  */
 app.use("/api/v1/web", require("./roles/index"));   
-app.use("/api/v1/app", require("./roles/index"));   
+app.use("/api/v1/app", require("./roles/index"));  
+app.use("/api/v1/admin", require("./roles/admin/routes"));   
 app.use("/api/v1", require("./routes"));     
 
 // Swagger

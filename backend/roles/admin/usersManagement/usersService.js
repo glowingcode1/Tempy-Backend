@@ -23,7 +23,6 @@ const {
 const { sendEmailViaBrevo } = require("../../../helperUtils/emailUtil");
 const { createOrSkipDevice } = require("../../../models/Devices");
 const { formatAthletes } = require("./formator/formatAthletes");
-const { findByIdAndUpdate } = require("../subAdmins/subAdminsRepository");
 
 const APP_NAME = "CoachCritic App";
 
@@ -402,10 +401,6 @@ const updateUser = async (req, res, options = {}) => {
     await user.save({ session });
 
 
-    if (permissions) {
-      await findByIdAndUpdate(userId, permissions);
-
-    }
 
     // Device handling
     if (deviceId && deviceType) {

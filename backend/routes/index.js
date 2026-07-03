@@ -18,8 +18,7 @@ router.use("/dashboard", require("../roles/admin/dashboard/dashboardsRoutes"));
 
 //locations
 router.use("/locations", require("../shared/locations/routes"));
-//help center
-router.use("/help-center", require("../roles/admin/helpCenter/helpCenterRoutes"));        
+        
 
 
 //users

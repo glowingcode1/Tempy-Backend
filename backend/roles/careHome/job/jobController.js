@@ -118,14 +118,60 @@ const createJob = async (req, res) => {
 
 const getJobs = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, date, range, user } = req.query;
+  let { keyword, status, date, range, user,latitude, longitude ,km} = req.query;
   const isCareHome = req.user.userType === "careHome";
   let userType = req.user.userType;
   let requester= req.user._id
   if (isCareHome) {
     user = req.user._id;
     userType=null
+  
   }
+  const geoProvided = [latitude, longitude, km].filter(
+  (v) => v !== undefined && v !== null && v !== "",
+);
+
+if (geoProvided.length > 0) {
+  if (geoProvided.length < 3) {
+    return res.status(400).json({
+      success: false,
+      message: "latitude, longitude and km must all be provided together.",
+    });
+  }
+
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  const radius = Number(km);
+
+  if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
+    return res.status(400).json({
+      success: false,
+      message: "latitude, longitude and km must be valid numbers.",
+    });
+  }
+
+  if (lat < -90 || lat > 90) {
+    return res.status(400).json({
+      success: false,
+      message: "latitude must be between -90 and 90.",
+    });
+  }
+
+  if (lng < -180 || lng > 180) {
+    return res.status(400).json({
+      success: false,
+      message: "longitude must be between -180 and 180.",
+    });
+  }
+  if (radius <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "km must be greater than 0.",
+    });
+  }
+}
+
+
   try {
     const timezone = req.user.timezone;
     const { Jobs, meta } = await JobService.getJobs({
@@ -137,6 +183,9 @@ const getJobs = async (req, res) => {
       user,
       userType,
       requester,
+      latitude: latitude ? Number(latitude) : undefined,
+      longitude: longitude ? Number(longitude) : undefined,
+      km: km ? Number(km) : undefined,
     });
 
     return sendResponse({

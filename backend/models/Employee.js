@@ -33,21 +33,21 @@ const employeeSchema = new mongoose.Schema({
       type: Boolean,
       default: true,
     },
-    hospitals: {
+    hospital: {
       type: Boolean,
-      default: false,
+      default: true,
     },
-    localAuthorities: {
+    localAuthority: {
       type: Boolean,
-      default: false,
+      default: true,
     },
-    nursingHomes: {
+    nursingHome: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     employee: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
 });

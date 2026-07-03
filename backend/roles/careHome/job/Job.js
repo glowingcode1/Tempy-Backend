@@ -75,7 +75,10 @@ const JobSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-
+JobSchema.index(
+  { location: "2dsphere" },
+  { partialFilterExpression: { "location.type": { $exists: true } } }
+);
 const Job = mongoose.model("Job", JobSchema);
 
 module.exports = Job;
