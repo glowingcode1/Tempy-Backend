@@ -205,6 +205,92 @@ if (geoProvided.length > 0) {
     });
   }
 };
+const updateJobBids = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  let user = null;
+  const isAdmin = req.user.userType === "admin";
+  if(!isAdmin){
+    user = req.user._id;
+  }
+
+  if (
+    !validateParams(req, res, {
+      pathParams: ["id"],
+      objectIdFields: ["id"],
+      rawData: ["status"],
+    })
+  )
+    return;
+
+  try {
+    const updatedBid = await JobService.updateJobBidStatus(id, status,user);
+    if (!updatedBid) {
+      return sendResponse({
+        res,
+        statusCode: 404,
+        translationKey: "JobBid_not_found",
+      });
+    }
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "JobBid_status_updated_successfully",
+      data: updatedBid,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+const getJobBids = async (req, res) => {
+  const { page, limit, keyword, status } = parsePaginationParams(req);
+  const { job,shift } = req.query;
+  const timezone = req.user.timezone;
+
+
+  try {
+    const { jobBids, meta } = await JobService.getJobBids({
+      timezone,
+      page,
+      limit,
+      keyword,
+      status,
+      job,
+      shift
+    });
+    if (!jobBids) {
+      return sendResponse({
+        res,
+        statusCode: 404,
+        translationKey: "JobBids_not_found",
+      });
+    }
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "JobBids_fetched_successfully",
+      data: jobBids,
+      meta,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
 const updateJob = async (req, res) => {
   const { id } = req.params;
   let {
@@ -307,6 +393,7 @@ const updateJob = async (req, res) => {
   }
 };
 
+
 const getJobDetails = async (req, res) => {
   const { id } = req.params;
   const timezone = req.user.timezone;
@@ -387,4 +474,6 @@ module.exports = {
   updateJob,
   deleteJob,
   getJobDetails,
+  getJobBids,
+  updateJobBids,
 };

@@ -32,11 +32,7 @@ const agencySchema = new mongoose.Schema({
       type: Boolean,
       default: true,
     },
-    nursingHome: {
-      type: Boolean,
-      default: true,
-    },
-    employee: {
+    user: {
       type: Boolean,
       default: true,
     },

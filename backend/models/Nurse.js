@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { LocationSchema } = require("../shared/locations/locationSchmea");
 const {User} = require("./UserModel");
-const employeeSchema = new mongoose.Schema({
+const nurseSchema = new mongoose.Schema({
   location: {
     type: LocationSchema,
     default: {},
@@ -52,5 +52,5 @@ const employeeSchema = new mongoose.Schema({
   },
 });
 
-const Employee = User.discriminator("employee", employeeSchema);
-module.exports = Employee;
+const Nurse = User.discriminator("nurse", nurseSchema);
+module.exports = Nurse;

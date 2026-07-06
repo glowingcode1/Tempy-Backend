@@ -1,4 +1,4 @@
-const Bid = require("./Bid");
+const Bid = require("./Booking");
 const mongoose = require("mongoose");
 const {
   buildKeywordQueryFromModels,
@@ -7,7 +7,7 @@ const { generateMeta } = require("@helperUtils/responseUtil");
 const {
   getUserAndShift,
   findJobById_,
-} = require("../../../roles/careHome/job/jobRepository");
+} = require("../job/jobRepository");
 
 const createBid = async (data) => {
   try {

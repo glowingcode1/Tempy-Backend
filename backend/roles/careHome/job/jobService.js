@@ -2,10 +2,43 @@ const { getCurrentDateInTimezone } = require("@helperUtils/responseUtil");
 const JobRepo = require("./jobRepository");
 const { cache, invalidate } = require("@redisCache");
 const formatJobToTimezone = require("./formator/formatJobToTimezone");
+const { getBidByJob, findBidById_ } = require("../../../roles/aggency/bid/bidRepository");
 
 const createJob = async (data) => {
   const Job = await JobRepo.createJob(data);
   return Job;
+};
+const updateJobBidStatus = async (id, status, user) => {
+  const JobBid = await findBidById_(id);
+
+  if (!JobBid) {
+    return null;
+  }
+  console.log("JobBid", JobBid);
+  return
+  const updatedBid = await JobRepo.updateJobBidStatus(id, status, user);
+  return updatedBid;
+};
+
+
+const getJobBids = async ({ timezone, page, limit, keyword, status, job,shift }) => {
+  const skip = limit === 0 ? 0 : (page - 1) * limit;
+
+  const { jobBids, meta } = await getBidByJob({
+    timezone,
+    page,
+    limit,
+    keyword,
+    status,
+    job,
+    shift,
+    skip,
+  });
+  const formatedJobBids = jobBids.map((jobBid) => {
+    return formatJobToTimezone(jobBid, timezone);
+  });
+
+  return { jobBids: formatedJobBids, meta };
 };
 
 const getJobs = async ({
@@ -17,9 +50,9 @@ const getJobs = async ({
   user,
   userType,
   requester,
-  latitude,   // user's latitude
-  longitude,  // user's longitude
-  km,         // radius in kilometers
+  latitude, // user's latitude
+  longitude, // user's longitude
+  km, // radius in kilometers
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -76,7 +109,6 @@ const updateJob = async (id, data) => {
     return Job;
   }
 
-
   Object.assign(Job, updateData);
   await Job.save();
 
@@ -109,5 +141,6 @@ module.exports = {
   getJobs,
   updateJob,
   deleteJob,
+  getJobBids,
   getJobDetails,
 };

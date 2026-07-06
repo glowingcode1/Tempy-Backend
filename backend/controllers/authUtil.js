@@ -11,8 +11,8 @@ const { defaultSetNotificationPreferences } = require("./notificationPreferences
 
 
 const USER_MODEL_MAP = {
-  CareHome: require("../models/CareHomesModel"),
-  employee: require("../models/Employee"),
+  careHome: require("../models/CareHomesModel"),
+  employee: require("../models/Nurse"),
   agency: require("../models/AgencyModel"),
   user: require("../models/UserModel").User,
   guest: require("../models/UserModel").User,
@@ -73,6 +73,11 @@ const registerUserUtility = async (req, res, options = {}) => {
       "careHome",
       "agency",
       "employee",
+      "hospital",
+      "localAuthority",
+      "nursingHome",
+      "homeCareCompany",
+
     ];
 
     if (options.allowAdminCreation) {
@@ -178,6 +183,8 @@ const registerUserUtility = async (req, res, options = {}) => {
     }
 
 const ModelToUse = USER_MODEL_MAP[userType] || require("../models/UserModel").User;
+console.log(userType);
+console.log(ModelToUse.modelName);
 
 
 // ✅ Create instance from the correct model
@@ -215,7 +222,7 @@ let user = existingUser || new ModelToUse();
       //send otp
       const otp = user.generateOtp("email", user.timezone);
       const mBody = registrationViaOtpEmailTemplate(otp);
-      await sendEmailViaBrevo([user.email], "Email Verification", mBody);
+      // await sendEmailViaBrevo([user.email], "Email Verification", mBody);
     }
 
     await user.save();
@@ -232,6 +239,7 @@ let user = existingUser || new ModelToUse();
     if (emailVerificationLink) {
       userObject.emailVerificationLink = emailVerificationLink;
     }
+    console.log("userObject", userObject);
     const formattedResponse = formatUserResponse(userObject);
 
     return { success: true, user: formattedResponse, responseSent: false };

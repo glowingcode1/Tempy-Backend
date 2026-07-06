@@ -26,10 +26,9 @@ const JobSchema = new mongoose.Schema(
       default: "",
     },
     type: {
-      type: String,
-      enum: USER_TYPES,
-      default: "employee",
-      index: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "JobType",
+      required: true,
     },
     status: {
       type: String,
@@ -67,6 +66,11 @@ const JobSchema = new mongoose.Schema(
         endTime: {
           type: String,
           default: "",
+        },
+        status: {
+          type: String,
+          enum: ["pending","booked","completed"],
+          default: "pending",
         },
       },
     ],

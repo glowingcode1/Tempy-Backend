@@ -4,7 +4,9 @@ const {
   buildKeywordQueryFromModels,
 } = require("@helperUtils/dbUtils/queryUtil");
 const { generateMeta } = require("@helperUtils/responseUtil");
-const { findUserById } = require("../../../roles/admin/usersManagement/usersRepository");
+const {
+  findUserById,
+} = require("../../../roles/admin/usersManagement/usersRepository");
 
 const createJob = async (data) => {
   try {
@@ -26,9 +28,9 @@ const getJobs = async ({
   skip,
   userType,
   requester,
-  latitude,   // user's latitude
-  longitude,  // user's longitude
-  km,         // radius in kilometers
+  latitude, // user's latitude
+  longitude, // user's longitude
+  km, // radius in kilometers
 }) => {
   const provideServicesToUser = await findUserById(requester);
   const servicePermissions = provideServicesToUser?.provideServicesTo || {};
@@ -85,6 +87,36 @@ const getJobs = async ({
 
   pipeline.push({
     $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
+  });
+  pipeline.push({
+    $lookup: {
+      from: "jobroles",
+      let: { typeId: "$type" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $eq: [
+                "$_id",
+                {
+                  $convert: {
+                    input: "$$typeId",
+                    to: "objectId",
+                    onError: null,
+                    onNull: null,
+                  },
+                },
+              ],
+            },
+          },
+        },
+        { $project: { department: 1, title: 1, status: 1 } },
+      ],
+      as: "type",
+    },
+  });
+  pipeline.push({
+    $unwind: { path: "$type", preserveNullAndEmptyArrays: true },
   });
 
   // Only show jobs whose owner's userType the requester is permitted to see
@@ -153,7 +185,11 @@ const getUserAndShift = async (jobId, shiftId) => {
   if (!job) return { user: null, shift: null };
 
   const shift = job.shift.id(shiftId); // Mongoose subdoc lookup by _id
-  return { user: job.user, shift: shift || null,_id: shift ? shift._id : null };
+  return {
+    user: job.user,
+    shift: shift || null,
+    _id: shift ? shift._id : null,
+  };
 };
 
 module.exports = {

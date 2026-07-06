@@ -27,11 +27,9 @@ const updateJobRole = async (id, data) => {
 
 
   const allowedFields = [
-    "JobRole",
-    "note",
+    "department",
+    "title",
     "status",
-    "shift",
-    "job",
   ];
 
   const updateData = {};

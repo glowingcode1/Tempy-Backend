@@ -7,44 +7,58 @@ const {
   convertTimezoneToUtc,
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment");
-const JobRoleService = require("./jobRoleService");
+const BidService = require("./bookingService");
 
-const createJobRole = async (req, res) => {
-  let {department,title  } = req.body;
+const createBid = async (req, res) => {
+  let { shift, job, bid, note } = req.body;
   let user = req.user._id;
+  const timezone = req.user.timezone;
+  if (req.user.userType === "admin") {
+    if (!req.body.userId) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "userId_required",
+      });
+    }
+    user = req.body.userId;
+  }
+
   if (
     !validateParams(req, res, {
-      rawData: ["department", "title"],
+      rawData: ["shift", "job", "bid"],
     })
   )
     return;
 
   let data = {
     user,
-    department,
-    title
+    shift,
+    job,
+    bid,
+    note,
   };
   try {
-    const jobRole = await JobRoleService.createJobRole(data);
-    if (!jobRole) {
+    const Bid = await BidService.createBid(data);
+    if (!Bid) {
       return sendResponse({
         res,
         statusCode: 400,
-        translationKey: "JobRole_creation_failed",
+        translationKey: "Bid_creation_failed",
       });
     }
-    if (jobRole && jobRole.error) {
+    if (Bid && Bid.error) {
       return sendResponse({
         res,
         statusCode: 400,
-        translationKey: jobRole.error,
+        translationKey: Bid.error,
       });
     }
     return sendResponse({
       res,
       statusCode: 201,
-      translationKey: "JobRole_created_successfully",
-      data: jobRole,
+      translationKey: "Bid_created_successfully",
+      data: Bid,
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -57,13 +71,18 @@ const createJobRole = async (req, res) => {
   }
 };
 
-const getJobRole = async (req, res) => {
+const getBid = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user } = req.query;
 
+  const isAgency = req.user.userType === "agency";
+  const isEmployee = req.user.userType === "employee";
+  if (isAgency||isEmployee) {
+    user = req.user._id;
+  }
   try {
     const timezone = req.user.timezone;
-    const { jobRole, meta } = await JobRoleService.getJobRole({
+    const { bid, meta } = await BidService.getBid({
       timezone,
       page,
       limit,
@@ -75,8 +94,8 @@ const getJobRole = async (req, res) => {
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "JobRole_fetched_successfully",
-      data: jobRole,
+      translationKey: "Bid_fetched_successfully",
+      data: bid,
       meta,
     });
   } catch (error) {
@@ -89,9 +108,27 @@ const getJobRole = async (req, res) => {
     });
   }
 };
-const updateJobRole = async (req, res) => {
+const updateBid = async (req, res) => {
   const { id } = req.params;
-  let {department,title,status } = req.body;
+  let { shift, job, bid, note, status } = req.body;
+  const isAgency = req.user.userType === "agency";
+  const allowedStatusesAgency = ["withdraw"];
+
+  if (isAgency && status && !allowedStatusesAgency.includes(status)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "the_status_is_not_allowed_for_agency",
+    });
+  }
+  if (Boolean(job) !== Boolean(shift)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "both_job_and_shift_are_required",
+    });
+  }
+
   if (
     !validateParams(req, res, {
       pathParams: ["id"],
@@ -104,12 +141,14 @@ const updateJobRole = async (req, res) => {
 
   let data = {
     user,
-    department,
-    title,
+    shift,
+    job,
+    bid,
+    note,
     status,
   };
   try {
-    const updated = await JobRoleService.updateJobRole(id, data);
+    const updated = await BidService.updateBid(id, data);
     if (updated && updated.error) {
       return sendResponse({
         res,
@@ -122,14 +161,14 @@ const updateJobRole = async (req, res) => {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "JobRole_not_found",
+        translationKey: "Bid_not_found",
       });
     }
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "JobRole_updated_successfully",
+      translationKey: "Bid_updated_successfully",
       data: updated,
     });
   } catch (error) {
@@ -143,7 +182,7 @@ const updateJobRole = async (req, res) => {
   }
 };
 
-const getJobRoleDetails = async (req, res) => {
+const getBidDetails = async (req, res) => {
   const { id } = req.params;
   const timezone = req.user.timezone;
 
@@ -156,19 +195,19 @@ const getJobRoleDetails = async (req, res) => {
     return;
 
   try {
-    const job = await JobRoleService.getJobRoleDetails(id, timezone);
+    const job = await BidService.getBidDetails(id, timezone);
     if (!job) {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "JobRole_not_found",
+        translationKey: "Bid_not_found",
       });
     }
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "JobRole_fetched_successfully",
+      translationKey: "Bid_fetched_successfully",
       data: job,
     });
   } catch (error) {
@@ -181,7 +220,7 @@ const getJobRoleDetails = async (req, res) => {
     });
   }
 };
-const deleteJobRole = async (req, res) => {
+const deleteBid = async (req, res) => {
   const { id } = req.params;
 
   if (
@@ -193,19 +232,19 @@ const deleteJobRole = async (req, res) => {
     return;
 
   try {
-    const deleted = await JobRoleService.deleteJobRole(id);
+    const deleted = await BidService.deleteBid(id);
     if (!deleted) {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "JobRole_not_found",
+        translationKey: "Bid_not_found",
       });
     }
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "JobRole_deleted_successfully",
+      translationKey: "Bid_deleted_successfully",
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -218,9 +257,9 @@ const deleteJobRole = async (req, res) => {
   }
 };
 module.exports = {
-  createJobRole,
-  getJobRole,
-  updateJobRole,
-  deleteJobRole,
-  getJobRoleDetails,
+  createBid,
+  getBid,
+  updateBid,
+  deleteBid,
+  getBidDetails,
 };

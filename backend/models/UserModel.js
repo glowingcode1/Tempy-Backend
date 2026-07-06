@@ -15,14 +15,16 @@ const {
 
 const USER_TYPES = [
   "guest",
-  "user",
-  "careHome",
   "admin",
-  "employee",
-  "agency",
+  // customers (post jobs)
   "hospital",
   "localAuthority",
-  "nursingHome"
+  "careHome",
+  "user", // Individual (Home Care) — family hiring for home care
+  // providers (bid on jobs)
+  "agency",
+  "homeCareCompany",
+  "nurse",
 ];
 const GENDER_TYPES = ["Male", "Female", "Other"];
 

@@ -11,6 +11,7 @@ const createJobRole = async (data) => {
     const existingJobRole = await JobRole.findOne({
       department: (data.department),
      title :(data.title),
+     status: { $ne: "deleted" },
     });
     if (existingJobRole) {
       return { error: "job_rol_already_exists" };
@@ -85,6 +86,31 @@ const getJobRole = async ({
       preserveNullAndEmptyArrays: true,
     },
   });
+
+    pipeline.push({
+      $lookup: {
+        from: "jobroles",
+        localField: "type",
+        foreignField: "_id",
+        pipeline: [
+          {
+            $project: {
+              department: 1,
+              title: 1,
+              status: 1,
+            },
+          },
+        ],
+        as: "type",
+      },
+    });
+
+    pipeline.push({
+      $unwind: {
+        path: "$type",
+        preserveNullAndEmptyArrays: true,
+      },
+    });
 
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(
