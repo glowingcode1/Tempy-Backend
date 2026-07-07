@@ -14,7 +14,6 @@ const updateJobBidStatus = async (id, status, user) => {
   if (!JobBid) {
     return null;
   }
-  console.log("JobBid", JobBid);
   return
   const updatedBid = await JobRepo.updateJobBidStatus(id, status, user);
   return updatedBid;

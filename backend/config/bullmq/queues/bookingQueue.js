@@ -23,8 +23,6 @@ const scheduleSlotUpdate = async (bookingId, slotId, delay) => {
     },
   );
 
-  console.log("✅ Slot successfully scheduled");
-  console.log(`📅 Scheduled | booking: ${bookingId} | slot: ${slotId}`);
 };
 
 const scheduleBookingExpiry = async (booking) => {
@@ -41,9 +39,6 @@ const scheduleBookingExpiry = async (booking) => {
     },
   );
 
-  console.log(
-    `📅 Booking ${booking._id} | ends: ${new Date(booking.bookingEndDate).toISOString()} | delay: ${Math.round(delay / 1000)}s`,
-  );
 };
 
 module.exports = { bookingQueue, scheduleBookingExpiry, scheduleSlotUpdate };

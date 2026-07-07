@@ -11,7 +11,6 @@ const AddressService = require("./addressService");
 
 const createAddress = async (req, res) => {
   let { location } = req.body;
-  console.log("req.body", req.body);
   const user = req.user._id;
 
   if (

@@ -186,8 +186,6 @@ const registerUserUtility = async (req, res, options = {}) => {
     }
 
 const ModelToUse = USER_MODEL_MAP[userType] || require("../models/UserModel").User;
-console.log(userType);
-console.log(ModelToUse.modelName);
 
 
 // ✅ Create instance from the correct model
@@ -242,7 +240,6 @@ let user = existingUser || new ModelToUse();
     if (emailVerificationLink) {
       userObject.emailVerificationLink = emailVerificationLink;
     }
-    console.log("userObject", userObject);
     const formattedResponse = formatUserResponse(userObject);
 
     return { success: true, user: formattedResponse, responseSent: false };

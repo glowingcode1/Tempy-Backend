@@ -109,7 +109,7 @@ const uploadFilesToS3 = async (files) => {
   // Create a list of upload promises with concurrency control
   const uploadPromises = files.map((file, index) => 
     limit(async () => {
-      // console.log(`Starting upload for file ${index + 1}: ${file.originalname}`);
+      // 
 
       // Compress the file buffer only if the size is greater than MAX_FILE_SIZE
       let fileBuffer = file.buffer;
@@ -126,18 +126,13 @@ const uploadFilesToS3 = async (files) => {
 
       // Register a progress listener
       parallelUploads3.on("httpUploadProgress", (progress) => {
-        // console.log(
-        //   `Progress for ${params.Key}: ${Math.round(
-        //     (progress.loaded / progress.total) * 100
-        //   )}%`
-        // );
+        // 
       });
 
       await parallelUploads3.done(); // Perform the upload
 
-      // console.log(`Completed upload for file ${index + 1}: ${file.originalname}`);
+      // 
       //also log remaining files
-      console.log(`Remaining files: ${files.length - (index + 1)}`);
 
       return {
         file: params.Key,
@@ -189,7 +184,6 @@ const compressImage = async (buffer) => {
     if (compressedBuffer.length <= MAX_FILE_SIZE) {
       break;
     }
-    console.log(`Compressed image size: ${compressedBuffer.length} bytes`);
 
     quality -= 10;
 

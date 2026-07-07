@@ -353,7 +353,6 @@ async function capturePayment({ paymentIntentId }) {
 
     return paymentIntent;
   } catch (error) {
-    console.log("Create and capture payment error:", error);
     throw new Error(`Payment error: ${error.message}`);
   }
 } */
@@ -404,7 +403,6 @@ async function capturePayment({ paymentIntentId }) {
 
     return paymentIntent;
   } catch (error) {
-    console.log("Create and capture payment error:", error);
     throw new Error(`Payment error: ${error.message}`);
   }
 }

@@ -42,7 +42,6 @@ const flushEngagementBuffer = async () => {
   }
 
   if (totalInserted > 0) {
-    console.log(`📊 Flushed ${totalInserted} engagement events`);
   }
 
   if (totalSkippedDuplicates > 0) {

@@ -390,7 +390,6 @@ const handleStripeWebhook = async (req, res) => {
       }
 
       default:
-        console.log(`Unhandled Stripe webhook event: ${event.type}`);
     }
 
     return res.status(200).json({ received: true });

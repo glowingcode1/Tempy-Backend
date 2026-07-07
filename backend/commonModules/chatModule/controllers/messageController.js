@@ -563,7 +563,6 @@ const sendMessage = async (req, res) => {
           });
         });
         const user = await User.findById(senderId).select("name -_id").lean();
-        console.log("user",user );
 
         // Send notifications to all group participants (excluding sender)
         if (conversation.type === "group") {

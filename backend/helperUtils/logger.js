@@ -105,7 +105,6 @@ function write(level, message, meta = {}) {
   if (level === "ERROR" || level === "FATAL") {
     console.error(output);
   } else if (!isProd) {
-    console.log(output);
   }
 }
 

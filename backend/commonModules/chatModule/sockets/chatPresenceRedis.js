@@ -35,7 +35,6 @@ async function markUserOnline(userId) {
 
     return newCount === 1; // true → first socket, broadcast online
   } catch (error) {
-    console.log("Failed to mark user online in Redis:", error.message);
     return false;
   }
 }
@@ -66,7 +65,6 @@ async function markUserOffline(userId) {
 
     return false;
   } catch (error) {
-    console.log("Failed to mark user offline in Redis:", error.message);
     return false;
   }
 }
@@ -89,7 +87,6 @@ async function cacheConversationPeers(userId, peerIds = []) {
       await redis.expire(key, PEERS_TTL_SECONDS);
     }
   } catch (error) {
-    console.log("Failed to cache conversation peers in Redis:", error.message);
   }
 }
 
@@ -105,7 +102,6 @@ async function getConversationPeers(userId) {
   try {
     return await redis.smembers(getPeersKey(userId));
   } catch (error) {
-    console.log("Failed to read conversation peers from Redis:", error.message);
     return [];
   }
 }
@@ -121,7 +117,6 @@ async function clearConversationPeers(userId) {
   try {
     await redis.del(getPeersKey(userId));
   } catch (error) {
-    console.log("Failed to clear conversation peers from Redis:", error.message);
   }
 }
 
@@ -157,7 +152,6 @@ async function getUsersOnlineMap(userIds = []) {
       result.set(normalizedIds[index], Boolean(isMember));
     });
   } catch (error) {
-    console.log("Failed to read online users from Redis:", error.message);
   }
 
   return result;

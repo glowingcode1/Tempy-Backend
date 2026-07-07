@@ -20,7 +20,6 @@ const chatSocketHandler = (io) => {
     const { Types } = mongoose;
 
     if (!objectId) {
-      console.log("Single User Socket Connect->", subjectId);
       if (!subjectId || !Types.ObjectId.isValid(subjectId)) {
         const errorMessage =
           "subjectId must be provided in query parameters and must be valid ObjectId.";
@@ -95,7 +94,6 @@ const chatSocketHandler = (io) => {
 
     // ── Presence disconnect (chat) ─────────────────────────────────────────
     socket.on("disconnect", async () => {
-      console.log(`User ${subjectId} disconnected.`);
       const isLastSocket = await markUserOffline(subjectId);
       if (isLastSocket) {
         await emitStatusToConversationPeers({ io, userId: subjectId, status: "offline" });
@@ -133,7 +131,6 @@ const chatSocketHandler = (io) => {
       const callerId = subjectId;
       const calleeId = String(targetUserId);
 
-      console.log(`[CALL] ${callerId} -> ${calleeId}`);
 
       if (isUserBusy(callerId) || isUserBusy(calleeId)) {
         io.to(getUserRoom(callerId)).emit("callBusy", {
@@ -177,7 +174,6 @@ const chatSocketHandler = (io) => {
       const calleeId = subjectId;
       const callerId = String(targetUserId);
 
-      console.log(`[CALL ANSWERED] ${calleeId} -> ${callerId}`);
 
       if (getPartner(callerId) || getPartner(calleeId)) {
         return;
@@ -212,7 +208,6 @@ const chatSocketHandler = (io) => {
       const callerId = String(targetUserId);
       const rejecterId = subjectId;
 
-      console.log(`[CALL REJECTED] ${rejecterId} -> ${callerId}`);
 
       const partner = getPartner(rejecterId);
       if (partner) {
@@ -238,7 +233,6 @@ const chatSocketHandler = (io) => {
       const otherUserId = String(targetUserId);
       const userId = subjectId;
 
-      console.log(`[CALL ENDED] ${userId} <-> ${otherUserId}`);
 
       const partner = getPartner(userId);
 
@@ -262,7 +256,6 @@ const chatSocketHandler = (io) => {
 
     // DISCONNECT CLEANUP (unchanged)
     socket.on("disconnect", async () => {
-      console.log(`[DISCONNECT] ${subjectId}`);
 
       const partnerId = getPartner(subjectId);
 

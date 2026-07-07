@@ -32,13 +32,12 @@ const slotWorker = new Worker(
 
     await booking.save();
 
-    console.log(`✅ Slot updated → ${slotId}`);
   },
 
   { connection: createNewRedisClient() },
 );
 
-slotWorker.on("ready", () => console.log("👷 Slot worker is listening"));
+slotWorker.on("ready", () => );
 
 slotWorker.on("failed", (job, err) =>
   console.error(`❌ Slot job ${job?.id} failed:`, err.message),
@@ -55,7 +54,6 @@ const bookingWorker = new Worker(
       booking.bookingStatus === "completed" ||
       booking.bookingStatus === "expired"
     ) {
-      console.log(`⚠️ Booking ${bookingId} already ${booking.bookingStatus}`);
       return;
     }
 
@@ -67,12 +65,11 @@ const bookingWorker = new Worker(
 
     await booking.save();
 
-    console.log(`✅ Booking ${bookingId} → ${booking.bookingStatus}`);
   },
   { connection: createNewRedisClient() },
 );
 
-bookingWorker.on("ready", () => console.log("👷 Booking worker is listening"));
+bookingWorker.on("ready", () => );
 
 bookingWorker.on("failed", (job, err) =>
   console.error(`❌ Job ${job?.id} failed:`, err.message),

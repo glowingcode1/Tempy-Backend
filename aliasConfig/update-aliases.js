@@ -44,4 +44,3 @@ jsConfig.exclude = ["node_modules"];
 
 fs.writeFileSync(jsConfigPath, JSON.stringify(jsConfig, null, 2) + "\n");
 
-console.log("✅ Aliases synced successfully to package.json and jsconfig.json");

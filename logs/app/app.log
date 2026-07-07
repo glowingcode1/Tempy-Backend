@@ -4594,3 +4594,11 @@
 {"time":"2026-07-07T05:20:19.883Z","level":"INFO","pid":5520,"message":"HTTP server listening","port":"4019","env":"dev"}
 {"time":"2026-07-07T05:20:19.893Z","level":"INFO","pid":5520,"message":"MongoDB connection opened — running bootstrap"}
 {"time":"2026-07-07T05:20:19.896Z","level":"INFO","pid":5520,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-07T05:22:07.166Z","level":"INFO","pid":5520,"message":"Socket.IO closed"}
+{"time":"2026-07-07T05:24:00.349Z","level":"INFO","pid":5899,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-07T05:24:00.368Z","level":"INFO","pid":5899,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-07T05:24:00.371Z","level":"INFO","pid":5899,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}
+{"time":"2026-07-07T05:24:06.106Z","level":"INFO","pid":5899,"message":"Socket.IO closed"}
+{"time":"2026-07-07T05:24:10.194Z","level":"INFO","pid":5954,"message":"HTTP server listening","port":"4019","env":"dev"}
+{"time":"2026-07-07T05:24:10.201Z","level":"INFO","pid":5954,"message":"MongoDB connection opened — running bootstrap"}
+{"time":"2026-07-07T05:24:10.203Z","level":"INFO","pid":5954,"message":"MongoDB connected","attempt":1,"host":"127.0.0.1"}

@@ -248,7 +248,6 @@ const getReviews = async (
       formatReviews(formattedReviews),
       getReviewTemplateScoring(formattedReviews),
     ]);
-    console.log("reviewTemplateScoring", reviewTemplateScoring);
 
   return {
     reviews: formatedReviewsWithContext,

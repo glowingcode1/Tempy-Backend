@@ -74,3 +74,5 @@
 {"time":"2026-07-03T04:23:08.448Z","level":"WARN","pid":2528,"message":"Shutdown signal received","signal":"SIGINT"}
 {"time":"2026-07-03T05:45:34.436Z","level":"WARN","pid":2744,"message":"Shutdown signal received","signal":"SIGINT"}
 {"time":"2026-07-07T05:20:06.172Z","level":"WARN","pid":5371,"message":"Shutdown signal received","signal":"SIGINT"}
+{"time":"2026-07-07T05:22:07.152Z","level":"WARN","pid":5520,"message":"Shutdown signal received","signal":"SIGINT"}
+{"time":"2026-07-07T05:24:06.102Z","level":"WARN","pid":5899,"message":"Shutdown signal received","signal":"SIGINT"}
