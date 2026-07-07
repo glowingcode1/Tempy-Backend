@@ -27,13 +27,19 @@ const { formatAthletes } = require("./formator/formatAthletes");
 const APP_NAME = "CoachCritic App";
 
 const USER_MODEL_MAP = {
-    careHome: require("../../../models/CareHomesModel"),
-    agency:   require("../../../models/AgencyModel"),
-    user:     require("../../../models/UserModel").User,
-    guest:    require("../../../models/UserModel").User,
-    admin:    require("../../../models/UserModel").User,
+  careHome: require("../../../models/CareHomesModel"),
+  agency: require("../../../models/AgencyModel"),
+  user: require("../../../models/UserModel").User,
+  guest: require("../../../models/UserModel").User,
+  admin: require("../../../models/UserModel").User,
 };
-const getAllUsers = async ({ page, limit, keyword, status, userType = "coach" }) => {
+const getAllUsers = async ({
+  page,
+  limit,
+  keyword,
+  status,
+  userType = "nurse",
+}) => {
   const skip = (page - 1) * limit;
 
   const matchStage = {
@@ -96,49 +102,6 @@ const getAllUsers = async ({ page, limit, keyword, status, userType = "coach" })
     },
 
     {
-      $lookup: {
-        from: "coachonboardingresponses", // or "usersonboardingresponses"
-        localField: "_id",
-        foreignField: "user",
-        as: "coachOnboardingResponse",
-      },
-    },
-
-    {
-      $unwind: {
-        path: "$coachOnboardingResponse",
-        preserveNullAndEmptyArrays: false,
-      },
-    },
-
-    {
-      $lookup: {
-        from: "credentials",
-        localField: "coachOnboardingResponse.credentials",
-        foreignField: "_id",
-        as: "coachOnboardingResponse.credentials",
-      },
-    },
-
-    {
-      $lookup: {
-        from: "specialities",
-        localField: "coachOnboardingResponse.specialities",
-        foreignField: "_id",
-        as: "coachOnboardingResponse.specialities",
-      },
-    },
-
-    {
-      $lookup: {
-        from: "coachingstyles",
-        localField: "coachOnboardingResponse.coachingStyle",
-        foreignField: "_id",
-        as: "coachOnboardingResponse.coachingStyle",
-      },
-    },
-
-    {
       $facet: {
         users: [
           {
@@ -151,16 +114,6 @@ const getAllUsers = async ({ page, limit, keyword, status, userType = "coach" })
               createdAt: 1,
               averageRating: 1,
               totalReviews: 1,
-
-              coachOnboardingResponse: {
-                _id: "$coachOnboardingResponse._id",
-                location: "$coachOnboardingResponse.location",
-                acceptingWork: "$coachOnboardingResponse.acceptingWork",
-                priceRange: "$coachOnboardingResponse.priceRange",
-                credentials: "$coachOnboardingResponse.credentials",
-                specialities: "$coachOnboardingResponse.specialities",
-                coachingStyle: "$coachOnboardingResponse.coachingStyle",
-              },
             },
           },
 
@@ -259,7 +212,6 @@ const getAllUsers = async ({ page, limit, keyword, status, userType = "coach" })
   };
 };
 
-
 const updateUser = async (req, res, options = {}) => {
   const { userId } = options;
   const {
@@ -291,9 +243,10 @@ const updateUser = async (req, res, options = {}) => {
     const user_ = await User.findById(userId).session(session);
     if (!user_) throw new Error("User not found");
     const userType = user_.accountState.userType;
-      const ModelToUse = USER_MODEL_MAP[userType] || require("../../../models/UserModel").User;
-      const user = await ModelToUse.findById(userId).session(session);
-      if (!user) throw new Error("User not found with the specific model");
+    const ModelToUse =
+      USER_MODEL_MAP[userType] || require("../../../models/UserModel").User;
+    const user = await ModelToUse.findById(userId).session(session);
+    if (!user) throw new Error("User not found with the specific model");
 
     // Validate profileIcon
     if (profileIcon && profileIcon.startsWith("http")) {
@@ -341,21 +294,21 @@ const updateUser = async (req, res, options = {}) => {
       user.phoneNumber = phoneNumber;
       user.verificationStatus.phoneNumber = "pending";
     }
-    if(companyName){
+    if (companyName) {
       user.companyName = companyName;
     }
-    if(type){
+    if (type) {
       user.type = type;
-    };
-    if(registrationNumber){
+    }
+    if (registrationNumber) {
       user.registrationNumber = registrationNumber;
-    };
-    if(location){
+    }
+    if (location) {
       user.location = location;
-    };
-    if(validationDocument){
+    }
+    if (validationDocument) {
       user.validationDocument = validationDocument;
-    };
+    }
 
     if (name) user.name = name;
     if (profileIcon) user.profileIcon = profileIcon;
@@ -397,10 +350,7 @@ const updateUser = async (req, res, options = {}) => {
       });
     }
 
-
     await user.save({ session });
-
-
 
     // Device handling
     if (deviceId && deviceType) {
@@ -525,7 +475,6 @@ const disableTwoFA = async (userId) => {
   });
   return true;
 };
-
 
 const getAllAthletes = async ({
   page,

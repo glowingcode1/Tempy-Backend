@@ -5,4 +5,5 @@ const router = express.Router();
 router.use(auth, roleMiddleware(["careHome"]));
 
 router.use("/job", require("../job/jobRoutes"));
+router.use("/staff", require("../../aggency/staff/staffRoutes"));
 module.exports = router;

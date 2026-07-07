@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { LocationSchema } = require("../shared/locations/locationSchmea");
 const {User} = require("./UserModel");
+const { ProvideServicesToSchema } = require("./provideServicesToSchema");
 const nurseSchema = new mongoose.Schema({
   location: {
     type: LocationSchema,
@@ -29,26 +30,8 @@ const nurseSchema = new mongoose.Schema({
     },
   ],
   provideServicesTo: {
-    careHome: {
-      type: Boolean,
-      default: true,
-    },
-    hospital: {
-      type: Boolean,
-      default: true,
-    },
-    localAuthority: {
-      type: Boolean,
-      default: true,
-    },
-    nursingHome: {
-      type: Boolean,
-      default: true,
-    },
-    employee: {
-      type: Boolean,
-      default: true,
-    },
+    type: ProvideServicesToSchema,
+    default: () => ({}),
   },
 });
 

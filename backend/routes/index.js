@@ -29,6 +29,10 @@ router.use("/users", require("../roles/admin/usersManagement/usersRoutes"));
 
 //notification preferences
 router.use("/notification-preferences", require("./notificationPreferencesRoutes"));
+router.use(
+  "/favorites",
+  require("../commonModules/favorite/favoriteRoutes"),
+);
 // router.use("/send-reminder", require("./sendRemindersRoutes"));
 // router.use(
 //   "/placeholder-profile",

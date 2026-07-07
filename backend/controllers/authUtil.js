@@ -52,12 +52,9 @@ const registerUserUtility = async (req, res, options = {}) => {
     governmentIdentity,
     degree,
     certification,
-    provideServicesTo,
   } = req.body;
 
 
-
-  
 
   let verificationStatus = "pending";
   try {
@@ -75,10 +72,10 @@ const registerUserUtility = async (req, res, options = {}) => {
       "coach",
       "careHome",
       "agency",
-      "employee",
+      "user",
+      "nurse",
       "hospital",
       "localAuthority",
-      "nursingHome",
       "homeCareCompany",
 
     ];
@@ -145,7 +142,7 @@ const registerUserUtility = async (req, res, options = {}) => {
         return { responseSent: true };
       }
     }
-
+console.log("email", email);
 
     // Check if email exists
     const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
@@ -186,6 +183,8 @@ const registerUserUtility = async (req, res, options = {}) => {
     }
 
 const ModelToUse = USER_MODEL_MAP[userType] || require("../models/UserModel").User;
+console.log("ModelToUse", ModelToUse.modelName);
+
 
 
 // ✅ Create instance from the correct model
@@ -207,7 +206,6 @@ let user = existingUser || new ModelToUse();
       validationDocument,
       taxNumber,
       governmentIdentity,
-      provideServicesTo,
       degree,
       certification,
       accountState: { userType, status: verificationStatus },

@@ -4,5 +4,6 @@ const router = express.Router();
 
 
 router.use("/bids", require("./bid/bidRoutes"));
+router.use("/staff", require("./staff/staffRoutes"));
 
-module.exports = router;
+module.exports = router;   

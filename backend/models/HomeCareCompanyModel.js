@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 const { LocationSchema } = require("../shared/locations/locationSchmea");
-const { User } = require("./UserModel"); // ✅ named import
+const { User } = require("./UserModel");
+const { ProvideServicesToSchema } = require("./provideServicesToSchema");
+
+
 
 const HomeCareCompanySchema = new mongoose.Schema({
   companyName: {
@@ -26,22 +29,8 @@ const HomeCareCompanySchema = new mongoose.Schema({
     },
   ],
   provideServicesTo: {
-    careHome: {
-      type: Boolean,
-      default: false,
-    },
-    hospital: {
-      type: Boolean,
-      default: true,
-    },
-    localAuthority: {
-      type: Boolean,
-      default: true,
-    },
-    user: {
-      type: Boolean,
-      default: true,
-    },
+    type: ProvideServicesToSchema,
+    default: () => ({}),
   },
 });
 
@@ -50,4 +39,4 @@ const HomeCareCompany = User.discriminator(
   HomeCareCompanySchema,
 );
 
-module.exports = HomeCareCompany; // ✅ export it
+module.exports = HomeCareCompany; 
