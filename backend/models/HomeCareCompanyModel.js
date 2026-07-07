@@ -3,28 +3,51 @@ const { LocationSchema } = require("../shared/locations/locationSchmea");
 const { User } = require("./UserModel"); // ✅ named import
 
 const HomeCareCompanySchema = new mongoose.Schema({
-    companyName: {
-        type: String,
-        required: true,
+  companyName: {
+    type: String,
+    required: true,
+  },
+  type: {
+    type: String,
+    enum: ["residentialCareHome"],
+    default: "residentialCareHome",
+  },
+  location: {
+    type: LocationSchema,
+    default: {},
+  },
+  registrationNumber: {
+    type: String,
+    required: true,
+  },
+  validationDocument: [
+    {
+      type: String,
     },
-    type: {
-        type: String,
-        enum: ["residentialCareHome"],
-        default: "residentialCareHome",
+  ],
+  provideServicesTo: {
+    careHome: {
+      type: Boolean,
+      default: false,
     },
-    location: {
-        type: LocationSchema,
-        default: {},
+    hospital: {
+      type: Boolean,
+      default: true,
     },
-    registrationNumber: {
-        type: String,
-        required: true,
+    localAuthority: {
+      type: Boolean,
+      default: true,
     },
-    validationDocument: [{
-        type: String,
-    }],
+    user: {
+      type: Boolean,
+      default: true,
+    },
+  },
 });
 
-const HomeCareCompany = User.discriminator("homeCareCompany", HomeCareCompanySchema);
+const HomeCareCompany = User.discriminator(
+  "homeCareCompany",
+  HomeCareCompanySchema,
+);
 
 module.exports = HomeCareCompany; // ✅ export it

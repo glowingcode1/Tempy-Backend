@@ -12,28 +12,6 @@ const userDescriminatorSchema = new mongoose.Schema({
       required: true,
     },
   ],
-  provideServicesTo: {
-    careHome: {
-      type: Boolean,
-      default: true,
-    },
-    hospitals: {
-      type: Boolean,
-      default: false,
-    },
-    localAuthorities: {
-      type: Boolean,
-      default: false,
-    },
-    nursingHomes: {
-      type: Boolean,
-      default: false,
-    },
-    employee: {
-      type: Boolean,
-      default: false,
-    },
-  },
 });
 
 

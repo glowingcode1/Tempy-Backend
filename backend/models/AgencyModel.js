@@ -19,6 +19,11 @@ const agencySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  validationDocument: [
+    {
+      type: String,
+    },
+  ],
   provideServicesTo: {
     careHome: {
       type: Boolean,

@@ -12,9 +12,12 @@ const { defaultSetNotificationPreferences } = require("./notificationPreferences
 
 const USER_MODEL_MAP = {
   careHome: require("../models/CareHomesModel"),
-  employee: require("../models/Nurse"),
+  nurse: require("../models/Nurse"),
+  hospital: require("../models/HospitalModel"),
+  localAuthority: require("../models/LocalAuthority"),
+  homeCareCompany: require("../models/HomeCareCompanyModel"),
   agency: require("../models/AgencyModel"),
-  user: require("../models/UserModel").User,
+  user: require("../models/UserModeldesciminator")(),
   guest: require("../models/UserModel").User,
   admin: require("../models/UserModel").User,
 };
