@@ -1,4 +1,4 @@
-const Bid = require("./Booking");
+const Booking = require("./Booking");
 const mongoose = require("mongoose");
 const {
   buildKeywordQueryFromModels,
@@ -9,36 +9,17 @@ const {
   findJobById_,
 } = require("../job/jobRepository");
 
-const createBid = async (data) => {
+const createBooking = async (data) => {
   try {
-    const existingBid = await Bid.findOne({
-      user: new mongoose.Types.ObjectId(data.user),
-      "shift._id": new mongoose.Types.ObjectId(data.shift),
-    });
-    if (existingBid) {
-      return { error: "Bid_already_exists_for_this_user_against_this_shift" };
-    }
-    const [{ user, shift }, snapshot] = await Promise.all([
-      getUserAndShift(data.job, data.shift),
-      findJobById_(data.job),
-    ]);
-
-    data.snapshot = snapshot;
-    data.jobCreater = user;
-    data.shift = shift;
-
-    if (!shift || !user) {
-      return { error: "Invalid_job_or_shift" };
-    }
-    const job = new Bid(data);
-    await job.save();
-    return job;
+    const booking = new Booking(data);
+    await booking.save();
+    return booking;
   } catch (err) {
     throw err;
   }
 };
 
-const getBid = async ({
+const getBooking = async ({
   timezone,
   page,
   limit,
@@ -133,7 +114,7 @@ const getBid = async ({
   });
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(
-      [{ schema: Bid.schema }],
+      [{ schema: Booking.schema }],
       keyword,
     );
 
@@ -161,9 +142,9 @@ const getBid = async ({
     },
   });
 
-  const result = await Bid.aggregate(pipeline);
+  const result = await Booking.aggregate(pipeline);
 
-  const bid = result[0]?.data || [];
+  const Booking = result[0]?.data || [];
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
   const countFilter = {
@@ -172,29 +153,29 @@ const getBid = async ({
 
   const [total, active, pending, inactive, deleted, withdraw] =
     await Promise.all([
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: { $ne: "deleted" },
       }),
 
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "active",
       }),
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "pending",
       }),
 
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "inactive",
       }),
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "deleted",
       }),
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "withdraw",
       }),
@@ -202,7 +183,7 @@ const getBid = async ({
 
   const meta = generateMeta(page, limit, totalFiltered);
 
-  meta.BidCount = {
+  meta.BookingCount = {
     total,
     active,
     pending,
@@ -212,12 +193,12 @@ const getBid = async ({
   };
 
   return {
-    bid,
+    Booking,
     meta,
   };
 };
 
-const getBidByJob = async ({
+const getBookingByJob = async ({
   timezone,
   page,
   limit,
@@ -320,7 +301,7 @@ const getBidByJob = async ({
   });
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(
-      [{ schema: Bid.schema }],
+      [{ schema: Booking.schema }],
       keyword,
     );
 
@@ -349,9 +330,9 @@ const getBidByJob = async ({
   });
   
 
-  const result = await Bid.aggregate(pipeline);
+  const result = await Booking.aggregate(pipeline);
 
-  const bid = result[0]?.data || [];
+  const Booking = result[0]?.data || [];
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
   const countFilter = {
@@ -361,29 +342,29 @@ const getBidByJob = async ({
 
   const [total, active, pending, inactive, deleted, withdraw] =
     await Promise.all([
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: { $ne: "deleted" },
       }),
 
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "active",
       }),
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "pending",
       }),
 
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "inactive",
       }),
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "deleted",
       }),
-      Bid.countDocuments({
+      Booking.countDocuments({
         ...countFilter,
         status: "withdraw",
       }),
@@ -391,7 +372,7 @@ const getBidByJob = async ({
 
   const meta = generateMeta(page, limit, totalFiltered);
 
-  meta.BidCount = {
+  meta.BookingCount = {
     total,
     active,
     pending,
@@ -400,32 +381,32 @@ const getBidByJob = async ({
     deleted,
   };
 
-  return { jobBids: bid, meta };
+  return { jobBookings: Booking, meta };
 };
 
-const findBidById = async (id) => {
-  return Bid.findById(id).lean().populate("user", "name email profileIcon");
+const findBookingById = async (id) => {
+  return Booking.findById(id).lean().populate("user", "name email profileIcon");
 };
-const findBidById_ = async (id) => {
-  return Bid.findById(id);
+const findBookingById_ = async (id) => {
+  return Booking.findById(id);
 };
 
 const findByIdAndUpdate = async (id, data) => {
-  return Bid.findByIdAndUpdate(id, data, { new: true })
+  return Booking.findByIdAndUpdate(id, data, { new: true })
     .lean()
     .populate("user", "name email profileIcon");
 };
-const deleteBid = async (id) => {
-  return await Bid.findByIdAndUpdate(id, { status: "deleted" }, { new: true });
+const deleteBooking = async (id) => {
+  return await Booking.findByIdAndUpdate(id, { status: "deleted" }, { new: true });
 };
 module.exports = {
-  createBid,
-  getBid,
-  findBidById,
+  createBooking,
+  getBooking,
+  findBookingById,
   getUserAndShift,
   findByIdAndUpdate,
-  deleteBid,
-  findBidById_,
+  deleteBooking,
+  findBookingById_,
   findJobById_,
-  getBidByJob,
+  getBookingByJob,
 };

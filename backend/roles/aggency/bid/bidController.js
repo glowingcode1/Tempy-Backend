@@ -77,7 +77,8 @@ const getBid = async (req, res) => {
 
   const isAgency = req.user.userType === "agency";
   const isEmployee = req.user.userType === "employee";
-  if (isAgency||isEmployee) {
+  const isHomeCareCompany = req.user.userType === "homeCareCompany";
+  if (isAgency || isEmployee || isHomeCareCompany) {
     user = req.user._id;
   }
   try {

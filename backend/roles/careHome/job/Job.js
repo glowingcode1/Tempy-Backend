@@ -21,15 +21,13 @@ const JobSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
       trim: true,
       default: "",
     },
     type: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "JobType",
-      required: true,
-    },
+      required: true,},
     status: {
       type: String,
       enum: ["active", "inactive", "deleted"],

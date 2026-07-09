@@ -1,30 +1,14 @@
 const mongoose = require("mongoose");
-const { Schema } = mongoose;
-const answerSchema = new Schema({
-  question: {
-    type: Schema.Types.ObjectId,
-    ref: "ReviewTemplate",
-    required: true,
-  },
-  type: {
-    type: String,
-    enum: ["single_select", "multi_select", "boolean"],
-    required: true,
-  },
-  selectedOption: [
-    { type: Schema.Types.ObjectId, ref: "ReviewTemplate.options" },
-  ], // selected by user
-});
 const reviewSchema = new mongoose.Schema(
   {
     reviewType: {
       type: String,
-      enum: ["user", "session"],
+      enum: ["user", "booking"],
       required: true,
     },
     objectType: {
       type: String,
-      enum: ["User", "coachservices"],
+      enum: ["User", "Booking"],
       required: true,
     },
     object: {
@@ -35,7 +19,7 @@ const reviewSchema = new mongoose.Schema(
     bookingId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bookings",
-      required: true,
+      default: null,
     },
     subject: {// current user
       type: mongoose.Schema.Types.ObjectId,
@@ -57,16 +41,10 @@ const reviewSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    quickContext: {
-      type: String,
-      trim: true,
-      default: "",
-    },
     createdAt: {
       type: Date,
       default: Date.now,
     },
-    reviewTemplate: [answerSchema],
     updatedAt: {
       type: Date,
     },

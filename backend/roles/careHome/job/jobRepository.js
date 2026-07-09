@@ -118,11 +118,12 @@ const getJobs = async ({
   pipeline.push({
     $unwind: { path: "$type", preserveNullAndEmptyArrays: true },
   });
-
-  // Only show jobs whose owner's userType the requester is permitted to see
-  pipeline.push({
-    $match: { "user.accountState.userType": { $in: allowedUserTypes } },
-  });
+  if (allowedUserTypes.length > 0) {
+    // Only show jobs whose owner's userType the requester is permitted to see
+    pipeline.push({
+      $match: { "user.accountState.userType": { $in: allowedUserTypes } },
+    });
+  }
 
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(

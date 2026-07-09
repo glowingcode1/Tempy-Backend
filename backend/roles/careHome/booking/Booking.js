@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+
 /* ---------------------------------------------
    Shift snapshot — copied from the job's shift
    at approval time so later edits to the job
@@ -7,7 +8,7 @@ const mongoose = require("mongoose");
 ---------------------------------------------- */
 const shiftSnapshotSchema = new mongoose.Schema(
   {
-    shift: {
+    _id: {
       type: mongoose.Schema.Types.ObjectId, // the _id of the shift inside job.shift[]
       required: true,
     },
@@ -28,9 +29,9 @@ const shiftSnapshotSchema = new mongoose.Schema(
       default: false,
     },
     breakMin: {
-      type: Number,
+      type: Number, // minutes to subtract from total hours
       default: 0,
-    }
+    },
   },
   { _id: false },
 );
@@ -46,7 +47,7 @@ const paymentSchema = new mongoose.Schema(
       type: Number, // agreed hourly rate (from the approved bid)
       required: true,
     },
-    Type: {
+    type: {
       type: String,
       enum: ["hourly", "fixed"],
       default: "hourly",
@@ -68,6 +69,10 @@ const paymentSchema = new mongoose.Schema(
       default: 0,
     },
     totalAmount: {
+      type: Number,
+      default: 0,
+    },
+    amountPayedToWorker: {
       type: Number,
       default: 0,
     },
@@ -149,6 +154,11 @@ const attendanceSchema = new mongoose.Schema(
 ---------------------------------------------- */
 const bookingSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId, // the user who created the booking (care home)
+      ref: "User",
+      required: true,
+    },
     // ---- references ----
     bid: {
       type: mongoose.Schema.Types.ObjectId,
@@ -168,7 +178,7 @@ const bookingSchema = new mongoose.Schema(
     employer: {
       type: mongoose.Schema.Types.ObjectId, // job.user (care home) — denormalized
       ref: "User",
-      required: true,
+      default: null,
     },
 
     // ---- agreed shift (snapshot, not a ref) ----
@@ -209,7 +219,7 @@ const bookingSchema = new mongoose.Schema(
     },
     payment: {
       type: paymentSchema,
-      required: true,
+      default: () => ({}),
     },
   },
   {
@@ -227,29 +237,14 @@ bookingSchema.index({ worker: 1, status: 1, "shift.date": 1 });
 bookingSchema.index({ employer: 1, status: 1, "shift.date": 1 });
 bookingSchema.index({ job: 1 });
 
-/* ---------------------------------------------
-   Helpers
----------------------------------------------- */
 
-// compute actual hours on check-out
-bookingSchema.methods.finalizeHours = function () {
-  const { checkIn, checkOut } = this.attendance || {};
-  if (checkIn && checkOut) {
-    let mins = (checkOut - checkIn) / 60000;
-    if (this.shift.isBreak) mins -= this.shift.breakMin || 0;
-    this.payment.actualHours = Math.max(0, +(mins / 60).toFixed(2));
-    if (this.payment.rateType === "hourly") {
-      this.payment.subTotal = +(
-        this.payment.actualHours * this.payment.rate
-      ).toFixed(2);
-      this.payment.totalAmount = +(
-        this.payment.subTotal + (this.payment.platformFee || 0)
-      ).toFixed(2);
-    }
-  }
-  return this;
-};
+bookingSchema.index({
+  "attendance.checkInLocation": "2dsphere",
+});
 
+bookingSchema.index({
+  "attendance.checkOutLocation": "2dsphere",
+});
 const Booking = mongoose.model("Booking", bookingSchema);
 
 module.exports = Booking;

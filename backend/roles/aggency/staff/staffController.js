@@ -140,6 +140,16 @@ const getStaff = async (req, res) => {
 
   const isAgency = req.user.userType === "agency";
   const homeCareCompany = req.user.userType === "homeCareCompany";
+  const isCareHome = req.user.userType === "careHome";
+  if (isCareHome) {
+    if (!user) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "user_required",
+      });
+    }
+  }
 
   if (isAgency || homeCareCompany) {
     user = req.user._id;
@@ -174,9 +184,18 @@ const getStaff = async (req, res) => {
 };
 const updateStaff = async (req, res) => {
   const { id } = req.params;
-  let { name,phoneNumber,dob,gender,speciality, ratePerHour, platformPercent, status } = req.body;
+  let {
+    name,
+    phoneNumber,
+    dob,
+    gender,
+    speciality,
+    ratePerHour,
+    platformPercent,
+    status,
+  } = req.body;
   const isAgency = req.user.userType === "agency";
-  const allowedStatusesAgency = ["active","left"];
+  const allowedStatusesAgency = ["active", "left"];
 
   if (isAgency && status && allowedStatusesAgency.includes(status)) {
     return sendResponse({
@@ -185,7 +204,6 @@ const updateStaff = async (req, res) => {
       translationKey: "the_status_is_not_allowed_for_agency",
     });
   }
-
 
   if (
     !validateParams(req, res, {

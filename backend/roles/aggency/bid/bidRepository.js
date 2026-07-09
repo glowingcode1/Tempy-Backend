@@ -418,6 +418,28 @@ const findByIdAndUpdate = async (id, data) => {
 const deleteBid = async (id) => {
   return await Bid.findByIdAndUpdate(id, { status: "deleted" }, { new: true });
 };
+
+const updateBidStatuses = async (bidId) => {
+  const bid = await Bid.findById(bidId).select("shift._id");
+
+  if (!bid) {
+    throw new Error("Bid not found");
+  }
+
+  await Promise.all([
+    // Accept the selected bid
+    Bid.updateOne({ _id: bidId }, { $set: { status: "accepted" } }),
+
+    // Reject all other bids for the same shift
+    Bid.updateMany(
+      {
+        "shift._id": bid.shift._id,
+        _id: { $ne: bidId },
+      },
+      { $set: { status: "rejected" } },
+    ),
+  ]);
+};
 module.exports = {
   createBid,
   getBid,
@@ -428,4 +450,5 @@ module.exports = {
   findBidById_,
   findJobById_,
   getBidByJob,
+  updateBidStatuses,
 };

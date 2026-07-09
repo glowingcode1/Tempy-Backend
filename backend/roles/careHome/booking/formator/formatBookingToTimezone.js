@@ -3,9 +3,9 @@ const responseUtil = require("../../../../helperUtils/responseUtil.js");
 const { convertUtcToTimezone } = responseUtil;
 const moment = require("moment-timezone");
 
-const formatBidToTimezone = (job, timezone) => {
+const formatBookingToTimezone = (job, timezone) => {
   if (!job) return job;
-
+  
   const formatShift = (shift) => {
     // date-only portion of the shift date, used to anchor the HH:mm times
     const datePart = moment.utc(shift.date).format("YYYY-MM-DD");
@@ -41,4 +41,4 @@ const formatBidToTimezone = (job, timezone) => {
   };
 };
 
-module.exports = formatBidToTimezone;
+module.exports = formatBookingToTimezone;

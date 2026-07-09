@@ -21,7 +21,7 @@ const getAllNurses = async ({ timezone, page, limit, keyword, status }) => {
 const createStaff = async (data, req, res) => {
   if(data.staff) {
     const existing = await getUserDetailsForQRRepo(data.staff);
-    console.log("existing staff", existing);
+
     data.name = existing.name;
     data.email = existing.email;
     data.profileIcon = existing.profileIcon;
@@ -44,7 +44,6 @@ const createStaff = async (data, req, res) => {
 
 const getStaff = async ({ timezone, page, limit, keyword, status, user }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
-
   const { staff, meta } = await StaffRepo.getStaff({
     timezone,
     page,

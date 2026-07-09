@@ -33,7 +33,7 @@ router.post(
 // Get all Jobs with pagination
 router.get(
   "/",
-  roleMiddleware(["admin", "careHome", "agency", "employee"]),
+  roleMiddleware(["admin", "careHome", "agency", "nurse"]),
   JobRateLimiter,
   getJobs,
 );

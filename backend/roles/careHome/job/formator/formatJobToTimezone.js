@@ -26,7 +26,7 @@ const formatJobToTimezone = (job, timezone) => {
     shift: Array.isArray(job.shift) ? job.shift.map(formatShift) : job.shift,
     user: {
       ...job.user,
-      profileIcon: getFullImageUrl(job.user.profileIcon),
+      profileIcon: getFullImageUrl(job.user?.profileIcon),
     },
     createdAt: job.createdAt
       ? convertUtcToTimezone(job.createdAt, timezone)

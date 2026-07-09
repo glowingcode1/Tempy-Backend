@@ -24,8 +24,8 @@ const StaffRateLimiter = createRateLimiter("Staff");
 router.get("/nurses", roleMiddleware(["admin", "agency"]), getAllNurses);
 router.post("/", roleMiddleware(["admin","agency",]), StaffRateLimiter, createStaff);
 
-// Get all Staff with pagination
-router.get("/", roleMiddleware(["admin","agency"]), StaffRateLimiter, getStaff);
+// Get all Staff with pagination        
+router.get("/", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getStaff);
 // Get a specific Staff by ID
 router.get("/:id", roleMiddleware(["admin","agency","employee"]), StaffRateLimiter, getStaffDetails);
 

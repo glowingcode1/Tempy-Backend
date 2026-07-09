@@ -94,6 +94,7 @@ const getStaff = async ({
       pipeline: [
         {
           $match: {
+            ...(status && { "accountState.status": status }),
             $expr: {
               $eq: ["$_id", "$$userId"],
             },
@@ -152,6 +153,7 @@ const getStaff = async ({
   const result = await Staff.aggregate(pipeline);
 
   const staff = result[0]?.data || [];
+
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
   const countFilter = {
