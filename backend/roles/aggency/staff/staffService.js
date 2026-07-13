@@ -3,13 +3,15 @@ const StaffRepo = require("./staffRepository");
 const { cache, invalidate } = require("@redisCache");
 const { registerUserUtility } = require("../../../controllers/authUtil");
 const formatStaff = require("./formator/formatStaff");
-const { getAllUsers } = require("../../../roles/admin/usersManagement/usersService");
-const { getUserDetailsForQRRepo } = require("../../../roles/admin/usersManagement/usersRepository");
-
-
+const {
+  getAllUsers,
+} = require("../../../roles/admin/usersManagement/usersService");
+const {
+  getUserDetailsForQRRepo,
+  findUserById,
+} = require("../../../roles/admin/usersManagement/usersRepository");
 
 const getAllNurses = async ({ timezone, page, limit, keyword, status }) => {
-
   const { users, meta } = await getAllUsers({
     page,
     limit,
@@ -19,7 +21,7 @@ const getAllNurses = async ({ timezone, page, limit, keyword, status }) => {
   return { staff: users, meta };
 };
 const createStaff = async (data, req, res) => {
-  if(data.staff) {
+  if (data.staff) {
     const existing = await getUserDetailsForQRRepo(data.staff);
 
     data.name = existing.name;
@@ -27,23 +29,47 @@ const createStaff = async (data, req, res) => {
     data.profileIcon = existing.profileIcon;
     const staffRecord = await StaffRepo.createStaff(data);
     return staffRecord;
-  }
-  else{
-  const staff = await registerUserUtility(req, res);
-  if(!staff || staff.responseSent||staff.error) {
-    return staff;
-  }
-  if(staff.success) {
-  data.staff = staff.user.basicInfo._id;
-  }
-  const staffRecord = await StaffRepo.createStaff(data);
-  return staffRecord; 
+  } else {
+    const staff = await registerUserUtility(req, res);
+    if (!staff || staff.responseSent || staff.error) {
+      return staff;
+    }
+    if (staff.success) {
+      data.staff = staff.user.basicInfo._id;
+    }
+    const staffRecord = await StaffRepo.createStaff(data);
+    return staffRecord;
   }
   return null;
 };
 
-const getStaff = async ({ timezone, page, limit, keyword, status, user }) => {
+const getStaff = async ({
+  timezone,
+  page,
+  limit,
+  keyword,
+  status,
+  user,
+  customer,
+}) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
+  if (customer) {
+    const { staff, meta } = await StaffRepo.getStaffCustomer({
+      timezone,
+      page,
+      limit,
+      keyword,
+      status,
+      user,      
+      customer,
+      skip,
+    });
+    const formatedStaff = staff.map((job) => {
+      return formatStaff(job, timezone,customer);
+    });
+    return { staff: formatedStaff, meta };
+  }
+
   const { staff, meta } = await StaffRepo.getStaff({
     timezone,
     page,
@@ -51,12 +77,12 @@ const getStaff = async ({ timezone, page, limit, keyword, status, user }) => {
     keyword,
     status,
     user,
+    customer,
     skip,
   });
   const formatedStaff = staff.map((job) => {
     return formatStaff(job, timezone);
   });
-
   return { staff: formatedStaff, meta };
 };
 
@@ -90,21 +116,23 @@ const updateStaff = async (id, data) => {
     return Staff;
   }
 
-
   Object.assign(Staff, updateData);
   await Staff.save();
 
   return Staff;
 };
 
-const getStaffDetails = async (id, timezone) => {
-  const Staff = await StaffRepo.findStaffById(id);
+const getStaffDetails = async (id, user, timezone) => {
 
-  if (!Staff) {
+  const [staff] = await Promise.all([
+   findUserById(id),
+  ]);
+
+  if (!staff) {
     return null;
-  }
+  };
 
-  return formatStaffToTimezone(Staff, timezone);
+  return staff;
 };
 const deleteStaff = async (id) => {
   if (!id) throw new Error("Staff ID is required");

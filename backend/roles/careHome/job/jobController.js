@@ -8,6 +8,8 @@ const {
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment");
 const JobService = require("./jobService");
+const { customerTypes, supplierTypes } = require("@UsersModel");
+const { buildProjection } = require("@helperUtils/buildProjection");
 
 const createJob = async (req, res) => {
   let { name, description, type, gender, shift, location } = req.body;
@@ -108,12 +110,21 @@ const createJob = async (req, res) => {
 
 const getJobs = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, date, range, user, latitude, longitude, km } =
+  let { keyword, status, date, range, user, latitude, longitude, km,summary } =
     req.query;
-  const isCareHome = req.user.userType === "careHome";
+  const customer = await customerTypes.includes(req.user.userType);
+  const supplier = await supplierTypes.includes(req.user.userType);
+
+  const JOB_FIELDS = ["name", "description", "location"];
+  const fields = "name,location";
+  let projection = undefined;
+  if(summary){
+   projection = await buildProjection(fields, JOB_FIELDS);
+  }
+
   let userType = req.user.userType;
   let requester = req.user._id;
-  if (isCareHome) {
+  if (customer) {
     user = req.user._id;
     userType = null;
   }
@@ -175,6 +186,8 @@ const getJobs = async (req, res) => {
       latitude: latitude ? Number(latitude) : undefined,
       longitude: longitude ? Number(longitude) : undefined,
       km: km ? Number(km) : undefined,
+      projection,
+      summary: summary === "true" ? true : false,
     });
 
     return sendResponse({
@@ -240,22 +253,23 @@ const updateJobBids = async (req, res) => {
 };
 const getJobBids = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  const { job, shift, keyword, status } = req.query;
+  const { job, shift, keyword, status, dateFilter } = req.query;
   const timezone = req.user.timezone;
+  const customer = await customerTypes.includes(req.user.userType);
+  const supplier = await supplierTypes.includes(req.user.userType);
   const isAdmin = req.user.userType === "admin";
-  const isNurse = req.user.userType === "nurse";
+
   let user = req.user._id;
   let jobCreater = req.user._id;
   if (isAdmin) {
     user = null;
     jobCreater = null;
   }
-  if (isNurse) {
+  if (supplier) {
     jobCreater = null;
-  } else {
+  } else if (customer) {
     user = null;
   }
-  console.log("status", status);
 
   try {
     const { jobBids, meta } = await JobService.getJobBids({
@@ -268,6 +282,7 @@ const getJobBids = async (req, res) => {
       shift,
       user,
       jobCreater,
+      dateFilter,
     });
     if (!jobBids) {
       return sendResponse({

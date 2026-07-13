@@ -8,7 +8,7 @@ const {
   getUserAndShift,
   findJobById_,
 } = require("../../../roles/careHome/job/jobRepository");
-
+const moment = require("moment-timezone");
 const createBid = async (data) => {
   try {
     const existingBid = await Bid.findOne({
@@ -26,6 +26,7 @@ const createBid = async (data) => {
     data.snapshot = snapshot;
     data.jobCreater = user;
     data.shift = shift;
+    data.type=snapshot.type;
 
     if (!shift || !user) {
       return { error: "Invalid_job_or_shift" };
@@ -231,14 +232,26 @@ const getBidByJob = async ({
   limit,
   keyword,
   status,
+  dateFilter,
   job,
   skip,
   shift,
   user,
   jobCreater,
 }) => {
-  console.log("status", status);
   const pipeline = [];
+  const now = moment.tz(timezone);
+  const next24h = now.clone().add(24, "hours").toDate();
+  const startOfThisWeek = now.clone().startOf("week").toDate();
+  const endOfThisWeek = now.clone().endOf("week").toDate();
+  const startOfNextWeek = now.clone().add(1, "week").startOf("week").toDate();
+  const endOfNextWeek = now.clone().add(1, "week").endOf("week").toDate();
+  const ranges = {
+    next24h: { $gte: now.toDate(), $lte: next24h },
+    thisWeek: { $gte: startOfThisWeek, $lte: endOfThisWeek },
+    nextWeek: { $gte: startOfNextWeek, $lte: endOfNextWeek },
+  };
+
   if (jobCreater) {
     pipeline.push({
       $match: {
@@ -250,6 +263,13 @@ const getBidByJob = async ({
     pipeline.push({
       $match: {
         user: new mongoose.Types.ObjectId(user),
+      },
+    });
+  }
+  if (dateFilter && ranges[dateFilter]) {
+    pipeline.push({
+      $match: {
+        "shift.date": ranges[dateFilter],
       },
     });
   }
@@ -299,13 +319,48 @@ const getBidByJob = async ({
             email: 1,
             profileIcon: 1,
             accountState: 1,
+            weeklyHours: 1,
           },
         },
       ],
       as: "user",
     },
   });
-
+  pipeline.push({
+    $unwind: {
+      path: "$user",
+      preserveNullAndEmptyArrays: true,
+    },
+  });
+  pipeline.push({
+    $lookup: {
+      from: "jobroles",
+      let: { typeId: { $toObjectId: "$type" } },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $eq: ["$_id", "$$typeId"],
+            },
+          },
+        },
+        {
+          $project: {
+            department: 1,
+            title: 1,
+            status: 1,
+          },
+        },
+      ],
+      as: "type",
+    },
+  });
+    pipeline.push({
+      $unwind: {
+        path: "$type",
+        preserveNullAndEmptyArrays: true,
+      },
+    });
   pipeline.push({
     $unwind: {
       path: "$user",
@@ -336,6 +391,44 @@ const getBidByJob = async ({
       as: "jobCreater",
     },
   });
+  pipeline.push({
+    $lookup: {
+      from: "reviews",
+      let: { userId: "$user._id" }, // <-- ._id, not the whole object
+      pipeline: [
+        {
+          $match: {
+            $expr: { $eq: ["$objectUser", "$$userId"] },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            averageRating: { $avg: "$rating" },
+            totalReviews: { $sum: 1 },
+          },
+        },
+      ],
+      as: "reviewStats",
+    },
+  });
+
+  // Write the stats INSIDE the user object
+  pipeline.push({
+    $addFields: {
+      "user.averageRating": {
+        $round: [
+          { $ifNull: [{ $arrayElemAt: ["$reviewStats.averageRating", 0] }, 0] },
+          1,
+        ],
+      },
+      "user.totalReviews": {
+        $ifNull: [{ $arrayElemAt: ["$reviewStats.totalReviews", 0] }, 0],
+      },
+    },
+  });
+
+  pipeline.push({ $project: { reviewStats: 0 } });
 
   pipeline.push({
     $unwind: {
@@ -343,6 +436,130 @@ const getBidByJob = async ({
       preserveNullAndEmptyArrays: true,
     },
   });
+
+
+pipeline.push({
+  $lookup: {
+    from: "bookings",
+    let: {
+      workerId: "$user._id",
+      weekStart: startOfThisWeek,
+      weekEnd: endOfThisWeek,
+    },
+    pipeline: [
+      {
+        $match: {
+          status: { $in: ["pending", "inProgress", "completed"] },
+          $expr: {
+            $and: [
+              { $eq: ["$worker", "$$workerId"] },
+              { $gte: ["$shift.date", "$$weekStart"] },
+              { $lte: ["$shift.date", "$$weekEnd"] },
+            ],
+          },
+        },
+      },
+      {
+        // parse "HH:mm" -> minutes since midnight
+        $addFields: {
+          _startMin: {
+            $add: [
+              {
+                $multiply: [
+                  {
+                    $toInt: {
+                      $arrayElemAt: [{ $split: ["$shift.startTime", ":"] }, 0],
+                    },
+                  },
+                  60,
+                ],
+              },
+              {
+                $toInt: {
+                  $arrayElemAt: [{ $split: ["$shift.startTime", ":"] }, 1],
+                },
+              },
+            ],
+          },
+          _endMin: {
+            $add: [
+              {
+                $multiply: [
+                  {
+                    $toInt: {
+                      $arrayElemAt: [{ $split: ["$shift.endTime", ":"] }, 0],
+                    },
+                  },
+                  60,
+                ],
+              },
+              {
+                $toInt: {
+                  $arrayElemAt: [{ $split: ["$shift.endTime", ":"] }, 1],
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          _rawMin: {
+            $let: {
+              vars: { diff: { $subtract: ["$_endMin", "$_startMin"] } },
+              in: {
+                $cond: [
+                  { $lt: ["$$diff", 0] },
+                  { $add: ["$$diff", 1440] }, // overnight
+                  "$$diff",
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalHours: {
+            $sum: {
+              $divide: [
+                {
+                  $subtract: ["$_rawMin", { $ifNull: ["$shift.breakMin", 0] }],
+                },
+                60,
+              ],
+            },
+          },
+          totalBookings: { $sum: 1 },
+        },
+      },
+    ],
+    as: "workStats_",
+  },
+});
+
+// flatten onto staff
+pipeline.push({
+  $addFields: {
+    "workStats.totalHoursWorked": {
+      $round: [
+        { $ifNull: [{ $arrayElemAt: ["$workStats_.totalHours", 0] }, 0] },
+        2,
+      ],
+    },
+    "workStats.hoursAllowed": {
+      $ifNull: ["$user.weeklyHours", 0],
+    },
+    "workStats.totalBookings": {
+      $ifNull: [{ $arrayElemAt: ["$workStats_.totalBookings", 0] }, 0],
+    },
+  },
+});
+
+// pipeline.push({ $project: { workStats_: 0 } });
+
+
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(
       [{ schema: Bid.schema }],
@@ -374,7 +591,7 @@ const getBidByJob = async ({
   });
 
   const result = await Bid.aggregate(pipeline);
-
+console.log(JSON.stringify(result[0]?.data?.[0]?.workStats_, null, 2));
   const bid = result[0]?.data || [];
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
@@ -385,35 +602,64 @@ const getBidByJob = async ({
     ...(jobCreater && { jobCreater: new mongoose.Types.ObjectId(jobCreater) }),
   };
 
-  const [total, active, pending, inactive, deleted, withdraw] =
-    await Promise.all([
-      Bid.countDocuments({
-        ...countFilter,
-        status: { $ne: "deleted" },
-      }),
+  const [
+    total,
+    active,
+    pending,
+    inactive,
+    deleted,
+    withdraw,
+    next24hCount,
+    thisWeekCount,
+    nextWeekCount,
+  ] = await Promise.all([
+    Bid.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+    }),
 
-      Bid.countDocuments({
-        ...countFilter,
-        status: "active",
-      }),
-      Bid.countDocuments({
-        ...countFilter,
-        status: "pending",
-      }),
+    Bid.countDocuments({
+      ...countFilter,
+      status: "active",
+    }),
+    Bid.countDocuments({
+      ...countFilter,
+      status: "pending",
+    }),
 
-      Bid.countDocuments({
-        ...countFilter,
-        status: "inactive",
-      }),
-      Bid.countDocuments({
-        ...countFilter,
-        status: "deleted",
-      }),
-      Bid.countDocuments({
-        ...countFilter,
-        status: "withdraw",
-      }),
-    ]);
+    Bid.countDocuments({
+      ...countFilter,
+      status: "inactive",
+    }),
+    Bid.countDocuments({
+      ...countFilter,
+      status: "deleted",
+    }),
+    Bid.countDocuments({
+      ...countFilter,
+      status: "withdraw",
+    }),
+    // shift within the next 24 hours
+    Bid.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      "shift.date": { $gte: now.toDate(), $lte: next24h },
+    }),
+
+    // shift within this week
+    Bid.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      "shift.date": { $gte: startOfThisWeek, $lte: endOfThisWeek },
+    }),
+
+    // shift within next week
+    Bid.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      "shift.date": { $gte: startOfNextWeek, $lte: endOfNextWeek },
+    }),
+  ]);
 
   const meta = generateMeta(page, limit, totalFiltered);
 
@@ -424,6 +670,9 @@ const getBidByJob = async ({
     inactive,
     withdraw,
     deleted,
+    next24hCount,
+    thisWeekCount,
+    nextWeekCount,
   };
 
   return { jobBids: bid, meta };

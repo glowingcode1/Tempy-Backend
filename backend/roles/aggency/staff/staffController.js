@@ -8,6 +8,7 @@ const {
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment");
 const StaffService = require("./staffService");
+const { customerTypes, supplierTypes } = require("@UsersModel");
 
 const getAllNurses = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
@@ -138,24 +139,18 @@ const getStaff = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user } = req.query;
 
-  const isAgency = req.user.userType === "agency";
-  const homeCareCompany = req.user.userType === "homeCareCompany";
-  const isCareHome = req.user.userType === "careHome";
-  if (isCareHome) {
-    if (!user) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "user_required",
-      });
-    }
-  }
-
-  if (isAgency || homeCareCompany) {
+  const customer = await customerTypes.includes(req.user.userType);
+  const supplier = await supplierTypes.includes(req.user.userType);
+  if (customer) {
     user = req.user._id;
   }
+
+  if (supplier) {
+    user = req.user._id;
+  }
+  console.log("user", user);
   try {
-    const timezone = req.user.timezone;
+    const timezone = req.user.timezone  ;
     const { staff, meta } = await StaffService.getStaff({
       timezone,
       page,
@@ -163,6 +158,7 @@ const getStaff = async (req, res) => {
       keyword,
       status,
       user,
+      customer,
     });
 
     return sendResponse({
@@ -273,9 +269,10 @@ const getStaffDetails = async (req, res) => {
   )
     return;
 
+  const user = req.user._id;
   try {
-    const job = await StaffService.getStaffDetails(id, timezone);
-    if (!job) {
+    const staff = await StaffService.getStaffDetails(id, user, timezone);
+    if (!staff) {
       return sendResponse({
         res,
         statusCode: 404,

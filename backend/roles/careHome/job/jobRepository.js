@@ -18,6 +18,137 @@ const createJob = async (data) => {
     throw err;
   }
 };
+const getJobsSummary = async ({
+  timezone,
+  page,
+  limit,
+  keyword,
+  status,
+  user,
+  skip,
+  userType,
+  requester,
+  latitude, // user's latitude
+  longitude, // user's longitude
+  km, // radius in kilometers
+  projection,
+}) => {
+  const provideServicesToUser = await findUserById(requester);
+  const servicePermissions = provideServicesToUser?.provideServicesTo || {};
+  const allowedUserTypes = Object.keys(servicePermissions).filter(
+    (key) => servicePermissions[key] === true,
+  );
+
+  const pipeline = [];
+
+  // Base filters shared by both geo and non-geo modes
+  const baseMatch = {
+    ...(user && { user: new mongoose.Types.ObjectId(user) }),
+    ...(status ? { status } : { status: { $ne: "deleted" } }),
+  };
+
+  const hasGeo =
+    latitude != null &&
+    longitude != null &&
+    km != null &&
+    !isNaN(Number(latitude)) &&
+    !isNaN(Number(longitude)) &&
+    !isNaN(Number(km));
+
+  if (hasGeo) {
+    // $geoNear MUST be the first stage; filters go inside `query`
+    pipeline.push({
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [Number(longitude), Number(latitude)], // [lng, lat]
+        },
+        key: "location",
+        distanceField: "distanceInMeters", // distance added to each job
+        spherical: true,
+        maxDistance: Number(km) * 1000, // km -> meters
+        query: baseMatch,
+      },
+    });
+    pipeline.push({
+      $addFields: {
+        distanceInKm: { $round: [{ $divide: ["$distanceInMeters", 1000] }, 2] },
+      },
+    });
+  } else {
+    pipeline.push({ $match: baseMatch });
+  }
+
+  pipeline.push({
+    $lookup: {
+      from: "users",
+      let: { userId: "$user" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
+        { $project: { accountState: 1 } },
+      ],
+      as: "user",
+    },
+  });
+
+  pipeline.push({
+    $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
+  });
+  
+  if (allowedUserTypes.length > 0) {
+    // Only show jobs whose owner's userType the requester is permitted to see
+    pipeline.push({
+      $match: { "user.accountState.userType": { $in: allowedUserTypes } },
+    });
+  }
+
+  if (keyword) {
+    const keywordMatch = buildKeywordQueryFromModels(
+      [{ schema: Job.schema }],
+      keyword,
+    );
+    if (Object.keys(keywordMatch).length) {
+      pipeline.push({ $match: keywordMatch });
+    }
+  }
+
+  pipeline.push({ $sort: { createdAt: -1 } });
+  if (projection) {
+    pipeline.push({
+      $project: projection,
+    });
+  }
+  pipeline.push({
+    $facet: {
+      data: [{ $skip: skip }, ...(limit === 0 ? [] : [{ $limit: limit }])],
+      totalFiltered: [{ $count: "count" }],
+    },
+  });
+
+  const result = await Job.aggregate(pipeline);
+
+  const Jobs = result[0]?.data || [];
+  const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
+
+  const countFilter = {
+    ...(user && { user: new mongoose.Types.ObjectId(user) }),
+  };
+
+  const [total, active, inactive, deleted] = await Promise.all([
+    Job.countDocuments({ ...countFilter, status: { $ne: "deleted" } }),
+    Job.countDocuments({ ...countFilter, status: "active" }),
+    Job.countDocuments({ ...countFilter, status: "inactive" }),
+    Job.countDocuments({ ...countFilter, status: "deleted" }),
+  ]);
+
+  const meta = generateMeta(page, limit, totalFiltered);
+  meta.JobsCount = { total, active, inactive, deleted };
+
+  return { Jobs, meta };
+};
+
+
+
 
 const getJobs = async ({
   timezone,
@@ -32,6 +163,7 @@ const getJobs = async ({
   latitude, // user's latitude
   longitude, // user's longitude
   km, // radius in kilometers
+  projection,
 }) => {
   const provideServicesToUser = await findUserById(requester);
   const servicePermissions = provideServicesToUser?.provideServicesTo || {};
@@ -160,7 +292,11 @@ const getJobs = async ({
   }
 
   pipeline.push({ $sort: { createdAt: -1 } });
-
+if (projection) {
+  pipeline.push({
+    $project: projection,
+  });
+}
   pipeline.push({
     $facet: {
       data: [{ $skip: skip }, ...(limit === 0 ? [] : [{ $limit: limit }])],
@@ -225,4 +361,5 @@ module.exports = {
   deleteJob,
   findJobById_,
   getUserAndShift,
+  getJobsSummary,
 };

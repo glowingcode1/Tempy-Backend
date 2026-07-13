@@ -12,7 +12,8 @@ const {
   generateResetToken,
 } = require("./userModelHelpers");
 
-
+const customerTypes = ["careHome", "hospital", "localAuthority", "user"];
+const supplierTypes = ["agency", "homeCareCompany", "nurse"];
 const USER_TYPES = [
   "guest",
   "admin",
@@ -623,4 +624,6 @@ module.exports = {
   createVerificationLink,
   USER_TYPES,
   GENDER_TYPES,
+  customerTypes,
+  supplierTypes,
 };

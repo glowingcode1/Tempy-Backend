@@ -2,7 +2,10 @@ const { getCurrentDateInTimezone } = require("@helperUtils/responseUtil");
 const JobRepo = require("./jobRepository");
 const { cache, invalidate } = require("@redisCache");
 const formatJobToTimezone = require("./formator/formatJobToTimezone");
-const { getBidByJob, findBidById_ } = require("../../../roles/aggency/bid/bidRepository");
+const {
+  getBidByJob,
+  findBidById_,
+} = require("../../../roles/aggency/bid/bidRepository");
 
 const createJob = async (data) => {
   const Job = await JobRepo.createJob(data);
@@ -14,11 +17,10 @@ const updateJobBidStatus = async (id, status, user) => {
   if (!JobBid) {
     return null;
   }
-  return
+  return;
   const updatedBid = await JobRepo.updateJobBidStatus(id, status, user);
   return updatedBid;
 };
-
 
 const getJobBids = async ({
   timezone,
@@ -30,6 +32,8 @@ const getJobBids = async ({
   shift,
   user,
   jobCreater,
+  dateFilter,
+
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -44,6 +48,7 @@ const getJobBids = async ({
     user,
     jobCreater,
     skip,
+    dateFilter,
   });
   const formatedJobBids = jobBids.map((jobBid) => {
     return formatJobToTimezone(jobBid, timezone);
@@ -64,9 +69,29 @@ const getJobs = async ({
   latitude, // user's latitude
   longitude, // user's longitude
   km, // radius in kilometers
+  projection,
+  summary
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
+  if (summary) {
+    const { Jobs, meta } = await JobRepo.getJobsSummary({
+      timezone,
+      page,
+      limit,
+      keyword,
+      status,
+      user,
+      skip,
+      userType,
+      requester,
+      latitude,
+      longitude,
+      km,
+      projection,
+    });
+    return { Jobs, meta };
+  }
   const { Jobs, meta } = await JobRepo.getJobs({
     timezone,
     page,

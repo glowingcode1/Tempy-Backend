@@ -27,11 +27,11 @@ router.post("/", roleMiddleware(["admin","agency",]), StaffRateLimiter, createSt
 // Get all Staff with pagination        
 router.get("/", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getStaff);
 // Get a specific Staff by ID
-router.get("/:id", roleMiddleware(["admin","agency","employee"]), StaffRateLimiter, getStaffDetails);
+router.get("/:id", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getStaffDetails);
 
 
 // Update an existing Staff
-router.put("/:id", roleMiddleware(["admin","agency","employee"]), updateStaff);
+router.put("/:id", roleMiddleware(["admin","agency","careHome"]), updateStaff);
 
 
 // Delete a Staff
