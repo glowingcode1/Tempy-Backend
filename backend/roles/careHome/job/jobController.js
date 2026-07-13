@@ -10,16 +10,7 @@ const moment = require("moment");
 const JobService = require("./jobService");
 
 const createJob = async (req, res) => {
-  let {
-    name,
-    description,
-    type,
-    gender,
-    isBreak,
-    breakMin,
-    shift,
-    location,
-  } = req.body;
+  let { name, description, type, gender, shift, location } = req.body;
   let user = req.user._id;
   const timezone = req.user.timezone;
   if (req.user.userType === "admin") {
@@ -35,7 +26,7 @@ const createJob = async (req, res) => {
 
   if (
     !validateParams(req, res, {
-      rawData: ["name", "description", "type", "gender", "shift", "location"],
+      rawData: ["name", "type", "shift", "location"],
     })
   )
     return;
@@ -46,12 +37,15 @@ const createJob = async (req, res) => {
       translationKey: "shift_must_be_array",
     });
   }
-  if (req.body.isBreak && !req.body.breakMin) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "breakMin_required_when_isBreak_true",
-    });
+  if (Array.isArray(req.body.shift)) {
+    const bad = req.body.shift.findIndex((s) => s.isBreak && !s.breakMin);
+    if (bad !== -1) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "breakMin_required_when_isBreak_true",
+      });
+    }
   }
   const convertedJobs = shift.map((job) => {
     if (job.perHour <= 0) {
@@ -82,8 +76,6 @@ const createJob = async (req, res) => {
     description,
     type,
     gender,
-    isBreak,
-    breakMin,
     shift: convertedJobs,
     user,
     location,
@@ -114,63 +106,60 @@ const createJob = async (req, res) => {
   }
 };
 
-
-
 const getJobs = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, date, range, user,latitude, longitude ,km} = req.query;
+  let { keyword, status, date, range, user, latitude, longitude, km } =
+    req.query;
   const isCareHome = req.user.userType === "careHome";
   let userType = req.user.userType;
-  let requester= req.user._id
+  let requester = req.user._id;
   if (isCareHome) {
     user = req.user._id;
-    userType=null
-  
+    userType = null;
   }
   const geoProvided = [latitude, longitude, km].filter(
-  (v) => v !== undefined && v !== null && v !== "",
-);
+    (v) => v !== undefined && v !== null && v !== "",
+  );
 
-if (geoProvided.length > 0) {
-  if (geoProvided.length < 3) {
-    return res.status(400).json({
-      success: false,
-      message: "latitude, longitude and km must all be provided together.",
-    });
+  if (geoProvided.length > 0) {
+    if (geoProvided.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: "latitude, longitude and km must all be provided together.",
+      });
+    }
+
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    const radius = Number(km);
+
+    if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
+      return res.status(400).json({
+        success: false,
+        message: "latitude, longitude and km must be valid numbers.",
+      });
+    }
+
+    if (lat < -90 || lat > 90) {
+      return res.status(400).json({
+        success: false,
+        message: "latitude must be between -90 and 90.",
+      });
+    }
+
+    if (lng < -180 || lng > 180) {
+      return res.status(400).json({
+        success: false,
+        message: "longitude must be between -180 and 180.",
+      });
+    }
+    if (radius <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "km must be greater than 0.",
+      });
+    }
   }
-
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  const radius = Number(km);
-
-  if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
-    return res.status(400).json({
-      success: false,
-      message: "latitude, longitude and km must be valid numbers.",
-    });
-  }
-
-  if (lat < -90 || lat > 90) {
-    return res.status(400).json({
-      success: false,
-      message: "latitude must be between -90 and 90.",
-    });
-  }
-
-  if (lng < -180 || lng > 180) {
-    return res.status(400).json({
-      success: false,
-      message: "longitude must be between -180 and 180.",
-    });
-  }
-  if (radius <= 0) {
-    return res.status(400).json({
-      success: false,
-      message: "km must be greater than 0.",
-    });
-  }
-}
-
 
   try {
     const timezone = req.user.timezone;
@@ -210,7 +199,7 @@ const updateJobBids = async (req, res) => {
   const { status } = req.body;
   let user = null;
   const isAdmin = req.user.userType === "admin";
-  if(!isAdmin){
+  if (!isAdmin) {
     user = req.user._id;
   }
 
@@ -224,7 +213,7 @@ const updateJobBids = async (req, res) => {
     return;
 
   try {
-    const updatedBid = await JobService.updateJobBidStatus(id, status,user);
+    const updatedBid = await JobService.updateJobBidStatus(id, status, user);
     if (!updatedBid) {
       return sendResponse({
         res,
@@ -250,10 +239,23 @@ const updateJobBids = async (req, res) => {
   }
 };
 const getJobBids = async (req, res) => {
-  const { page, limit, keyword, status } = parsePaginationParams(req);
-  const { job,shift } = req.query;
+  const { page, limit } = parsePaginationParams(req);
+  const { job, shift, keyword, status } = req.query;
   const timezone = req.user.timezone;
-
+  const isAdmin = req.user.userType === "admin";
+  const isNurse = req.user.userType === "nurse";
+  let user = req.user._id;
+  let jobCreater = req.user._id;
+  if (isAdmin) {
+    user = null;
+    jobCreater = null;
+  }
+  if (isNurse) {
+    jobCreater = null;
+  } else {
+    user = null;
+  }
+  console.log("status", status);
 
   try {
     const { jobBids, meta } = await JobService.getJobBids({
@@ -263,7 +265,9 @@ const getJobBids = async (req, res) => {
       keyword,
       status,
       job,
-      shift
+      shift,
+      user,
+      jobCreater,
     });
     if (!jobBids) {
       return sendResponse({
@@ -293,41 +297,25 @@ const getJobBids = async (req, res) => {
 
 const updateJob = async (req, res) => {
   const { id } = req.params;
-  let {
-    name,
-    description,
-    type,
-    gender,
-    isBreak,
-    breakMin,
-    shift,
-    location,
-  } = req.body;
-
-    if (shift && !Array.isArray(shift)) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "shift_must_be_array",
-      });
-    }
-    if (req.body.isBreak && !req.body.breakMin) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "breakMin_required_when_isBreak_true",
-      });
-    }
-    let convertedJobs = undefined;
-    if(shift && shift.length > 0){
-     convertedJobs = shift.map((job) => {
-      if (job.perHour <= 0) {
-        return sendResponse({
-          res,
-          statusCode: 400,
-          translationKey: "perHour_must_be_greater_than_zero",
-        });
-      }
+  let { name, description, type, gender, shift, location } = req.body;
+  const timezone = req.user.timezone;
+  if (shift && !Array.isArray(shift)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "shift_must_be_array",
+    });
+  }
+  if (req.body.isBreak && !req.body.breakMin) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "breakMin_required_when_isBreak_true",
+    });
+  }
+  let convertedJobs = undefined;
+  if (shift && Array.isArray(shift)) {
+    convertedJobs = shift.map((job) => {
       const startUtc = moment
         .tz(`${job.date} ${job.startTime}`, "YYYY-MM-DD HH:mm", timezone)
         .utc();
@@ -346,16 +334,13 @@ const updateJob = async (req, res) => {
   }
 
   const user = req.user._id;
-
   let data = {
     user,
     name,
     description,
     type,
     gender,
-    isBreak,
-    breakMin,
-    shift: convertedJobs||undefined,
+    shift: convertedJobs || undefined,
     location,
   };
   try {
@@ -392,7 +377,6 @@ const updateJob = async (req, res) => {
     });
   }
 };
-
 
 const getJobDetails = async (req, res) => {
   const { id } = req.params;

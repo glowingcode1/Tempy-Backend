@@ -41,6 +41,11 @@ const LocationSchema = new mongoose.Schema(
   },
   { _id: false }
 );
+LocationSchema.pre("validate", function () {
+  if (this.coordinates?.length === 2 && !this.type) {
+    this.type = "Point";
+  }
+});
 
 module.exports = {
   LocationSchema,

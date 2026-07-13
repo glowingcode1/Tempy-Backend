@@ -14,6 +14,7 @@ const createJob = async (data) => {
     await job.save();
     return job;
   } catch (err) {
+    ``;
     throw err;
   }
 };
@@ -69,6 +70,11 @@ const getJobs = async ({
         query: baseMatch,
       },
     });
+    pipeline.push({
+      $addFields: {
+        distanceInKm: { $round: [{ $divide: ["$distanceInMeters", 1000] }, 2] },
+      },
+    });
   } else {
     pipeline.push({ $match: baseMatch });
   }
@@ -117,6 +123,24 @@ const getJobs = async ({
   });
   pipeline.push({
     $unwind: { path: "$type", preserveNullAndEmptyArrays: true },
+  });
+
+  pipeline.push({
+    $lookup: {
+      from: "bids",
+      let: { jobId: "$_id" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$job", "$$jobId"] } } },
+        { $count: "count" },
+      ],
+      as: "bidsCount",
+    },
+  });
+
+  pipeline.push({
+    $addFields: {
+      bidsCount: { $ifNull: [{ $arrayElemAt: ["$bidsCount.count", 0] }, 0] },
+    },
   });
   if (allowedUserTypes.length > 0) {
     // Only show jobs whose owner's userType the requester is permitted to see

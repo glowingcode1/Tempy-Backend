@@ -186,6 +186,10 @@ const bookingSchema = new mongoose.Schema(
       type: shiftSnapshotSchema,
       required: true,
     },
+    snapshot: {
+      type: mongoose.Schema.Types.Mixed, // denormalized snapshot of the job at approval time
+      default: {},
+    },
 
     // ---- lifecycle ----
     status: {

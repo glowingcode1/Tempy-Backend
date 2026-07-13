@@ -1,12 +1,12 @@
 const reviewRepository = require("./reviewRepository");
-const { Services } = require("@ServicesModel");
 const { User } = require("@UsersModel");
 const { Bookings } = require("@BookingsModel");
 const { generateMeta } = require("@helperUtils/responseUtil");
-const formatReview = require("./formatters/formatReview");
 const mongoose = require("mongoose");
+const Booking = require("../../roles/careHome/booking/Booking");
+
 const REVIEW_TYPE_TO_OBJECT_MODEL = {
-  session: "coachservices",
+  booking: "Booking",
   user: "User",
 };
 
@@ -24,13 +24,11 @@ const toIdString = (value) => {
 };
 
 const getTargetModelByReviewType = (reviewType) => {
-  if (reviewType === "session") {
-    return Services;
+  if (reviewType === "booking") {
+    return Booking;
   }
-
   return User;
 };
-
 const getReviewedUserFromBooking = (booking, currentUserId) => {
   const bookingUserId = toIdString(booking.user);
   const bookingCoachId = toIdString(booking.coach);
@@ -43,72 +41,38 @@ const getReviewedUserFromBooking = (booking, currentUserId) => {
 };
 
 const createReview = async ({ reviewData, timezone }) => {
-  const {
-    reviewType,
-    objectId,
-    bookingId,
-    quickContext,
-    rating,
-    comment,
-    userId: currentUserId,
-    reviewTemplate,
-  } = reviewData;
+  const { reviewType, objectId, rating, comment, currentUserId } = reviewData;
   const targetModel = getTargetModelByReviewType(reviewType);
-
-  const [targetObject, booking] = await Promise.all([
+  const [targetObject, currentUser] = await Promise.all([
     targetModel.findById(objectId),
-    Bookings.findById(bookingId),
+    User.findById(currentUserId),
   ]);
 
   if (!targetObject) {
     throw buildAppError(
-      reviewType === "session" ? "service_not_found" : "user_not_found",
+      reviewType === "booking" ? "booking_not_found" : "user_not_found",
       404,
     );
-  }
-
-  if (!booking) {
-    throw buildAppError("booking_not_found", 404);
-  }
-
-  const bookingUserId = toIdString(booking.user);
-  const bookingCoachId = toIdString(booking.coach);
-  const currentUserIdString = toIdString(currentUserId);
-
-  if (![bookingUserId, bookingCoachId].includes(currentUserIdString)) {
-    throw buildAppError("unauthorized_to_perform_this_action", 403);
-  }
-
-  if (reviewType === "session") {
-    if (toIdString(booking.service) !== toIdString(objectId)) {
-      throw buildAppError("service_not_found", 404);
-    }
-  } else {
-    const reviewedUserId = getReviewedUserFromBooking(booking, currentUserId);
-    if (toIdString(objectId) !== reviewedUserId) {
-      throw buildAppError("user_not_found", 404);
-    }
-  }
-
-  const existingReview = await reviewRepository.findReviewByUniqueScope({
-    bookingId,
-    subject: currentUserId,
-    object: objectId,
-  });
-
-  if (existingReview) {
-    throw buildAppError("review_already", 400);
   }
 
   if (Number(rating) < 1 || Number(rating) > 5) {
     throw buildAppError("rating_must_be_between_1_and_5", 400);
   }
-
-  const objectUser =
-    reviewType === "session"
-      ? bookingCoachId
-      : getReviewedUserFromBooking(booking, currentUserId);
-
+  let objectUser = null;
+  let bookingId = null;
+  if (reviewType === "booking") {
+    if (targetObject.status !== "completed") {
+      return buildAppError("cannot_review_incomplete_booking", 400);
+    }
+       bookingId = objectId;
+    if (currentUser.accountState.usertype != "nurse") {
+      objectUser = targetObject.employer;
+    } else {
+      objectUser = targetObject.worker;
+    }
+  } else if (reviewType === "user") {
+    objectUser = targetObject._id;
+  }
   const createdReview = await reviewRepository.createReview({
     reviewType,
     objectType: REVIEW_TYPE_TO_OBJECT_MODEL[reviewType],
@@ -118,8 +82,6 @@ const createReview = async ({ reviewData, timezone }) => {
     objectUser,
     rating,
     comment,
-    quickContext,
-    reviewTemplate,
   });
 
   return {
@@ -161,7 +123,10 @@ const getReviewsByType = async ({
 
 const getReviewById = async ({ reviewId, timezone = "UTC" }) => {
   const filter = { _id: new mongoose.Types.ObjectId(reviewId) };
-  const review_te = await reviewRepository.getReviews(filter, { skip: 0, limit: 10 });
+  const review_te = await reviewRepository.getReviews(filter, {
+    skip: 0,
+    limit: 10,
+  });
   if (!review_te || review_te.reviews.length === 0) {
     throw buildAppError("review_not", 404);
   }
@@ -175,18 +140,18 @@ const updateReviewById = async ({
   userId,
   rating,
   comment,
-  quickContext,
   timezone = "UTC",
   userType,
 }) => {
+  console.log("userId", userId);
   const review = await reviewRepository.findReviewById(reviewId);
   if (!review) {
     throw buildAppError("review_not", 404);
   }
-  if(userType !== "admin"){
-  if (toIdString(review.subject) !== toIdString(userId)) {
-    throw buildAppError("unauthorized_to_perform_this_action", 403);
-  }
+  if (userType !== "admin") {
+    if (toIdString(review.subject) !== toIdString(userId)) {
+      throw buildAppError("unauthorized_to_perform_this_action", 403);
+    }
   }
   const payload = {};
 
@@ -195,9 +160,6 @@ const updateReviewById = async ({
       throw buildAppError("rating_must_be_between_1_and_5", 400);
     }
     payload.rating = rating;
-  }
-  if (quickContext !== undefined) {
-    payload.quickContext = quickContext;
   }
 
   if (comment !== undefined) {
@@ -227,11 +189,11 @@ const deleteReviewById = async ({ reviewId, userId, userType }) => {
     throw buildAppError("review_not", 404);
   }
 
-  if(userType !== "admin"){
-  if (toIdString(review.subject) !== toIdString(userId)) {
-    throw buildAppError("unauthorized_to_perform_this_action", 403);
+  if (userType !== "admin") {
+    if (toIdString(review.subject) !== toIdString(userId)) {
+      throw buildAppError("unauthorized_to_perform_this_action", 403);
+    }
   }
-}
 
   await reviewRepository.deleteReviewById(reviewId);
 };
@@ -245,18 +207,16 @@ const getReview = async ({
   const filter = {
     objectUser: new mongoose.Types.ObjectId(objectUser),
   };
-  const [{ reviews, total, reviewTemplateScoring }, ratingStats] =
-    await Promise.all([
-      reviewRepository.getReviews(filter, { skip: (page - 1) * limit, limit }),
-      reviewRepository.getRatingStats(filter),
-    ]);
+  const [{ reviews, total }, ratingStats] = await Promise.all([
+    reviewRepository.getReviews(filter, { skip: (page - 1) * limit, limit }),
+    reviewRepository.getRatingStats(filter),
+  ]);
 
   return {
     reviews,
     // reviews: formatReview(reviews, timezone),
     meta: {
       ...generateMeta(page, limit, total),
-      reviewTemplateScoring,
       ratingStats: {
         totalReviews: ratingStats.totalReviews,
         averageRating: ratingStats.averageRating,
@@ -265,15 +225,43 @@ const getReview = async ({
     },
   };
 };
-const getallReview = async ({ page = 1, limit = 10, timezone = "UTC",keyword }) => {
+const getallReview = async ({
+  page = 1,
+  limit = 10,
+  timezone = "UTC",
+  keyword,
+  objectUser,
+  reviewType,
+  bookingId,
+  object,
+  subject,
+}) => {
   const filter = {};
+  if (subject) {
+    filter.subject = new mongoose.Types.ObjectId(subject);
+  }
+  if (objectUser) {
+    filter.objectUser = new mongoose.Types.ObjectId(objectUser);
+  }
+  if (reviewType) {
+    filter.reviewType = reviewType;
+  }
+  if (bookingId) {
+    filter.bookingId = new mongoose.Types.ObjectId(bookingId);
+  }
+  if (object) {
+    filter.object = new mongoose.Types.ObjectId(object);
+  }
   const [{ reviews, total }, ratingStats, editedReviewStats] =
     await Promise.all([
-      reviewRepository.getReviews(filter, { skip: (page - 1) * limit, limit },keyword),
+      reviewRepository.getReviews(
+        filter,
+        { skip: (page - 1) * limit, limit },
+        keyword,
+      ),
       reviewRepository.getRatingStats(filter),
       reviewRepository.getEditedReviewStats(filter),
     ]);
-
   return {
     reviews,
     // reviews: formatReview(reviews, timezone),
@@ -282,9 +270,7 @@ const getallReview = async ({ page = 1, limit = 10, timezone = "UTC",keyword }) 
       ratingStats: {
         totalReviews: ratingStats.totalReviews,
         averageRating: ratingStats.averageRating,
-
         totalEditedReviews: editedReviewStats.totalEditedReviews,
-        quickContextReviewsCount: editedReviewStats.quickContextReviewsCount,
         ratingBreakdown: ratingStats.ratingBreakdown,
       },
     },

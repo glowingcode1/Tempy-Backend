@@ -57,6 +57,7 @@ const createBooking = async (data) => {
   const bookingData = {
     ...data,
     user: bid.jobCreater,
+    snapshot: bid.snapshot,
     employer: user.accountState.userType !== "nurse" ? bid.user : null,
     shift: {
       _id: bid.shift._id,

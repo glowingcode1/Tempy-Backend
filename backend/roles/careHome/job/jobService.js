@@ -20,7 +20,17 @@ const updateJobBidStatus = async (id, status, user) => {
 };
 
 
-const getJobBids = async ({ timezone, page, limit, keyword, status, job,shift }) => {
+const getJobBids = async ({
+  timezone,
+  page,
+  limit,
+  keyword,
+  status,
+  job,
+  shift,
+  user,
+  jobCreater,
+}) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
   const { jobBids, meta } = await getBidByJob({
@@ -31,6 +41,8 @@ const getJobBids = async ({ timezone, page, limit, keyword, status, job,shift })
     status,
     job,
     shift,
+    user,
+    jobCreater,
     skip,
   });
   const formatedJobBids = jobBids.map((jobBid) => {
@@ -91,8 +103,6 @@ const updateJob = async (id, data) => {
     "status",
     "shift",
     "location",
-    "isBreak",
-    "breakMin",
     "type",
   ];
 
@@ -103,6 +113,7 @@ const updateJob = async (id, data) => {
       updateData[key] = data[key];
     }
   }
+  console.log("updateData", updateData);
 
   if (Object.keys(updateData).length === 0) {
     return Job;

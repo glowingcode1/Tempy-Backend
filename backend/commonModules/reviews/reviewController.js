@@ -5,7 +5,7 @@ const {
   parsePaginationParams,
   getReadableErrorMessage,
 } = require("@helperUtils/responseUtil");
-
+const mongoose = require("mongoose");
 const resolveError = (error) => {
   if (error?.statusCode) {
     return error;
@@ -18,24 +18,16 @@ const createReview = async (req, res) => {
   // Validate basic fields
   if (
     !validateParams(req, res, {
-      rawData: ["reviewType", "objectId",  "rating"],
+      rawData: ["reviewType", "objectId", "rating"],
       objectIdFields: ["objectId"],
       enumFields: {
-        reviewType: ["session", "user"],
+        reviewType: ["booking", "user"],
       },
     })
   )
     return;
 
-  const {
-    reviewType,
-    objectId,
-    bookingId = null,
-    rating,
-    comment = "",
-    quickContext = "",
-    reviewTemplate,
-  } = req.body;
+  const { reviewType, objectId, rating, comment = "" } = req.body;
   const currentUserId = req.user._id;
 
   // Validate rating
@@ -47,59 +39,26 @@ const createReview = async (req, res) => {
     });
   }
 
-  // Validate reviewTemplate
-  if (!Array.isArray(reviewTemplate) || reviewTemplate.length === 0) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "reviewTemplate_required",
-    });
-  }
-
-  // Normalize and validate each question
-  const normalizedAnswers = [];
-  for (const ans of reviewTemplate) {
-    const { question, type,  selectedOption = [] } = ans;
-
-    if (!question || !type) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "question_and_type_required",
-      });
-    }
-
-    if (!["single_select", "multi_select", "boolean"].includes(type)) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "invalid_question_type",
-      });
-    }
-    let selectedOptions = selectedOption;
-
-
-    normalizedAnswers.push({
-      question,
-      type,
-      selectedOption: selectedOptions,
-    });
-  }
   const reviewData = {
     reviewType,
     objectId,
-    bookingId,
     rating,
     comment,
-    quickContext,
-    reviewTemplate: normalizedAnswers,
-    userId: currentUserId,
+    currentUserId,
   };
   const timezone = req.user?.timezone || "UTC";
 
   try {
     const review = await reviewService.createReview({ reviewData, timezone });
+    if (review instanceof Error) {
+      return sendResponse({
+        res,
 
+        statusCode: review.statusCode || 400,
+
+        translationKey: review.message,
+      });
+    }
     return sendResponse({
       res,
       statusCode: 201,
@@ -208,7 +167,6 @@ const updateReviewById = async (req, res) => {
       userId: req.user._id,
       rating: req.body.rating,
       comment: req.body.comment,
-      quickContext: req.body.quickContext,
       timezone: req.user?.timezone || "UTC",
       userType: req.user?.userType,
     });
@@ -300,14 +258,33 @@ const getReview = async (req, res) => {
 };
 const getallReview = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  const {keyword} = req.query
-
+  const { keyword, reviewType, bookingId, object, subject } = req.query;
+  const isAdmin = req.user?.userType === "admin";
+  let objectUser = req.query.user || req.user._id;
+  if (isAdmin) {
+    objectUser = null;
+  }
+  if (subject) {
+    if (!req.user._id.equals(subject)) {
+      return sendResponse({
+        res,
+        statusCode: 403,
+        translationKey: "unauthorized_to_perform_this_action",
+      });
+    }
+    objectUser = null;
+  }
   try {
     const { reviews, meta } = await reviewService.getallReview({
       page,
       limit,
       keyword,
       timezone: req.user?.timezone || "UTC",
+      objectUser,
+      reviewType,
+      bookingId,
+      object,
+      subject,
     });
 
     return sendResponse({
@@ -334,5 +311,5 @@ module.exports = {
   updateReviewById,
   deleteReviewById,
   getReview,
-  getallReview
+  getallReview,
 };

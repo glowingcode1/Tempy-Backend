@@ -45,9 +45,17 @@ const getBid = async ({
   keyword,
   status,
   user,
+  jobCreater,
   skip,
 }) => {
   const pipeline = [];
+  if (jobCreater) {
+    pipeline.push({
+      $match: {
+        jobCreater: new mongoose.Types.ObjectId(jobCreater),
+      },
+    });
+  }
   if (user) {
     pipeline.push({
       $match: {
@@ -226,8 +234,25 @@ const getBidByJob = async ({
   job,
   skip,
   shift,
+  user,
+  jobCreater,
 }) => {
+  console.log("status", status);
   const pipeline = [];
+  if (jobCreater) {
+    pipeline.push({
+      $match: {
+        jobCreater: new mongoose.Types.ObjectId(jobCreater),
+      },
+    });
+  }
+  if (user) {
+    pipeline.push({
+      $match: {
+        user: new mongoose.Types.ObjectId(user),
+      },
+    });
+  }
   if (job) {
     pipeline.push({
       $match: {
@@ -347,7 +372,6 @@ const getBidByJob = async ({
       ],
     },
   });
-  
 
   const result = await Bid.aggregate(pipeline);
 
@@ -357,6 +381,8 @@ const getBidByJob = async ({
   const countFilter = {
     ...(job && { job: new mongoose.Types.ObjectId(job) }),
     ...(shift && { "shift._id": new mongoose.Types.ObjectId(shift) }),
+    ...(user && { user: new mongoose.Types.ObjectId(user) }),
+    ...(jobCreater && { jobCreater: new mongoose.Types.ObjectId(jobCreater) }),
   };
 
   const [total, active, pending, inactive, deleted, withdraw] =

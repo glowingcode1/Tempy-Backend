@@ -54,8 +54,7 @@ const reviewSchema = new mongoose.Schema(
   },
 );
 
-reviewSchema.index({ bookingId: 1, subject: 1, object: 1 }, { unique: true });
-reviewSchema.index({ reviewType: 1, object: 1, createdAt: -1 });
+
 
 const Review = mongoose.models.Review || mongoose.model("Review", reviewSchema);
 
