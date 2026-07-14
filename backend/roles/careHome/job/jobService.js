@@ -2,7 +2,10 @@ const { getCurrentDateInTimezone } = require("@helperUtils/responseUtil");
 const JobRepo = require("./jobRepository");
 const { cache, invalidate } = require("@redisCache");
 const formatJobToTimezone = require("./formator/formatJobToTimezone");
-const { getBidByJob, findBidById_ } = require("../../../roles/aggency/bid/bidRepository");
+const {
+  getBidByJob,
+  findBidById_,
+} = require("../../../roles/aggency/bid/bidRepository");
 
 const createJob = async (data) => {
   const Job = await JobRepo.createJob(data);
@@ -14,13 +17,24 @@ const updateJobBidStatus = async (id, status, user) => {
   if (!JobBid) {
     return null;
   }
-  return
+  return;
   const updatedBid = await JobRepo.updateJobBidStatus(id, status, user);
   return updatedBid;
 };
 
+const getJobBids = async ({
+  timezone,
+  page,
+  limit,
+  keyword,
+  status,
+  job,
+  shift,
+  user,
+  jobCreater,
+  dateFilter,
 
-const getJobBids = async ({ timezone, page, limit, keyword, status, job,shift }) => {
+}) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
   const { jobBids, meta } = await getBidByJob({
@@ -31,7 +45,10 @@ const getJobBids = async ({ timezone, page, limit, keyword, status, job,shift })
     status,
     job,
     shift,
+    user,
+    jobCreater,
     skip,
+    dateFilter,
   });
   const formatedJobBids = jobBids.map((jobBid) => {
     return formatJobToTimezone(jobBid, timezone);
@@ -52,9 +69,29 @@ const getJobs = async ({
   latitude, // user's latitude
   longitude, // user's longitude
   km, // radius in kilometers
+  projection,
+  summary
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
+  if (summary) {
+    const { Jobs, meta } = await JobRepo.getJobsSummary({
+      timezone,
+      page,
+      limit,
+      keyword,
+      status,
+      user,
+      skip,
+      userType,
+      requester,
+      latitude,
+      longitude,
+      km,
+      projection,
+    });
+    return { Jobs, meta };
+  }
   const { Jobs, meta } = await JobRepo.getJobs({
     timezone,
     page,
@@ -91,8 +128,6 @@ const updateJob = async (id, data) => {
     "status",
     "shift",
     "location",
-    "isBreak",
-    "breakMin",
     "type",
   ];
 
@@ -103,6 +138,7 @@ const updateJob = async (id, data) => {
       updateData[key] = data[key];
     }
   }
+  console.log("updateData", updateData);
 
   if (Object.keys(updateData).length === 0) {
     return Job;

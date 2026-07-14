@@ -52,7 +52,7 @@ const updateAddress = async (id, data) => {
     return { error: "Address_not_found" };
   }
 
-  const allowedFields = ["location", "status"];
+  const allowedFields = ["location", "title", "status"];
 
   const updateData = {};
 

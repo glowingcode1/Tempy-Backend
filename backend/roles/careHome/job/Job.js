@@ -6,7 +6,7 @@ const JobSchema = new mongoose.Schema(
   {
     location: {
       type: LocationSchema,
-      default: {},
+      required: true,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -21,18 +21,16 @@ const JobSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
       trim: true,
       default: "",
     },
     type: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "JobType",
-      required: true,
-    },
+      required: true,},
     status: {
       type: String,
-      enum: ["active", "inactive", "deleted"],
+      enum: ["active", "inactive", "deleted","completed"],
       default: "active",
       index: true,
     },
@@ -41,14 +39,6 @@ const JobSchema = new mongoose.Schema(
       enum: GENDER_TYPES,
       default: "Other",
       index: true,
-    },
-    isBreak: {
-      type: Boolean,
-      default: false,
-    },
-    breakMin: {
-      type: Number,
-      default: 0,
     },
     shift: [
       {
@@ -72,6 +62,18 @@ const JobSchema = new mongoose.Schema(
           enum: ["pending","booked","completed"],
           default: "pending",
         },
+        isBreak: {
+          type: Boolean,
+          default: false,
+        },
+        breakMin: {
+          type: Number,
+          default: 0,
+        },
+        isBiddingAllowed: {
+          type: Boolean,
+          default: true,
+        },
       },
     ],
   },
@@ -79,10 +81,8 @@ const JobSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-JobSchema.index(
-  { location: "2dsphere" },
-  { partialFilterExpression: { "location.type": { $exists: true } } }
-);
+JobSchema.index({ location: "2dsphere" });
 const Job = mongoose.model("Job", JobSchema);
+
 
 module.exports = Job;

@@ -6,59 +6,43 @@ const {
   getReadableErrorMessage,
   convertTimezoneToUtc,
 } = require("../../../helperUtils/responseUtil");
+const mongoose = require("mongoose");
 const moment = require("moment");
-const BidService = require("./bookingService");
+const BookingService = require("./bookingService");
 
-const createBid = async (req, res) => {
-  let { shift, job, bid, note } = req.body;
-  let user = req.user._id;
-  const timezone = req.user.timezone;
-  if (req.user.userType === "admin") {
-    if (!req.body.userId) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "userId_required",
-      });
-    }
-    user = req.body.userId;
-  }
-
+const createBooking = async (req, res) => {
+  let { bid, worker } = req.body;
   if (
     !validateParams(req, res, {
-      rawData: ["shift", "job", "bid"],
+      rawData: ["bid"],
     })
   )
     return;
-
   let data = {
-    user,
-    shift,
-    job,
     bid,
-    note,
+    worker: worker || null,
   };
   try {
-    const Bid = await BidService.createBid(data);
-    if (!Bid) {
+    const Booking = await BookingService.createBooking(data);
+    if (!Booking) {
       return sendResponse({
         res,
         statusCode: 400,
-        translationKey: "Bid_creation_failed",
+        translationKey: "Booking_creation_failed",
       });
     }
-    if (Bid && Bid.error) {
+    if (Booking && Booking.error) {
       return sendResponse({
         res,
         statusCode: 400,
-        translationKey: Bid.error,
+        translationKey: Booking.error,
       });
     }
     return sendResponse({
       res,
       statusCode: 201,
-      translationKey: "Bid_created_successfully",
-      data: Bid,
+      translationKey: "Booking_created_successfully",
+      data: Booking,
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -71,18 +55,20 @@ const createBid = async (req, res) => {
   }
 };
 
-const getBid = async (req, res) => {
+const 
+getBooking = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user } = req.query;
 
   const isAgency = req.user.userType === "agency";
   const isEmployee = req.user.userType === "employee";
-  if (isAgency||isEmployee) {
+  const isCareHome = req.user.userType === "careHome";
+  if (isAgency || isEmployee) {
     user = req.user._id;
   }
   try {
     const timezone = req.user.timezone;
-    const { bid, meta } = await BidService.getBid({
+    const { Booking, meta } = await BookingService.getBooking({
       timezone,
       page,
       limit,
@@ -94,8 +80,8 @@ const getBid = async (req, res) => {
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "Bid_fetched_successfully",
-      data: bid,
+      translationKey: "Booking_fetched_successfully",
+      data: Booking,
       meta,
     });
   } catch (error) {
@@ -108,9 +94,9 @@ const getBid = async (req, res) => {
     });
   }
 };
-const updateBid = async (req, res) => {
+const updateBooking = async (req, res) => {
   const { id } = req.params;
-  let { shift, job, bid, note, status } = req.body;
+  let { shift, job, Booking, note, status } = req.body;
   const isAgency = req.user.userType === "agency";
   const allowedStatusesAgency = ["withdraw"];
 
@@ -136,19 +122,19 @@ const updateBid = async (req, res) => {
     })
   )
     return;
-  
+
   const user = req.user._id;
 
   let data = {
     user,
     shift,
     job,
-    bid,
+    Booking,
     note,
     status,
   };
   try {
-    const updated = await BidService.updateBid(id, data);
+    const updated = await BookingService.updateBooking(id, data);
     if (updated && updated.error) {
       return sendResponse({
         res,
@@ -161,14 +147,14 @@ const updateBid = async (req, res) => {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "Bid_not_found",
+        translationKey: "Booking_not_found",
       });
     }
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "Bid_updated_successfully",
+      translationKey: "Booking_updated_successfully",
       data: updated,
     });
   } catch (error) {
@@ -182,7 +168,7 @@ const updateBid = async (req, res) => {
   }
 };
 
-const getBidDetails = async (req, res) => {
+const getBookingDetails = async (req, res) => {
   const { id } = req.params;
   const timezone = req.user.timezone;
 
@@ -195,19 +181,19 @@ const getBidDetails = async (req, res) => {
     return;
 
   try {
-    const job = await BidService.getBidDetails(id, timezone);
+    const job = await BookingService.getBookingDetails(id, timezone);
     if (!job) {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "Bid_not_found",
+        translationKey: "Booking_not_found",
       });
     }
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "Bid_fetched_successfully",
+      translationKey: "Booking_fetched_successfully",
       data: job,
     });
   } catch (error) {
@@ -220,7 +206,7 @@ const getBidDetails = async (req, res) => {
     });
   }
 };
-const deleteBid = async (req, res) => {
+const deleteBooking = async (req, res) => {
   const { id } = req.params;
 
   if (
@@ -232,19 +218,19 @@ const deleteBid = async (req, res) => {
     return;
 
   try {
-    const deleted = await BidService.deleteBid(id);
+    const deleted = await BookingService.deleteBooking(id);
     if (!deleted) {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "Bid_not_found",
+        translationKey: "Booking_not_found",
       });
     }
 
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "Bid_deleted_successfully",
+      translationKey: "Booking_deleted_successfully",
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -257,9 +243,9 @@ const deleteBid = async (req, res) => {
   }
 };
 module.exports = {
-  createBid,
-  getBid,
-  updateBid,
-  deleteBid,
-  getBidDetails,
+  createBooking,
+  getBooking,
+  updateBooking,
+  deleteBooking,
+  getBookingDetails,
 };

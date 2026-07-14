@@ -12,7 +12,8 @@ const {
   generateResetToken,
 } = require("./userModelHelpers");
 
-
+const customerTypes = ["careHome", "hospital", "localAuthority", "user"];
+const supplierTypes = ["agency", "homeCareCompany", "nurse"];
 const USER_TYPES = [
   "guest",
   "admin",
@@ -612,10 +613,7 @@ userSchema.index(
   }
 );
 
-userSchema.index(
-  { location: "2dsphere" },
-  { partialFilterExpression: { "location.type": { $exists: true } } }
-);
+userSchema.index({ location: "2dsphere" });
 userSchema.index({ createdAt: 1, "accountState.status": 1 });
 
 const User = mongoose.model("User", userSchema);
@@ -626,4 +624,6 @@ module.exports = {
   createVerificationLink,
   USER_TYPES,
   GENDER_TYPES,
+  customerTypes,
+  supplierTypes,
 };

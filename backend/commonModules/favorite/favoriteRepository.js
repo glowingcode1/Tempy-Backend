@@ -387,6 +387,38 @@ const deleteFavorite = async (id) => {
     { new: true },
   );
 };
+const isFavorite = async (userId, favoriteUserId) => {
+  const favorite = await Favorite.exists({
+    user:new mongoose.Types.ObjectId(userId),
+    favoriteUser: new mongoose.Types.ObjectId(favoriteUserId),
+    status: "active",
+  });
+
+  return Boolean(favorite);
+}
+
+const favoriteStaff = async (userId, staffIds = []) => {
+  if (!staffIds.length) return [];
+
+  const ids = staffIds.map((id) => new mongoose.Types.ObjectId(id));
+
+  // one query: which of these are favorited
+  const rows = await Favorite.find(
+    {
+      user: new mongoose.Types.ObjectId(userId),
+      favoriteUser: { $in: ids },
+      status: "active",
+    },
+    { favoriteUser: 1, _id: 0 },
+  ).lean();
+
+  const favoriteSet = new Set(rows.map((r) => String(r.favoriteUser)));
+
+  return staffIds.map((id) => ({
+    id: String(id),
+    isFavorite: favoriteSet.has(String(id)),
+  }));
+};
 module.exports = {
   createFavorite,
   getFavorite,
@@ -395,4 +427,6 @@ module.exports = {
   deleteFavorite,
   findFavoriteByFavoriteUserId,
   getFavoriteByJob,
+  isFavorite,
+  favoriteStaff,
 };

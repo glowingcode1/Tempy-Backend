@@ -22,6 +22,11 @@ const BidSchema = new mongoose.Schema(
       ref: "Job",
       required: true,
     },
+    type: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "JobRole",
+      required: true,
+    },
     snapshot: {
       type: Object,
       default: {},

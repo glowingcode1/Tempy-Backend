@@ -10,7 +10,7 @@ const {
 const AddressService = require("./addressService");
 
 const createAddress = async (req, res) => {
-  let { location } = req.body;
+  let { location,title } = req.body;
   const user = req.user._id;
 
   if (
@@ -22,6 +22,7 @@ const createAddress = async (req, res) => {
 
   let data = {
     location,
+    title,
     user,
   };
   try {
@@ -94,7 +95,7 @@ const getAddress = async (req, res) => {
 };
 const updateAddress = async (req, res) => {
   const { id } = req.params;
-  let { location, status } = req.body;
+  let { location, title, status } = req.body;
 
   const user = req.user._id;
   const timezone = req.user.timezone;
@@ -102,6 +103,7 @@ const updateAddress = async (req, res) => {
   let data = {
     user,
     location,
+    title,
     status,
   };
   try {

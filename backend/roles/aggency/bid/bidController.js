@@ -76,9 +76,19 @@ const getBid = async (req, res) => {
   let { keyword, status, user } = req.query;
 
   const isAgency = req.user.userType === "agency";
-  const isEmployee = req.user.userType === "employee";
-  if (isAgency||isEmployee) {
+  const isNurse = req.user.userType === "nurse";
+  const isHomeCareCompany = req.user.userType === "homeCareCompany";
+  let jobCreater = req.user._id;
+  console.log("req.user.userType", req.user.userType);
+  if (isAgency || isNurse || isHomeCareCompany) {
     user = req.user._id;
+  } else {
+    user = null;
+    jobCreater = req.user._id;
+  }
+
+  if (req.user.userType === "admin") {
+    ((user = null), (jobCreater = null));
   }
   try {
     const timezone = req.user.timezone;
@@ -89,6 +99,7 @@ const getBid = async (req, res) => {
       keyword,
       status,
       user,
+      jobCreater,
     });
 
     return sendResponse({
@@ -136,7 +147,7 @@ const updateBid = async (req, res) => {
     })
   )
     return;
-  
+
   const user = req.user._id;
 
   let data = {

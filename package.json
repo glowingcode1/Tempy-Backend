@@ -36,9 +36,8 @@
     "@FaqModel": "backend/roles/admin/settings/models/Faq.js",
     "@NotificationsModel": "backend/models/Notifications.js",
     "@UsersOnboardingResponsesModel": "backend/roles/admin/onboardingAndFilters/usersOnboardingResponses/UsersOnboardingResponsesModel.js",
-    "@BookingsModel": "backend/roles/user/bookings/BookingsModel.js",
-    "@ServicesModel": "backend/roles/coach/services/ServicesModel.js",
-    "@HelpCenterModel": "backend/roles/admin/helpCenter/HelpCenetr.js"
+    "@HelpCenterModel": "backend/roles/admin/helpCenter/HelpCenetr.js",
+    "@BookingsModel": "backend/roles/careHome/booking/Booking.js"
   },
   "keywords": [],
   "author": "",

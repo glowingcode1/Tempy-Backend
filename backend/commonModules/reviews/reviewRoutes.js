@@ -11,14 +11,12 @@ const {
   getReview,
   getallReview
 } = require("./reviewController");
-const { getReviewTemplates } = require("../../roles/admin/reviewTemplate/reviewTemplateController");
 const roleMiddleware = require("@middlewares/roleMiddleware");
 
 const router = express.Router();
 
 router.use(auth);
 const reviewsRateLimiter = createRateLimiter("Reviews");
-router.get("/template", reviewsRateLimiter,getReviewTemplates );
 router.post("/", reviewsRateLimiter, createReview);
 router.get("/all/:user", reviewsRateLimiter, getReview);
 router.get("/", reviewsRateLimiter, getallReview);

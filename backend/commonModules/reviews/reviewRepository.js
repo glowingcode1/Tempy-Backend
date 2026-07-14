@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const Review = require("./Review");
-const ReviewTemplate = require("../../roles/admin/reviewTemplate/ReviewTemplate");
-const { formatReviews, getReviewTemplateScoring } = require("./formatters/formatReview");
+const { formatReviews} = require("./formatters/formatReview");
 const { default: isEmail } = require("validator/lib/isEmail");
 
 const castAggregationFilter = (filter = {}) => {
@@ -35,8 +34,8 @@ const createReview = async (data = {}) => {
   return Review.findById(created._id);
 };
 
-const findReviewByUniqueScope = async ({ bookingId, subject, object }) => {
-  return Review.findOne({ bookingId, subject, object });
+const findReviewByUniqueScope = async ({ subject, object }) => {
+  return Review.findOne({ subject, object });
 };
 /**
  * Enrich reviews with question details and selectedOptionDetails
@@ -112,7 +111,9 @@ const getReviews = async (
         from: "users",
         localField: "subject",
         foreignField: "_id",
-        pipeline: [{ $project: { name: 1, profileIcon: 1, accountState: 1, email: 1 } }],
+        pipeline: [
+          { $project: { name: 1, profileIcon: 1, accountState: 1, email: 1 } },
+        ],
         as: "subject",
       },
     },
@@ -121,7 +122,7 @@ const getReviews = async (
     // Populate service object
     {
       $lookup: {
-        from: "coachservices",
+        from: "bookings",
         let: {
           objectId: "$object",
           objectType: "$objectType",
@@ -132,7 +133,7 @@ const getReviews = async (
               $expr: {
                 $and: [
                   { $eq: ["$_id", "$$objectId"] },
-                  { $eq: ["$$objectType", "coachservices"] },
+                  { $eq: ["$$objectType", "Booking"] },
                 ],
               },
             },
@@ -140,11 +141,11 @@ const getReviews = async (
           {
             $project: {
               _id: 1,
-              serviceName: 1,
+              "snapshot.name": 1,
             },
           },
         ],
-        as: "serviceObject",
+        as: "bookingObject",
       },
     },
 
@@ -184,7 +185,7 @@ const getReviews = async (
       $addFields: {
         object: {
           $ifNull: [
-            { $arrayElemAt: ["$serviceObject", 0] },
+            { $arrayElemAt: ["$bookingObject", 0] },
             { $arrayElemAt: ["$userObject", 0] },
           ],
         },
@@ -193,7 +194,7 @@ const getReviews = async (
 
     {
       $project: {
-        serviceObject: 0,
+        bookingObject: 0,
         userObject: 0,
       },
     },
@@ -204,7 +205,9 @@ const getReviews = async (
         from: "users",
         localField: "objectUser",
         foreignField: "_id",
-        pipeline: [{ $project: { name: 1, profileIcon: 1, accountState: 1, email: 1 } }],
+        pipeline: [
+          { $project: { name: 1, profileIcon: 1, accountState: 1, email: 1 } },
+        ],
         as: "objectUser",
       },
     },
@@ -244,15 +247,13 @@ const getReviews = async (
   const total = result[0]?.total?.[0]?.count || 0;
 
   const formattedReviews = await enrichReviewsWithSelectedFlag(reviews);
-  const [formatedReviewsWithContext, reviewTemplateScoring] = await Promise.all([
-      formatReviews(formattedReviews),
-      getReviewTemplateScoring(formattedReviews),
+  const [formatedReviewsWithContext] = await Promise.all([
+      formatReviews(formattedReviews)
     ]);
 
   return {
     reviews: formatedReviewsWithContext,
     total,
-    reviewTemplateScoring,
   };
 };
 
@@ -290,6 +291,11 @@ const getRatingStats = async (filter = {}) => {
 
 const findReviewById = async (id) => {
   return Review.findById(id).populate(reviewPopulate);
+};
+const findReviewByUser = async (userId) => {
+  return Review.find({
+    objectUser: new mongoose.Types.ObjectId(userId),
+  }).populate("subject", "name profileIcon").lean();
 };
 
 const updateReviewById = async (id, data = {}) => {
@@ -362,6 +368,41 @@ const getEditedReviewStats = async (filter = {}) => {
     quickContextReviewsCount: result[0]?.quickContextCount?.[0]?.count || 0,
   };
 };
+
+
+const findReviewByStaff = async (staffIds = []) => {
+  if (!staffIds.length) return [];
+
+  const ids = staffIds.map((id) => new mongoose.Types.ObjectId(id));
+
+  const rows = await Review.aggregate([
+    { $match: { objectUser: { $in: ids } } },
+    {
+      $group: {
+        _id: "$objectUser",
+        averageRating: { $avg: "$rating" },
+        totalReviews: { $sum: 1 },
+      },
+    },
+  ]);
+
+  // map results back so every staff id appears, even with zero reviews
+  const statsMap = new Map(
+    rows.map((r) => [
+      String(r._id),
+      {
+        averageRating: Number(r.averageRating.toFixed(1)),
+        totalReviews: r.totalReviews,
+      },
+    ]),
+  );
+
+  return staffIds.map((id) => ({
+    id: String(id),
+    averageRating: statsMap.get(String(id))?.averageRating || 0,
+    totalReviews: statsMap.get(String(id))?.totalReviews || 0,
+  }));
+};
 module.exports = {
   createReview,
   findReviewByUniqueScope,
@@ -371,4 +412,6 @@ module.exports = {
   updateReviewById,
   deleteReviewById,
   getEditedReviewStats,
+  findReviewByUser,
+  findReviewByStaff,
 };
