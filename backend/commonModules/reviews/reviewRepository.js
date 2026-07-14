@@ -292,6 +292,11 @@ const getRatingStats = async (filter = {}) => {
 const findReviewById = async (id) => {
   return Review.findById(id).populate(reviewPopulate);
 };
+const findReviewByUser = async (userId) => {
+  return Review.find({
+    objectUser: new mongoose.Types.ObjectId(userId),
+  }).populate("subject", "name profileIcon").lean();
+};
 
 const updateReviewById = async (id, data = {}) => {
   return Review.findByIdAndUpdate(id, data, {
@@ -363,6 +368,41 @@ const getEditedReviewStats = async (filter = {}) => {
     quickContextReviewsCount: result[0]?.quickContextCount?.[0]?.count || 0,
   };
 };
+
+
+const findReviewByStaff = async (staffIds = []) => {
+  if (!staffIds.length) return [];
+
+  const ids = staffIds.map((id) => new mongoose.Types.ObjectId(id));
+
+  const rows = await Review.aggregate([
+    { $match: { objectUser: { $in: ids } } },
+    {
+      $group: {
+        _id: "$objectUser",
+        averageRating: { $avg: "$rating" },
+        totalReviews: { $sum: 1 },
+      },
+    },
+  ]);
+
+  // map results back so every staff id appears, even with zero reviews
+  const statsMap = new Map(
+    rows.map((r) => [
+      String(r._id),
+      {
+        averageRating: Number(r.averageRating.toFixed(1)),
+        totalReviews: r.totalReviews,
+      },
+    ]),
+  );
+
+  return staffIds.map((id) => ({
+    id: String(id),
+    averageRating: statsMap.get(String(id))?.averageRating || 0,
+    totalReviews: statsMap.get(String(id))?.totalReviews || 0,
+  }));
+};
 module.exports = {
   createReview,
   findReviewByUniqueScope,
@@ -372,4 +412,6 @@ module.exports = {
   updateReviewById,
   deleteReviewById,
   getEditedReviewStats,
+  findReviewByUser,
+  findReviewByStaff,
 };

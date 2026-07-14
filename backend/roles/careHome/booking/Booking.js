@@ -65,7 +65,7 @@ const paymentSchema = new mongoose.Schema(
       default: 0,
     },
     platformFee: {
-      type: Number,
+      type: Number, 
       default: 0,
     },
     totalAmount: {

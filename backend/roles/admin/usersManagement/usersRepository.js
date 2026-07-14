@@ -1,7 +1,7 @@
 // repositories/userRepository.js
 
 const { User } = require("@UsersModel");
-
+const mongoose = require("mongoose");
 // Create
 const createUser = async (data) => {
   const user = new User(data);
@@ -20,7 +20,6 @@ const getUsersWithFilters = async (query, skip, limit) => {
   return users;
 };
 
-
 // Count by condition
 const countUsers = async (query = {}) => {
   return User.countDocuments(query);
@@ -37,7 +36,7 @@ const findUserById = async (id, projection = null) => {
 
 const getUserDetailsForQRRepo = async (id) => {
   return User.findById(id).select("profileIcon name email phoneNumber");
-}
+};
 
 // Update and save
 const updateUserData = async (user, data) => {
@@ -65,10 +64,25 @@ const updateTwoFA = async (userId, data) => {
     {
       new: true,
       runValidators: true,
-    }
+    },
   );
 };
+const findUserByStaff = async (staffIds = [], projection = null) => {
+  if (!staffIds.length) return [];
 
+  const ids = staffIds.map((id) => new mongoose.Types.ObjectId(id));
+
+  const defaultProjection = {
+    name: 1,
+    profileIcon: 1,
+    location: 1,
+    weeklyHours: 1,
+  };
+
+  const proj = projection || defaultProjection;
+
+  return User.find({ _id: { $in: ids } }, proj).lean();
+};
 
 module.exports = {
   createUser,
@@ -79,5 +93,6 @@ module.exports = {
   deleteUserById,
   findByIdAndUpdate,
   updateTwoFA,
-  getUserDetailsForQRRepo
+  getUserDetailsForQRRepo,
+  findUserByStaff,
 };

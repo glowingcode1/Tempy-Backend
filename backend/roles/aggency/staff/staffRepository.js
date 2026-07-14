@@ -926,6 +926,9 @@ const findStaffById = async (id) => {
 const findStaffById_ = async (id) => {
   return Staff.findById(id);
 };
+const findStaffByUserAndStaff = async (user,staff) => {
+  return Staff.findOne({ user: new mongoose.Types.ObjectId(user), staff: new mongoose.Types.ObjectId(staff) });
+};
 
 const findByIdAndUpdate = async (id, data) => {
   return Staff.findByIdAndUpdate(id, data, { new: true })
@@ -939,6 +942,110 @@ const deleteStaff = async (id) => {
     { new: true },
   );
 };
+
+
+
+const findStaffNearJob = async (user, jobDetails, km = 50) => {
+  const [lng, lat] = jobDetails?.location?.coordinates || [];
+  if (lng == null || lat == null) return [];
+
+  const nearby = await Staff.aggregate([
+    // this employer's active staff
+    {
+      $match: {
+        user: new mongoose.Types.ObjectId(user),
+        status: "active",
+      },
+    },
+    // pull each staff's user location
+    {
+      $lookup: {
+        from: "users",
+        let: { staffId: "$staff" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$staffId"] } } },
+          { $project: { location: 1 } },
+        ],
+        as: "staffUser",
+      },
+    },
+    { $unwind: "$staffUser" },
+    // compute distance (meters) from the job to each staff
+    {
+      $addFields: {
+        distance: {
+          $let: {
+            vars: { coords: "$staffUser.location.coordinates" },
+            in: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ["$$coords", []] } }, 1] },
+                {
+                  $multiply: [
+                    6371000, // earth radius (m)
+                    {
+                      $acos: {
+                        $min: [
+                          1,
+                          {
+                            $add: [
+                              {
+                                $multiply: [
+                                  { $sin: { $degreesToRadians: lat } },
+                                  {
+                                    $sin: {
+                                      $degreesToRadians: {
+                                        $arrayElemAt: ["$$coords", 1],
+                                      },
+                                    },
+                                  },
+                                ],
+                              },
+                              {
+                                $multiply: [
+                                  { $cos: { $degreesToRadians: lat } },
+                                  {
+                                    $cos: {
+                                      $degreesToRadians: {
+                                        $arrayElemAt: ["$$coords", 1],
+                                      },
+                                    },
+                                  },
+                                  {
+                                    $cos: {
+                                      $subtract: [
+                                        {
+                                          $degreesToRadians: {
+                                            $arrayElemAt: ["$$coords", 0],
+                                          },
+                                        },
+                                        { $degreesToRadians: lng },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+                null,
+              ],
+            },
+          },
+        },
+      },
+    },
+    // keep only those within km
+    { $match: { distance: { $ne: null, $lte: km * 1000 } } },
+    { $project: { _id: 1, staff: 1, distance: 1 } },
+  ]);
+
+  return nearby.map((s) => s.staff.toString());
+};
+
 module.exports = {
   createStaff,
   getStaff,
@@ -950,4 +1057,6 @@ module.exports = {
   findJobById_,
   getStaffByJob,
   getStaffCustomer,
+  findStaffByUserAndStaff,
+  findStaffNearJob,
 };

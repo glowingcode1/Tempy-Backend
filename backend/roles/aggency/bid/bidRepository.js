@@ -681,8 +681,8 @@ console.log(JSON.stringify(result[0]?.data?.[0]?.workStats_, null, 2));
 const findBidById = async (id) => {
   return Bid.findById(id).lean().populate("user", "name email profileIcon");
 };
-const findBidById_ = async (id) => {
-  return Bid.findById(id);
+const findBidById_ = async (id,projection = null) => {
+  return Bid.findById(id, projection);
 };
 
 const findByIdAndUpdate = async (id, data) => {

@@ -137,20 +137,24 @@ const createStaff = async (req, res) => {
 
 const getStaff = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, user } = req.query;
+  let { keyword, status, user,bid } = req.query;
 
-  const customer = await customerTypes.includes(req.user.userType);
-  const supplier = await supplierTypes.includes(req.user.userType);
-  if (customer) {
-    user = req.user._id;
+  let customer = await customerTypes.includes(req.user.userType);
+  let supplier = await supplierTypes.includes(req.user.userType);
+  if (user) {
+    customer = null, supplier = null;
+  } else {
+    if (customer) {
+      user = req.user._id;
+    }
+
+    if (supplier) {
+      user = req.user._id;
+    }
   }
 
-  if (supplier) {
-    user = req.user._id;
-  }
-  console.log("user", user);
   try {
-    const timezone = req.user.timezone  ;
+    const timezone = req.user.timezone;
     const { staff, meta } = await StaffService.getStaff({
       timezone,
       page,
@@ -159,6 +163,7 @@ const getStaff = async (req, res) => {
       status,
       user,
       customer,
+      bid,
     });
 
     return sendResponse({
@@ -270,13 +275,21 @@ const getStaffDetails = async (req, res) => {
     return;
 
   const user = req.user._id;
+  const customer = await customerTypes.includes(req.user.userType);
+  const supplier = await supplierTypes.includes(req.user.userType);
   try {
-    const staff = await StaffService.getStaffDetails(id, user, timezone);
-    if (!staff) {
+    const { formatted, error } = await StaffService.getStaffDetails(
+      id,
+      user,
+      timezone,
+      customer,
+      supplier,
+    );
+    if (error) {
       return sendResponse({
         res,
         statusCode: 404,
-        translationKey: "Staff_not_found",
+        translationKey: error,
       });
     }
 
@@ -284,7 +297,7 @@ const getStaffDetails = async (req, res) => {
       res,
       statusCode: 200,
       translationKey: "Staff_fetched_successfully",
-      data: job,
+      data: formatted,
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -332,6 +345,56 @@ const deleteStaff = async (req, res) => {
     });
   }
 };
+
+
+
+const getAvailableStaff = async (req, res) => {
+  const { page, limit } = parsePaginationParams(req);
+  let { user,bid,job } = req.query;
+  if(!bid ||!user||!job) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "bid_user_and_job_required",
+    });
+  }
+
+  try {
+    const timezone = req.user.timezone;
+    const { staff, meta, error } = await StaffService.getAvailableStaff({
+      timezone,
+      page,
+      limit,
+      user,
+      bid,
+      job,
+    });
+    if (error) {
+      return sendResponse({
+        res,
+        statusCode: 404,
+        translationKey: error,
+      });
+    }
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "Staff_fetched_successfully",
+      data: staff,
+      meta,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
 module.exports = {
   createStaff,
   getStaff,
@@ -339,4 +402,5 @@ module.exports = {
   deleteStaff,
   getStaffDetails,
   getAllNurses,
+  getAvailableStaff,
 };

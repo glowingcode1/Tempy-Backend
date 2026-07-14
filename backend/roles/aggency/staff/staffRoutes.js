@@ -7,6 +7,7 @@ const {
   deleteStaff,
   getStaffDetails,
   getAllNurses,
+  getAvailableStaff,
 } = require("./staffController"); // Assuming you have a separate controller for promo codes
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
@@ -26,6 +27,8 @@ router.post("/", roleMiddleware(["admin","agency",]), StaffRateLimiter, createSt
 
 // Get all Staff with pagination        
 router.get("/", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getStaff);
+// Get all Staff with pagination        
+router.get("/available", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getAvailableStaff);
 // Get a specific Staff by ID
 router.get("/:id", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getStaffDetails);
 

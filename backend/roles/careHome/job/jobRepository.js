@@ -329,8 +329,8 @@ if (projection) {
 const findJobById = async (id) => {
   return Job.findById(id).lean().populate("user", "name email profileIcon");
 };
-const findJobById_ = async (id) => {
-  return Job.findById(id);
+const findJobById_ = async (id, projection = null) => {
+  return Job.findById(id, projection || {});
 };
 
 const findByIdAndUpdate = async (id, data) => {

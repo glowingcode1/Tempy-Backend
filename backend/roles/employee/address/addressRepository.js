@@ -132,6 +132,10 @@ const findAddressById = async (id) => {
   return AddressModel.findById(id);
 };
 
+const findAddressByUser = async (userId, limit = 3) => {
+  return AddressModel.find({ user: new mongoose.Types.ObjectId(userId) }).limit(limit);
+};
+
 const findByIdAndUpdate = async (id, data) => {
   const invalidations = [];
   invalidations.push("faqs");
@@ -153,4 +157,5 @@ module.exports = {
   findAddressById,
   findByIdAndUpdate,
   deleteAddress,
+  findAddressByUser,
 };
