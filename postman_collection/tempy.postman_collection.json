@@ -682,7 +682,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailUser}}\",\n    \"password\": \"{{passwordUser}}\",\n    \"userType\": \"careHome\", //user, organizer, admin, manager, guest\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailUser}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// \n    \"password\": \"{{passwordUser}}\",\n    \"userType\": \"careHome\", //user, organizer, admin, manager, guest\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -2569,7 +2569,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"gender\": \"Female\",\n    \"isBreak\": true,\n    \"breakMin\": 30,\n \n  \"location\": {\n        \"coordinates\": [\n        0,\n        0\n    ], //optional\n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\"\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\"\n    }\n]\n}",
+                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        10,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2612,6 +2612,33 @@
                       ],
                       "path": [
                         "job"
+                      ],
+                      "query": [
+                        {
+                          "key": "latitude",
+                          "value": "9.2",
+                          "disabled": true
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "9.3",
+                          "disabled": true
+                        },
+                        {
+                          "key": "km",
+                          "value": "1000",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "inactive",
+                          "disabled": true
+                        },
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
+                        }
                       ]
                     }
                   },
@@ -2694,7 +2721,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomFullName}}\"\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    // \"type\": \"employee\",\n    // \"gender\": \"Female\",\n    // \"isBreak\": true,\n    // \"breakMin\": 30\n \n//   \"location\": {\n//         \"coordinates\": [\n//         0,\n//         0\n//     ], //optional\n//     \"fullAddress\": \"{{$randomStreetAddress}}\",\n//     \"city\": \"{{$randomCity}}\", // //optional\n//     \"country\": \"{{$randomCountry}}\", // //optional\n//     \"state\": \"pakistan\", //optional\n//     \"postalCode\": 12345 //optional\n// },\n// \"shift\": [\n//     {\n//         \"date\": \"2026-06-25\",\n//         \"startTime\": \"08:00\",\n//         \"endTime\": \"14:06\",\n\n//     },\n//     {\n//         \"date\": \"2026-06-26\",\n//         \"startTime\": \"09:00\",\n//         \"endTime\": \"17:00\",\n//     }\n// ]\n}",
+                      "raw": "{\n    // \"name\": \"{{$randomFullName}}\"\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    // \"type\": \"employee\",\n    // \"gender\": \"Female\",\n    // \"isBreak\": true,\n    // \"breakMin\": 30\n    //   \"location\": {\n    //         \"coordinates\": [\n    //         0,\n    //         0\n    //     ], //optional\n    //     \"fullAddress\": \"{{$randomStreetAddress}}\",\n    //     \"city\": \"{{$randomCity}}\", // //optional\n    //     \"country\": \"{{$randomCountry}}\", // //optional\n    //     \"state\": \"pakistan\", //optional\n    //     \"postalCode\": 12345 //optional\n    // },\n    \"shift\": [\n        {\n            \"date\": \"2026-06-25\",\n            \"startTime\": \"08:00\",\n            \"endTime\": \"14:06\",\n            \"isBreak\": true,\n            \"breakMin\": 12,\n            \"isBiddingAllowed\": true\n        },\n        {\n            \"date\": \"2026-06-26\",\n            \"startTime\": \"09:00\",\n            \"endTime\": \"17:00\",\n            \"isBreak\": true,\n            \"breakMin\": 12,\n            \"isBiddingAllowed\": false\n        }\n    ]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2789,7 +2816,7 @@
                       "raw": ""
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/job/bids",
+                      "raw": "{{url}}web/care-home/job/bids?limit=1",
                       "host": [
                         "{{url}}web"
                       ],
@@ -2801,17 +2828,27 @@
                       "query": [
                         {
                           "key": "limit",
-                          "value": "1",
-                          "disabled": true
+                          "value": "1"
                         },
                         {
                           "key": "job",
-                          "value": "6a460eafc1719af6f4e3ec79",
+                          "value": "6a50c8da0341ac5657c45d50",
                           "disabled": true
                         },
                         {
                           "key": "shift",
                           "value": "6a4b3b352d06b75399883728",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "pending",
+                          "disabled": true
+                        },
+                        {
+                          "key": "dateFilter",
+                          "value": "nextWeek",
+                          "description": "next24h/thisWeek/nextWeek",
                           "disabled": true
                         }
                       ]
@@ -2917,7 +2954,7 @@
                   "response": []
                 },
                 {
-                  "name": "get nurces",
+                  "name": "get available staff",
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true
                   },
@@ -2934,13 +2971,14 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/staff?user=6a4c91fdd6052f91236364c2",
+                      "raw": "{{url}}web/care-home/staff/available?user=6a4c91fdd6052f91236364c2&bid=6a4f7b095f6e52ef29482f9b&job=6a50c8da0341ac5657c45d50",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
                         "care-home",
-                        "staff"
+                        "staff",
+                        "available"
                       ],
                       "query": [
                         {
@@ -2951,6 +2989,97 @@
                           "key": "status",
                           "value": "acive",
                           "disabled": true
+                        },
+                        {
+                          "key": "bid",
+                          "value": "6a4f7b095f6e52ef29482f9b",
+                          "description": "true/ false"
+                        },
+                        {
+                          "key": "job",
+                          "value": "6a50c8da0341ac5657c45d50"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "staff",
+              "item": [
+                {
+                  "name": "get",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}web/care-home/staff",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "care-home",
+                        "staff"
+                      ],
+                      "query": [
+                        {
+                          "key": "user",
+                          "value": "6a4c91fdd6052f91236364c2",
+                          "disabled": true
+                        },
+                        {
+                          "key": "keyword",
+                          "value": "Casper",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "inactive",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "details",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}web/care-home/staff/:id",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "care-home",
+                        "staff",
+                        ":id"
+                      ],
+                      "query": [
+                        {
+                          "key": "user",
+                          "value": "6a4c91fdd6052f91236364c2",
+                          "disabled": true
+                        },
+                        {
+                          "key": "keyword",
+                          "value": "Casper",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "inactive",
+                          "disabled": true
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "6a4c9304f2e273d27e49d435"
                         }
                       ]
                     }
@@ -12815,6 +12944,44 @@
                     }
                   },
                   "response": []
+                },
+                {
+                  "name": "get details",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    // \"email\": \"{{$randomExampleEmail}}\",\n    \"email\": \"aime_gibson@example.net\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\", //optional\n    \"gender\": \"Male\", //optional\n    \"userType\": \"nurse\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\": 1234,\n    \"governmentIdentity\": [\n        \"image.png\"\n    ],\n    \"degree\": [\n        \"imaage.png\"\n    ],\n    \"certification\": [\n        \"image.png\"\n    ],\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"speciality\": \"generalNurse\",\n    \"ratePerHour\": 12,\n    \"platformPercent\": 10\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/staff/:id",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "staff",
+                        ":id"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "6a4c9304f2e273d27e49d435",
+                          "description": "6a4c9304f2e273d27e49d435 /  6a4ca466d33030feca93b701"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
                 }
               ]
             }
@@ -15605,7 +15772,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailUser}}\", //ujamil503@gmail.com //cwtest1@gmail.com //alineony@gmail.com\n    \"password\": \"{{passwordUser}}\", //@Li123456//123456\n    \"userType\": \"nurse\", //user, organizer, admin, manager, guest,employee\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailUser}}\",// vada_yost@example.com\n    \"password\": \"{{passwordUser}}\", //@Li123456//123456\n    \"userType\": \"nurse\", //user, organizer, admin, manager, guest,employee\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -17493,7 +17660,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"pakistan\",\n        \"postalCode\": 12345\n    }\n}",
+                      "raw": "{\n    \"title\": \"Home\",\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"pakistan\",\n        \"postalCode\": 12345\n    }\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -17501,12 +17668,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/employee/address",
+                      "raw": "{{url}}app/nurse/address",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "employee",
+                        "nurse",
                         "address"
                       ]
                     }
@@ -17526,12 +17693,12 @@
                       "raw": "{\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"pakistan\",\n        \"postalCode\": 12345\n    }\n}"
                     },
                     "url": {
-                      "raw": "{{url}}app/employee/address?page=1&limit=1",
+                      "raw": "{{url}}app/nurse/address?page=1&limit=1",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "employee",
+                        "nurse",
                         "address"
                       ],
                       "query": [
@@ -17541,8 +17708,7 @@
                         },
                         {
                           "key": "limit",
-                          "value": "1",
-                          "type": "text"
+                          "value": "1"
                         }
                       ]
                     }
@@ -17795,6 +17961,23 @@
                       ],
                       "path": [
                         "job"
+                      ],
+                      "query": [
+                        {
+                          "key": "latitude",
+                          "value": "9",
+                          "disabled": true
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "9",
+                          "disabled": true
+                        },
+                        {
+                          "key": "km",
+                          "value": "1",
+                          "disabled": true
+                        }
                       ]
                     }
                   },
@@ -18863,6 +19046,148 @@
                     {
                       "key": "favoriteUser",
                       "value": "6a4c9304f2e273d27e49d436",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "review",
+          "item": [
+            {
+              "name": "create review",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reviewType\":\"booking\",//booking,user\n    \"objectId\":\"6a50a3bce6ac069ffc85a773\",\n    \"rating\":2,\n    \"comment\":\"ok\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}reviews",
+                  "host": [
+                    "{{url}}reviews"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "update",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"rating\":2,\n    \"comment\":\"ok brother\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}reviews/:id",
+                  "host": [
+                    "{{url}}reviews"
+                  ],
+                  "path": [
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "6a509907b9ea1daaa3409fed"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "delete",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}reviews/:id",
+                  "host": [
+                    "{{url}}reviews"
+                  ],
+                  "path": [
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "6a509907b9ea1daaa3409fed"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "get",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reviewType\":\"user\",//booking\n    \"objectId\":\"6a4c884a41e7a92aec838ead\",\n    \"rating\":2,\n    \"booking\":\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}reviews",
+                  "host": [
+                    "{{url}}reviews"
+                  ],
+                  "query": [
+                    {
+                      "key": "subject",
+                      "value": "6a4f867e212d85988f711656",
+                      "description": "get all reviews that you gave ",
+                      "disabled": true
+                    },
+                    {
+                      "key": "reviewType",
+                      "value": "user",
+                      "description": "user,booking",
+                      "disabled": true
+                    },
+                    {
+                      "key": "bookingId",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "object",
+                      "value": "",
                       "disabled": true
                     }
                   ]
