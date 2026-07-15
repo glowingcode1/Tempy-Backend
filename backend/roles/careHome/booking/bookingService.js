@@ -2,11 +2,57 @@ const { getCurrentDateInTimezone } = require("@helperUtils/responseUtil");
 const BookingRepo = require("./bookingRepository");
 const { cache, invalidate } = require("@redisCache");
 const formatBookingToTimezone = require("./formator/formatBookingToTimezone");
-const { findBidById_, updateBidStatuses } = require("../../../roles/aggency/bid/bidRepository");
+const {
+  findBidById_,
+  updateBidStatuses,
+} = require("../../../roles/aggency/bid/bidRepository");
 const {
   findUserById,
 } = require("../../../roles/admin/usersManagement/usersRepository");
+const {
+  getActiveJobRoles,
+} = require("../../../roles/admin/jobRole/jobRoleRepository");
+const convertToMongoArray = require("@helperUtils/convertToMongoArray");
+const { formatCalendar } = require("./formator/calendarFormatter");
 const platformFee = Number(process.env.PLATFORM_FEE);
+// weither Data
+const WEATHER_API_URL = process.env.WEATHER_API_URL;
+const DAILY =
+  "weather_code,sunrise,sunset,uv_index_clear_sky_max,uv_index_max,temperature_2m_mean,relative_humidity_2m_max,relative_humidity_2m_min,wet_bulb_temperature_2m_mean";
+const CURRENT = "temperature_2m,is_day,rain,showers,snowfall";
+const toISODate = (v) => {
+  const d = v instanceof Date ? v : new Date(v);
+  if (isNaN(d)) throw new Error(`Invalid date: ${v}`);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const getWeather = async ({
+  latitude,
+  longitude,
+  startDate,
+  endDate,
+  timezone = "auto",
+}) => {
+  if (!latitude || !longitude) {
+    throw new Error(`Missing coordinates: lat=${latitude} lng=${longitude}`);
+  }
+  const params = new URLSearchParams({
+    latitude,
+    longitude,
+    timezone,
+    daily: DAILY,
+    current: CURRENT,
+    start_date: toISODate(startDate),
+    end_date: toISODate(endDate),
+  });
+
+  const res = await fetch(`${process.env.WEATHER_API_URL}?${params}`);
+  const data = await res.json();
+
+  if (!res.ok) throw new Error(data.reason || "Weather API failed");
+
+  return data;
+};
+
 const calculatePayment = (
   startTime,
   endTime,
@@ -79,10 +125,10 @@ const createBooking = async (data) => {
 
   const booking = await BookingRepo.createBooking(bookingData);
 
-  if(!booking) {
+  if (!booking) {
     return { error: "Booking_creation_failed" };
   }
-  const shiftID=booking.shift._id.toString();
+  const shiftID = booking.shift._id.toString();
   await updateBidStatuses(bid._id);
   return booking;
 };
@@ -90,7 +136,7 @@ const createBooking = async (data) => {
 const getBooking = async ({ timezone, page, limit, keyword, status, user }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
-  const { Booking, meta } = await BookingRepo.getBooking({
+  const { booking, meta } = await BookingRepo.getBooking({
     timezone,
     page,
     limit,
@@ -99,7 +145,7 @@ const getBooking = async ({ timezone, page, limit, keyword, status, user }) => {
     user,
     skip,
   });
-  const formatedBooking = Booking.map((job) => {
+  const formatedBooking = booking.map((job) => {
     return formatBookingToTimezone(job, timezone);
   });
 
@@ -158,10 +204,36 @@ const deleteBooking = async (id) => {
   return !!deleted;
 };
 
+const getBookingCalender = async ({
+  timezone,
+  latitude,
+  longitude,
+  startDate,
+  endDate,
+  user,
+  branch,
+}) => {
+  const userIds = await convertToMongoArray(user);
+  const [jobRoles, bookings, weather] = await Promise.all([
+    getActiveJobRoles(),
+    BookingRepo.getBookingsByUsersAndDateRange(userIds, startDate, endDate),
+    getWeather({ latitude, longitude, startDate, endDate, timezone }),
+  ]);
+  console.log("bookings", bookings);
+  const { calendar,meta } = formatCalendar({
+    jobRoles,
+    bookings,
+    weather,
+  });
+
+  return { calendar, meta };
+};
+
 module.exports = {
   createBooking,
   getBooking,
   updateBooking,
   deleteBooking,
   getBookingDetails,
+  getBookingCalender,
 };

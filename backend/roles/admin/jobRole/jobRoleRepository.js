@@ -205,6 +205,18 @@ const findByIdAndUpdate = async (id, data) => {
 const deleteJobRole = async (id) => {
   return await JobRole.findByIdAndUpdate(id, { status: "deleted" }, { new: true });
 };
+const getActiveJobRoles = async () => {
+  try {
+    const jobRoles = await JobRole.find({ status: "active" })
+      .sort({ department: 1, title: 1 })
+      .select("department title")
+      .lean();
+      return jobRoles;
+  } catch (error) {
+    throw new Error("Failed to fetch active job roles");
+  }
+};
+
 module.exports = {
   createJobRole,
   getJobRole,
@@ -212,4 +224,5 @@ module.exports = {
   findByIdAndUpdate,
   deleteJobRole,
   findJobRoleById_,
+  getActiveJobRoles,
 };
