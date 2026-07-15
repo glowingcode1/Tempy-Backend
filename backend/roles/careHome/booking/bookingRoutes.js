@@ -6,6 +6,7 @@ const {
   updateBooking,
   deleteBooking,
   getBookingDetails,
+  getBookingCalender,
 } = require("./bookingController"); // Assuming you have a separate controller for promo codes
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
@@ -17,7 +18,11 @@ router.use(auth);
 
 // Create a rate limiter for Promo Codes
 const BookingRateLimiter = createRateLimiter("Booking");
-
+router.get(
+  "/calender",
+  roleMiddleware(["admin", "careHome"]),
+  getBookingCalender,
+);
 // Routes for Booking Management
 // Create a new Booking
 router.post("/", roleMiddleware(["admin","careHome"]), BookingRateLimiter, createBooking);
@@ -33,5 +38,10 @@ router.put("/:id", roleMiddleware(["admin","agency","employee"]), updateBooking)
 
 // Delete a Booking
 router.delete("/:id", roleMiddleware(["admin","agency","employee"]), deleteBooking);
+router.get(
+  "/calender",
+  roleMiddleware(["admin", "careHome"]),
+  getBookingCalender,
+);
 
 module.exports = router;

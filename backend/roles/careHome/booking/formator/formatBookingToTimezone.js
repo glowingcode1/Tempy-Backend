@@ -26,11 +26,11 @@ const formatBookingToTimezone = (job, timezone) => {
     shift: Array.isArray(job.shift) ? job.shift.map(formatShift) : job.shift,
     user: {
       ...job.user,
-      profileIcon: getFullImageUrl(job.user.profileIcon),
+      profileIcon: getFullImageUrl(job.user?.profileIcon),
     },
     jobCreater: {
       ...job.jobCreater,
-      profileIcon: getFullImageUrl(job.jobCreater.profileIcon),
+      profileIcon: getFullImageUrl(job.jobCreater?.profileIcon),
     },
     createdAt: job.createdAt
       ? convertUtcToTimezone(job.createdAt, timezone)
