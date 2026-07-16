@@ -73,10 +73,6 @@ const createAvailability = async (req, res) => {
 const getAvailability = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user, startDate, endDate, summary } = req.query;
-
-  // No forced scoping — any authenticated role can query by any user,
-  // or omit `user` to get all records they're permitted to see.
-
   try {
     const timezone = req.user.timezone;
     const { availability, meta } = await AvailabilityService.getAvailability({
@@ -174,48 +170,6 @@ const updateAvailability = async (req, res) => {
   }
 };
 
-const getAvailabilityDetails = async (req, res) => {
-  const { id } = req.params;
-  const timezone = req.user.timezone;
-
-  if (
-    !validateParams(req, res, {
-      pathParams: ["id"],
-      objectIdFields: ["id"],
-    })
-  )
-    return;
-
-  try {
-    const availability = await AvailabilityService.getAvailabilityDetails(
-      id,
-      timezone,
-    );
-    if (!availability) {
-      return sendResponse({
-        res,
-        statusCode: 404,
-        translationKey: "Availability_not_found",
-      });
-    }
-
-    return sendResponse({
-      res,
-      statusCode: 200,
-      translationKey: "Availability_fetched_successfully",
-      data: availability,
-    });
-  } catch (error) {
-    const readableError = getReadableErrorMessage(error);
-    return sendResponse({
-      res,
-      statusCode: readableError.statusCode,
-      translationKey: readableError.message,
-      error,
-    });
-  }
-};
-
 const deleteAvailability = async (req, res) => {
   const { id } = req.params;
 
@@ -258,5 +212,4 @@ module.exports = {
   getAvailability,
   updateAvailability,
   deleteAvailability,
-  getAvailabilityDetails,
 };

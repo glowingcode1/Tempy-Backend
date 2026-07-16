@@ -4,7 +4,6 @@ const {
   getAvailability,
   updateAvailability,
   deleteAvailability,
-  getAvailabilityDetails,
 } = require("./availabilityController");
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
@@ -24,9 +23,6 @@ router.post("/", AvailabilityRateLimiter, createAvailability);
 
 // Get all Availability entries with pagination
 router.get("/", AvailabilityRateLimiter, getAvailability);
-
-// Get a specific Availability entry by ID
-router.get("/:id", AvailabilityRateLimiter, getAvailabilityDetails);
 
 // Update an existing Availability entry
 router.put("/:id", updateAvailability);

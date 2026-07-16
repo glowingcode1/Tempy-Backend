@@ -240,13 +240,6 @@ const getAvailabilitySummary = async ({
   };
 };
 
-const findAvailabilityById = async (id) => {
-  return Availability.findById(id)
-    .lean()
-    .populate("user", "name email profileIcon userType")
-    .populate("creator", "name email profileIcon userType");
-};
-
 const findAvailabilityById_ = async (id, projection = null) => {
   return Availability.findById(id, projection);
 };
@@ -279,7 +272,6 @@ const findOverlappingAvailability = async ({
 module.exports = {
   createAvailability,
   getAvailability,
-  findAvailabilityById,
   findAvailabilityById_,
   findByIdAndUpdate,
   deleteAvailability,

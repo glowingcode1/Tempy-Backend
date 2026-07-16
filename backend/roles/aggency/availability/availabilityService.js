@@ -90,16 +90,6 @@ const updateAvailability = async (id, data) => {
   return availability;
 };
 
-const getAvailabilityDetails = async (id, timezone) => {
-  const availability = await AvailabilityRepo.findAvailabilityById(id);
-
-  if (!availability) {
-    return null;
-  }
-
-  return formatAvailabilityToTimezone(availability, timezone);
-};
-
 const deleteAvailability = async (id) => {
   if (!id) throw new Error("Availability ID is required");
   const deleted = await AvailabilityRepo.deleteAvailability(id);
@@ -111,5 +101,4 @@ module.exports = {
   getAvailability,
   updateAvailability,
   deleteAvailability,
-  getAvailabilityDetails,
 };
