@@ -8,7 +8,7 @@ const createBid = async (data) => {
   return Bid;
 };
 
-const getBid = async ({ timezone, page, limit, keyword, status, user, jobCreater }) => {
+const getBid = async ({ timezone, page, limit, keyword, status, user, jobCreator }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
   const { bid, meta } = await BidRepo.getBid({
@@ -18,9 +18,10 @@ const getBid = async ({ timezone, page, limit, keyword, status, user, jobCreater
     keyword,
     status,
     user,
-    jobCreater,
+    jobCreator,
     skip,
   });
+  console.log("bid",bid );
   const formatedBid = bid.map((job) => {
     return formatBidToTimezone(job, timezone);
   });
@@ -37,7 +38,7 @@ const updateBid = async (id, data) => {
       ]);
 
       data.snapshot = snapshot;
-      data.jobCreater = user;
+      data.jobCreator = user;
       data.shift = shift;
   }
 

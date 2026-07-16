@@ -50,6 +50,8 @@ const formatUserResponse = (
     },
     location,
     ...(subAdmin ? { subAdmin } : {}),
+    averageRating: userObject.averageRating || 0,
+    totalReviews: userObject.totalReviews || 0,
 
 
     metadata: {

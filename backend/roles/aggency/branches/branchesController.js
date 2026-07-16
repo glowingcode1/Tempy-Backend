@@ -15,9 +15,8 @@ const BRANCH_OWNER_TYPES = [
 ];
 
 const createBranch = async (req, res) => {
-  let { name, status, location } = req.body;
+  let { name, status = "active", location } = req.body;
   let user = req.user._id;
-
   if (req.user.userType === "admin") {
     if (!req.body.userId) {
       return sendResponse({
@@ -31,7 +30,7 @@ const createBranch = async (req, res) => {
 
   if (
     !validateParams(req, res, {
-      rawData: ["name"],
+      rawData: ["name", "location"],
     })
   )
     return;
@@ -78,13 +77,14 @@ const createBranch = async (req, res) => {
 
 const getBranch = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, user } = req.query;
+  let { keyword, status, user,summary } = req.query;
 
   const isBranchOwner = BRANCH_OWNER_TYPES.includes(req.user.userType);
 
   if (isBranchOwner) {
     user = req.user._id;
   } else if (req.user.userType === "admin") {
+    user = null;
   } else {
     return sendResponse({
       res,
@@ -102,6 +102,7 @@ const getBranch = async (req, res) => {
       keyword,
       status,
       user,
+      summary,
     });
 
     return sendResponse({
@@ -124,7 +125,7 @@ const getBranch = async (req, res) => {
 
 const updateBranch = async (req, res) => {
   const { id } = req.params;
-  let { name, location, status, userId } = req.body;
+  let { name, location, status } = req.body;
 
   if (
     !validateParams(req, res, {
@@ -133,17 +134,16 @@ const updateBranch = async (req, res) => {
     })
   )
     return;
+    const user = req.user._id;
+    const userType = req.user.userType;
 
   let data = {
     name,
     location,
     status,
+    user,
+    userType,
   };
-
-  // only admin may reassign a branch to a different owner
-  if (req.user.userType === "admin" && userId) {
-    data.user = userId;
-  }
 
   try {
     const updated = await BranchService.updateBranch(id, data);

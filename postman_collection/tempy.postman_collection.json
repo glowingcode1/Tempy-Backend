@@ -2569,7 +2569,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        10,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
+                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"branch\":\"6a587d05da03dd8d55abcdd3\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        10,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2616,12 +2616,12 @@
                       "query": [
                         {
                           "key": "latitude",
-                          "value": "9.2",
+                          "value": "89.2",
                           "disabled": true
                         },
                         {
                           "key": "longitude",
-                          "value": "9.3",
+                          "value": "89.3",
                           "disabled": true
                         },
                         {
@@ -2816,7 +2816,7 @@
                       "raw": ""
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/job/bids?limit=1",
+                      "raw": "{{url}}web/care-home/job/bids",
                       "host": [
                         "{{url}}web"
                       ],
@@ -2828,7 +2828,8 @@
                       "query": [
                         {
                           "key": "limit",
-                          "value": "1"
+                          "value": "1",
+                          "disabled": true
                         },
                         {
                           "key": "job",
@@ -2998,6 +2999,60 @@
                         {
                           "key": "job",
                           "value": "6a50c8da0341ac5657c45d50"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "calender",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/care-home/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-12&endDate=2026-07-18",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "care-home",
+                        "booking",
+                        "calender"
+                      ],
+                      "query": [
+                        {
+                          "key": "latitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "startDate",
+                          "value": "2026-07-12"
+                        },
+                        {
+                          "key": "endDate",
+                          "value": "2026-07-18"
+                        },
+                        {
+                          "key": "bramch",
+                          "value": "",
+                          "disabled": true
                         }
                       ]
                     }
@@ -5981,7 +6036,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailUser}}\",\n    \"password\": \"{{passwordUser}}\",\n    \"userType\": \"localAuthority\", //user, organizer, admin, manager, guest\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailUser}}\",\n    \"password\": \"{{passwordUser}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -10748,7 +10803,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailUser}}\", //ivy_bosco38@example.org\n    \"password\": \"{{passwordUser}}\", //@Li123456//123456\n    \"userType\": \"agency\", //user, organizer, admin, manager, guestx\n    \n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailUser}}\", //ivy_bosco38@example.org\n    \"password\": \"{{passwordUser}}\", //@Li123456//123456\n    \"userType\": \"agency\", //user, organizer, admin, manager, guestx\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -12977,6 +13032,157 @@
                           "key": "id",
                           "value": "6a4c9304f2e273d27e49d435",
                           "description": "6a4c9304f2e273d27e49d435 /  6a4ca466d33030feca93b701"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "branches",
+              "item": [
+                {
+                  "name": "create",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/branches",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "branches"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "get",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/branches",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "branches"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "update",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    // // \"name\":\"Lula83\",\n    // \"location\": {\n    //     \"name\": \"Home\",\n    //     \"coordinates\": [\n    //         0,\n    //         0\n    //     ],\n    //     \"fullAddress\": \"{{$randomStreetAddress}}\",\n    //     \"city\": \"{{$randomCity}}\",\n    //     \"country\": \"{{$randomCountry}}\",\n    //     \"state\": \"Punjab\",\n    //     \"postalCode\": \"12345\"\n    // },\n    \"status\":\"deleted\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/branches/:id",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "branches",
+                        ":id"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "6a58749581df5d3dff3ef06b"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "delete",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/branches/:id",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "branches",
+                        ":id"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "6a58749581df5d3dff3ef06b"
                         }
                       ]
                     }
@@ -19356,7 +19562,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    \"email\": \"{{$randomExampleEmail}}\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\",  //optional\n    \"gender\": \"Male\",  //optional\n    \"deviceType\": \"ios\",\n    \"userType\": \"employee\",\n    \"deviceId\": \"test\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\":12334,\n    \"governmentIdentity\":[\"image.png\",\"imge2.png\"], \n    \"degree\":[\"image.png\",\"imge2.png\"], \n    \"certification\":[\"image.png\",\"imge2.png\"], \n    \"provideServicesTo\":{\n        \"careHome\":true,\n        \"hospital\":true,\n        \"localAuthority\":true,\n        \"nursingHome\":true,\n        \"employee\":true\n\n    },\n\n\n    \"location\": {\n        \"coordinates\": [0,0],  //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",// //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\",  //optional\n        \"postalCode\": 12345 //optional\n    }\n}",
+                      "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    \"email\": \"{{$randomExampleEmail}}\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\",  //optional\n    \"gender\": \"Male\",  //optional\n    \"deviceType\": \"ios\",\n    \"userType\": \"nurse\",\n    \"deviceId\": \"test\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\":12334,\n    \"governmentIdentity\":[\"image.png\",\"imge2.png\"], \n    \"degree\":[\"image.png\",\"imge2.png\"], \n    \"certification\":[\"image.png\",\"imge2.png\"], \n\n\n\n    \"location\": {\n        \"coordinates\": [0,0],  //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",// //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\",  //optional\n        \"postalCode\": 12345 //optional\n    }\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -19523,7 +19729,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"email\": \"{{emailUser}}\",//destiney.balistreri@example.org\n    \"password\": \"{{passwordUser}}\",\n    \"userType\": \"employee\", //user, organizer, admin, manager, guest\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                      "raw": "{\n    \"email\": \"{{emailUser}}\",//destiney.balistreri@example.org\n    \"password\": \"{{passwordUser}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -21443,12 +21649,12 @@
                   "raw": "{\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"pakistan\",\n        \"postalCode\": 12345\n    }\n}"
                 },
                 "url": {
-                  "raw": "{{url}}app/employee/address?page=1&limit=1",
+                  "raw": "{{url}}app/nurse/address?page=1&limit=1",
                   "host": [
                     "{{url}}app"
                   ],
                   "path": [
-                    "employee",
+                    "nurse",
                     "address"
                   ],
                   "query": [
@@ -21458,8 +21664,7 @@
                     },
                     {
                       "key": "limit",
-                      "value": "1",
-                      "type": "text"
+                      "value": "1"
                     }
                   ]
                 }
@@ -22325,6 +22530,85 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "user Management",
+          "item": [
+            {
+              "name": "get all users",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n \t\"email\": \"testuser3@gmail.com\",\n\t\"password\": \"123456\",\n\t\"deviceType\": \"android\", //andoird/ios\n\t\"deviceId\": \"ciMKqgnjRiaQvxj2Q9T5_g:APA91bF3LLhH7TQoNny1mS-c2iK_PZ4vZXG8bKSavzUuAqQ8A2ipLSf6yWzMhvNCr9fH44mPVUukNytAYQtorUJGo2FYkdV4yusDDL_-fri0yKZ18THsh8w1hVlJ_5a_YWNFbXO479ci\", //device id from firebase fcm\n\t\"timezone\": \"Asia/Karachi\"\n}"
+                },
+                "url": {
+                  "raw": "{{url}}admin/users",
+                  "host": [
+                    "{{url}}admin"
+                  ],
+                  "path": [
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "userType",
+                      "value": "careHome",
+                      "disabled": true
+                    },
+                    {
+                      "key": "keyword",
+                      "value": null,
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "active",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "update user",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    // \"companyName\": \"new company name\",\n    // \"phoneNumber\": {\n    //     \"code\": \"+92\",\n    //     \"number\": \"3005098441\"\n    // },\n    // \"profileIcon\": \"new.png\",\n    // \"name\": \"helo\",\n    // \"location\": {\n    //     \"coordinates\": [\n    //         0,\n    //         0\n    //     ], //optional\n    //     \"fullAddress\": \"{{$randomStreetAddress}}\",\n    //     \"city\": \"{{$randomCity}}\", // //optional\n    //     \"country\": \"{{$randomCountry}}\", // //optional\n    //     \"state\": \"pakistan\", //optional\n    //     \"postalCode\": 12345 //optional\n    // },\n    // \"gender\": \"other\",\n    // \"registrationNumber\": 1234,\n    // \"dob\": \"2005-10-16\",\n    \"status\":\"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}admin/users/:id",
+                  "host": [
+                    "{{url}}admin"
+                  ],
+                  "path": [
+                    "users",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "6a586595fef321b4d72a2977"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
         }
       ]
     },
@@ -22383,6 +22667,60 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "weither",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://api.open-meteo.com/v1/forecast?latitude=31.558&longitude=74.3507&daily=weather_code,sunrise,sunset,uv_index_clear_sky_max,uv_index_max,temperature_2m_mean,relative_humidity_2m_max,relative_humidity_2m_min,wet_bulb_temperature_2m_mean&current=temperature_2m,is_day,rain,showers,snowfall&timezone=America%2FAnchorage&start_date=2026-07-08&end_date=2026-07-22",
+          "protocol": "https",
+          "host": [
+            "api",
+            "open-meteo",
+            "com"
+          ],
+          "path": [
+            "v1",
+            "forecast"
+          ],
+          "query": [
+            {
+              "key": "latitude",
+              "value": "31.558"
+            },
+            {
+              "key": "longitude",
+              "value": "74.3507"
+            },
+            {
+              "key": "daily",
+              "value": "weather_code,sunrise,sunset,uv_index_clear_sky_max,uv_index_max,temperature_2m_mean,relative_humidity_2m_max,relative_humidity_2m_min,wet_bulb_temperature_2m_mean"
+            },
+            {
+              "key": "current",
+              "value": "temperature_2m,is_day,rain,showers,snowfall"
+            },
+            {
+              "key": "timezone",
+              "value": "America%2FAnchorage"
+            },
+            {
+              "key": "start_date",
+              "value": "2026-07-08"
+            },
+            {
+              "key": "end_date",
+              "value": "2026-07-22"
+            }
+          ]
+        }
+      },
+      "response": []
     }
   ],
   "auth": {
@@ -22390,7 +22728,7 @@
     "bearer": [
       {
         "key": "token",
-        "value": "{{tokenCareHome}}",
+        "value": "{{tokenAdmin}}",
         "type": "string"
       }
     ]

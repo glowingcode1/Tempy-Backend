@@ -12,7 +12,7 @@ const { customerTypes, supplierTypes } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
 
 const createJob = async (req, res) => {
-  let { name, description, type, gender, shift, location } = req.body;
+  let { name, description, type, gender, shift, location,branch } = req.body;
   let user = req.user._id;
   const timezone = req.user.timezone;
   if (req.user.userType === "admin") {
@@ -28,7 +28,7 @@ const createJob = async (req, res) => {
 
   if (
     !validateParams(req, res, {
-      rawData: ["name", "type", "shift", "location"],
+      rawData: ["name", "type", "shift", "location","branch"],
     })
   )
     return;
@@ -81,6 +81,7 @@ const createJob = async (req, res) => {
     shift: convertedJobs,
     user,
     location,
+    branch,
   };
   try {
     const Job = await JobService.createJob(data);

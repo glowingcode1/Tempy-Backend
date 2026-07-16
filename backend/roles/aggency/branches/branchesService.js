@@ -7,8 +7,19 @@ const createBranch = async (data) => {
   return branch;
 };
 
-const getBranch = async ({ timezone, page, limit, keyword, status, user }) => {
+const getBranch = async ({ timezone, page, limit, keyword, status, user, summary }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
+  if (summary) {
+    const { branch, meta } = await BranchRepo.getBranchSummary({
+      page,
+      limit,
+      keyword,
+      status,
+      user,
+      skip,
+    });
+    return { branch, meta };
+  }
 
   const { branch, meta } = await BranchRepo.getBranch({
     page,
@@ -36,8 +47,7 @@ const updateBranch = async (id, data) => {
     Object.entries({
       name: data.name,
       location: data.location,
-      status: data.status,
-      user: data.user,
+      status: data.status
     }).filter(([, value]) => value !== undefined),
   );
 

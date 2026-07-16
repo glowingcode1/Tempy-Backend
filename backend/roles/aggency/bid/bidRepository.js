@@ -24,7 +24,7 @@ const createBid = async (data) => {
     ]);
 
     data.snapshot = snapshot;
-    data.jobCreater = user;
+    data.jobCreator = user;
     data.shift = shift;
     data.type=snapshot.type;
 
@@ -46,14 +46,14 @@ const getBid = async ({
   keyword,
   status,
   user,
-  jobCreater,
+  jobCreator,
   skip,
 }) => {
   const pipeline = [];
-  if (jobCreater) {
+  if (jobCreator) {
     pipeline.push({
       $match: {
-        jobCreater: new mongoose.Types.ObjectId(jobCreater),
+        jobCreator: new mongoose.Types.ObjectId(jobCreator),
       },
     });
   }
@@ -112,7 +112,7 @@ const getBid = async ({
   pipeline.push({
     $lookup: {
       from: "users",
-      let: { userId: "$jobCreater" },
+      let: { userId: "$jobCreator" },
       pipeline: [
         {
           $match: {
@@ -130,13 +130,13 @@ const getBid = async ({
           },
         },
       ],
-      as: "jobCreater",
+      as: "jobCreator",
     },
   });
 
   pipeline.push({
     $unwind: {
-      path: "$jobCreater",
+      path: "$jobCreator",
       preserveNullAndEmptyArrays: true,
     },
   });
@@ -237,7 +237,7 @@ const getBidByJob = async ({
   skip,
   shift,
   user,
-  jobCreater,
+  jobCreator,
 }) => {
   const pipeline = [];
   const now = moment.tz(timezone);
@@ -252,10 +252,10 @@ const getBidByJob = async ({
     nextWeek: { $gte: startOfNextWeek, $lte: endOfNextWeek },
   };
 
-  if (jobCreater) {
+  if (jobCreator) {
     pipeline.push({
       $match: {
-        jobCreater: new mongoose.Types.ObjectId(jobCreater),
+        jobCreator: new mongoose.Types.ObjectId(jobCreator),
       },
     });
   }
@@ -370,7 +370,7 @@ const getBidByJob = async ({
   pipeline.push({
     $lookup: {
       from: "users",
-      let: { userId: "$jobCreater" },
+      let: { userId: "$jobCreator" },
       pipeline: [
         {
           $match: {
@@ -388,7 +388,7 @@ const getBidByJob = async ({
           },
         },
       ],
-      as: "jobCreater",
+      as: "jobCreator",
     },
   });
   pipeline.push({
@@ -432,7 +432,7 @@ const getBidByJob = async ({
 
   pipeline.push({
     $unwind: {
-      path: "$jobCreater",
+      path: "$jobCreator",
       preserveNullAndEmptyArrays: true,
     },
   });
@@ -599,7 +599,7 @@ console.log(JSON.stringify(result[0]?.data?.[0]?.workStats_, null, 2));
     ...(job && { job: new mongoose.Types.ObjectId(job) }),
     ...(shift && { "shift._id": new mongoose.Types.ObjectId(shift) }),
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
-    ...(jobCreater && { jobCreater: new mongoose.Types.ObjectId(jobCreater) }),
+    ...(jobCreator && { jobCreator: new mongoose.Types.ObjectId(jobCreator) }),
   };
 
   const [

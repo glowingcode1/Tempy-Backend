@@ -38,7 +38,7 @@ const getAllUsers = async ({
   limit,
   keyword,
   status,
-  userType = "nurse",
+  userType,
 }) => {
   const skip = (page - 1) * limit;
 
@@ -111,6 +111,7 @@ const getAllUsers = async ({
               email: 1,
               accountState: 1,
               profileIcon: 1,
+              location: 1,
               createdAt: 1,
               averageRating: 1,
               totalReviews: 1,
@@ -215,8 +216,6 @@ const getAllUsers = async ({
 const updateUser = async (req, res, options = {}) => {
   const { userId } = options;
   const {
-    // email,
-    permissions,
     validationDocument,
     companyName,
     type,
