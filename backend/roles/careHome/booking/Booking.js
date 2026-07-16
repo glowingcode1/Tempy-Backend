@@ -65,7 +65,7 @@ const paymentSchema = new mongoose.Schema(
       default: 0,
     },
     platformFee: {
-      type: Number, 
+      type: Number,
       default: 0,
     },
     totalAmount: {
@@ -73,6 +73,10 @@ const paymentSchema = new mongoose.Schema(
       default: 0,
     },
     amountPayedToWorker: {
+      type: Number,
+      default: 0,
+    },
+    amountPayedToEmployer: {
       type: Number,
       default: 0,
     },
@@ -164,6 +168,11 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bid",
       required: true,
+    },
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      default: null,
     },
     job: {
       type: mongoose.Schema.Types.ObjectId,

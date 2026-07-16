@@ -8,6 +8,7 @@ const {
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment");
 const BidService = require("./bidService");
+const { customerTypes, supplierTypes } = require("@UsersModel");
 
 const createBid = async (req, res) => {
   let { shift, job, bid, note } = req.body;
@@ -75,20 +76,18 @@ const getBid = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user } = req.query;
 
-  const isAgency = req.user.userType === "agency";
-  const isNurse = req.user.userType === "nurse";
-  const isHomeCareCompany = req.user.userType === "homeCareCompany";
-  let jobCreater = req.user._id;
-  console.log("req.user.userType", req.user.userType);
-  if (isAgency || isNurse || isHomeCareCompany) {
+  const customer =await customerTypes.includes(req.user.userType);
+  const supplier =await supplierTypes.includes(req.user.userType);
+  let jobCreator = req.user._id;
+  if (customer) {
+    jobCreator = req.user._id;
+  } else if (supplier) {
     user = req.user._id;
-  } else {
-    user = null;
-    jobCreater = req.user._id;
+    jobCreator = null;
   }
 
   if (req.user.userType === "admin") {
-    ((user = null), (jobCreater = null));
+    ((user = null), (jobCreator = null));
   }
   try {
     const timezone = req.user.timezone;
@@ -99,7 +98,7 @@ const getBid = async (req, res) => {
       keyword,
       status,
       user,
-      jobCreater,
+      jobCreator,
     });
 
     return sendResponse({

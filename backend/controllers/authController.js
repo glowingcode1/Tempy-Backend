@@ -247,11 +247,7 @@ const login = async (req, res) => {
         "deviceId",
         "deviceType",
         "timezone",
-        "userType",
       ],
-      enumFields: {
-        userType: User.USER_TYPES,
-      },
     };
     if (!validateParams(req, res, validationOptions)) {
       return;
@@ -261,11 +257,9 @@ const login = async (req, res) => {
     const user = await User.findByCredentials(
       email,
       password,
-      userType,
       timezone,
       populateFields,
     );
-
 
 
 
@@ -286,13 +280,7 @@ const login = async (req, res) => {
         });
       }
     }
-        if(user.accountState.userType != userType){
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "user_type_mismatch",
-      });
-    }
+
 
     // Restrict admin login
     if (user.accountState.userType === "admin") {
@@ -347,9 +335,12 @@ const login = async (req, res) => {
         translationKey: "your_account_2",
       });
     }
+    console.log("user", user);
 
     // Update the user's timezone
     user.timezone = timezone;
+
+    console.log("user", user);
 
     // Ensure toJSON method is applied to strip out sensitive data
     const userObject = user.toJSON();

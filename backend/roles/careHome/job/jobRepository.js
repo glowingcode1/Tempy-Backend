@@ -94,7 +94,7 @@ const getJobsSummary = async ({
   pipeline.push({
     $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
   });
-  
+
   if (allowedUserTypes.length > 0) {
     // Only show jobs whose owner's userType the requester is permitted to see
     pipeline.push({
@@ -146,9 +146,6 @@ const getJobsSummary = async ({
 
   return { Jobs, meta };
 };
-
-
-
 
 const getJobs = async ({
   timezone,
@@ -256,6 +253,36 @@ const getJobs = async ({
   pipeline.push({
     $unwind: { path: "$type", preserveNullAndEmptyArrays: true },
   });
+    pipeline.push({
+      $lookup: {
+        from: "branches",
+        let: { branchId: "$branch" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: [
+                  "$_id",
+                  {
+                    $convert: {
+                      input: "$$branchId",
+                      to: "objectId",
+                      onError: null,
+                      onNull: null,
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          { $project: { name: 1, location: 1, status: 1 } },
+        ],
+        as: "branch",
+      },
+    });
+    pipeline.push({
+      $unwind: { path: "$branch", preserveNullAndEmptyArrays: true },
+    });
 
   pipeline.push({
     $lookup: {
@@ -292,11 +319,11 @@ const getJobs = async ({
   }
 
   pipeline.push({ $sort: { createdAt: -1 } });
-if (projection) {
-  pipeline.push({
-    $project: projection,
-  });
-}
+  if (projection) {
+    pipeline.push({
+      $project: projection,
+    });
+  }
   pipeline.push({
     $facet: {
       data: [{ $skip: skip }, ...(limit === 0 ? [] : [{ $limit: limit }])],

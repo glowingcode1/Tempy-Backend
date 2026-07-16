@@ -102,7 +102,8 @@ const createBooking = async (data) => {
 
   const bookingData = {
     ...data,
-    user: bid.jobCreater,
+    user: bid.jobCreator,
+    branch: bid.snapshot.branch,
     snapshot: bid.snapshot,
     employer: user.accountState.userType !== "nurse" ? bid.user : null,
     shift: {
@@ -123,6 +124,7 @@ const createBooking = async (data) => {
     },
   };
 
+  console.log("bookingData", bookingData);
   const booking = await BookingRepo.createBooking(bookingData);
 
   if (!booking) {

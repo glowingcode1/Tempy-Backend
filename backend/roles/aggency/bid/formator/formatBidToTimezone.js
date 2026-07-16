@@ -28,9 +28,9 @@ const formatBidToTimezone = (job, timezone) => {
       ...job.user,
       profileIcon: getFullImageUrl(job.user.profileIcon),
     },
-    jobCreater: {
-      ...job.jobCreater,
-      profileIcon: getFullImageUrl(job.jobCreater.profileIcon),
+    jobCreator: {
+      ...job.jobCreator,
+      profileIcon: getFullImageUrl(job.jobCreator?.profileIcon),
     },
     createdAt: job.createdAt
       ? convertUtcToTimezone(job.createdAt, timezone)

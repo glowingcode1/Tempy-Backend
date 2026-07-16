@@ -15,7 +15,7 @@ const createBranch = async (data) => {
 
     if (existingBranch) {
       return {
-        error: "Branch_already_exists_for_this_user",
+        error: "Branch_already_exists_for_this_user_with_this_name",
       };
     }
 
@@ -64,7 +64,6 @@ const getBranch = async ({ page, limit, keyword, status, user, skip }) => {
             email: 1,
             profileIcon: 1,
             accountState: 1,
-            userType: 1,
           },
         },
       ],
@@ -121,7 +120,7 @@ const getBranch = async ({ page, limit, keyword, status, user, skip }) => {
   const [total, active, inactive, deleted] = await Promise.all([
     Branches.countDocuments({
       ...countFilter,
-      status: { $in: ["active", "inactive"] },
+      status: { $ne: "deleted" },
     }),
     Branches.countDocuments({
       ...countFilter,
@@ -151,6 +150,88 @@ const getBranch = async ({ page, limit, keyword, status, user, skip }) => {
     meta,
   };
 };
+
+const getBranchSummary = async ({ page, limit, keyword, status, user, skip }) => {
+  const pipeline = [];
+
+  if (user) {
+    pipeline.push({
+      $match: {
+        user: new mongoose.Types.ObjectId(user),
+      },
+    });
+  }
+
+  if (status) {
+    pipeline.push({
+      $match: {
+        status,
+      },
+    });
+  }
+
+
+  pipeline.push({
+    $sort: {
+      createdAt: -1,
+    },
+  });
+
+  pipeline.push({
+    $facet: {
+      data: [{ $skip: skip }, ...(limit === 0 ? [] : [{ $limit: limit }])],
+      totalFiltered: [
+        {
+          $count: "count",
+        },
+      ],
+    },
+  });
+
+  const result = await Branches.aggregate(pipeline);
+
+  const branch = result[0]?.data || [];
+  const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
+
+  const countFilter = {
+    ...(user && { user: new mongoose.Types.ObjectId(user) }),
+  };
+
+  const [total, active, inactive, deleted] = await Promise.all([
+    Branches.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+    }),
+    Branches.countDocuments({
+      ...countFilter,
+      status: "active",
+    }),
+    Branches.countDocuments({
+      ...countFilter,
+      status: "inactive",
+    }),
+    Branches.countDocuments({
+      ...countFilter,
+      status: "deleted",
+    }),
+  ]);
+
+  const meta = generateMeta(page, limit, totalFiltered);
+
+  meta.BranchCount = {
+    total,
+    active,
+    inactive,
+    deleted,
+  };
+
+  return {
+    branch,
+    meta,
+  };
+};
+
+
 
 const findBranchById = async (id) => {
   return Branches.findById(id)
@@ -197,4 +278,5 @@ module.exports = {
   findByIdAndUpdate,
   deleteBranch,
   findDuplicateBranch,
+  getBranchSummary,
 };

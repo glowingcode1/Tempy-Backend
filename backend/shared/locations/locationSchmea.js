@@ -2,6 +2,10 @@ const { default: mongoose } = require("mongoose");
 
 const LocationSchema = new mongoose.Schema(
   {
+    title: {
+      type: String,
+      default: "",
+    },
     type: {
       type: String,
       enum: ["Point"]

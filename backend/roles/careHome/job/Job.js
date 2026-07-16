@@ -19,6 +19,11 @@ const JobSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: true,
+    },  
     description: {
       type: String,
       trim: true,

@@ -7,7 +7,7 @@ const BidSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    jobCreater: {
+    jobCreator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -58,6 +58,14 @@ const BidSchema = new mongoose.Schema(
       endTime: {
         type: String,
         required: true,
+      },
+      isBreak: {
+        type: Boolean,
+        default: false,
+      },
+      breakMin: {
+        type: Number,
+        default: 0,
       },
     },
     status: {
