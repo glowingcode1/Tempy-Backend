@@ -9,6 +9,7 @@ const {
 const mongoose = require("mongoose");
 const moment = require("moment");
 const BookingService = require("./bookingService");
+const { customerTypes, supplierTypes } = require("@UsersModel");
 
 const createBooking = async (req, res) => {
   let { bid, worker } = req.body;
@@ -55,8 +56,7 @@ const createBooking = async (req, res) => {
   }
 };
 
-const 
-getBooking = async (req, res) => {
+const getBooking = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user } = req.query;
 
@@ -242,10 +242,87 @@ const deleteBooking = async (req, res) => {
     });
   }
 };
+const getBookingCalender = async (req, res) => {
+  let { latitude, longitude, startDate, endDate, brach } = req.query;
+
+  if (
+    !validateParams(req, res, {
+      queryParams: ["latitude", "longitude", "startDate", "endDate"],
+    })
+  )
+    return;
+  const lat = parseFloat(latitude);
+  if (Number.isNaN(lat) || lat < -90 || lat > 90) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_latitude",
+    });
+  }
+  const lon = parseFloat(longitude);
+  if (Number.isNaN(lon) || lon < -180 || lon > 180) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_longitude",
+    });
+  }
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_date_format",
+    });
+  }
+  if (start > end) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "start_date_must_be_before_end_date",
+    });
+  }
+
+  try {
+    const timezone = req.user.timezone;
+    const user = req.user._id;
+    const customer = await customerTypes.includes(req.user.userType);
+    const supplier = await supplierTypes.includes(req.user.userType);
+    const { calendar, meta } = await BookingService.getBookingCalender({
+      timezone,
+      latitude: lat,
+      longitude: lon,
+      startDate: start,
+      endDate: end,
+      user,
+      customer,
+      supplier,
+      brach,
+    });
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "Booking_fetched_successfully",
+      data: calendar,
+      meta
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
 module.exports = {
   createBooking,
   getBooking,
   updateBooking,
   deleteBooking,
   getBookingDetails,
+  getBookingCalender,
 };

@@ -4,10 +4,7 @@ const {
   buildKeywordQueryFromModels,
 } = require("@helperUtils/dbUtils/queryUtil");
 const { generateMeta } = require("@helperUtils/responseUtil");
-const {
-  getUserAndShift,
-  findJobById_,
-} = require("../job/jobRepository");
+const { getUserAndShift, findJobById_ } = require("../job/jobRepository");
 
 const createBooking = async (data) => {
   try {
@@ -144,7 +141,7 @@ const getBooking = async ({
 
   const result = await Booking.aggregate(pipeline);
 
-  const Booking = result[0]?.data || [];
+  const booking = result[0]?.data || [];
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
   const countFilter = {
@@ -193,7 +190,7 @@ const getBooking = async ({
   };
 
   return {
-    Booking,
+    booking,
     meta,
   };
 };
@@ -328,7 +325,6 @@ const getBookingByJob = async ({
       ],
     },
   });
-  
 
   const result = await Booking.aggregate(pipeline);
 
@@ -387,9 +383,14 @@ const getBookingByJob = async ({
 const findBookingById = async (id) => {
   return Booking.findById(id).lean().populate("user", "name email profileIcon");
 };
-const findBookingByUserId = async (worker,user,customer) => {
-  if(customer){
-    return Booking.find({ worker: new mongoose.Types.ObjectId(worker), status: { $in: ["pending", "inProgress","completed"] } }).lean().select("shift status snapshot");
+const findBookingByUserId = async (worker, user, customer) => {
+  if (customer) {
+    return Booking.find({
+      worker: new mongoose.Types.ObjectId(worker),
+      status: { $in: ["pending", "inProgress", "completed"] },
+    })
+      .lean()
+      .select("shift status snapshot");
   }
   return Booking.find({
     worker: new mongoose.Types.ObjectId(worker),
@@ -409,9 +410,12 @@ const findByIdAndUpdate = async (id, data) => {
     .populate("user", "name email profileIcon");
 };
 const deleteBooking = async (id) => {
-  return await Booking.findByIdAndUpdate(id, { status: "deleted" }, { new: true });
+  return await Booking.findByIdAndUpdate(
+    id,
+    { status: "deleted" },
+    { new: true },
+  );
 };
-
 
 const filterFreeStaff = async (staffIds, shift) => {
   if (!staffIds?.length || !shift?.date) return staffIds || [];
@@ -577,10 +581,29 @@ const getWeeklyHours = async (userIds = []) => {
     },
   ]);
 
-
   const map = new Map(rows.map((r) => [String(r.userId), r.hours]));
   return userIds.map((id) => ({ userId: id, hours: map.get(String(id)) ?? 0 }));
 };
+
+const getBookingsByUsersAndDateRange = async (userIds, startDate, endDate) => {
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+
+  return Booking.find({
+    user: { $in: userIds },
+    "shift.date": { $gte: start, $lte: end },
+  })
+    .select("shift payment worker snapshot.type status")
+    .populate({
+      path: "worker",
+      select: "name accountState",
+    })
+    .lean();
+};
+
 module.exports = {
   createBooking,
   getBooking,
@@ -594,4 +617,5 @@ module.exports = {
   findBookingByUserId,
   filterFreeStaff,
   getWeeklyHours,
+  getBookingsByUsersAndDateRange,
 };
