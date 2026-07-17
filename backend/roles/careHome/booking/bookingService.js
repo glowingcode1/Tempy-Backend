@@ -15,6 +15,7 @@ const {
 const convertToMongoArray = require("@helperUtils/convertToMongoArray");
 const { formatCalendar } = require("./formator/calendarFormatter");
 const { updateShiftStatus } = require("../job/jobRepository");
+const { formatAttendance } = require("./formator/formatAttendance");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
 const WEATHER_API_URL = process.env.WEATHER_API_URL;
@@ -137,7 +138,19 @@ const createBooking = async (data) => {
   return booking;
 };
 
-const getBooking = async ({ timezone, page, limit, keyword, status, user }) => {
+const getBooking = async ({
+  timezone,
+  page,
+  limit,
+  keyword,
+  status,
+  user,
+  worker,
+  employer,
+  latitude,
+  longitude,
+  km,
+}) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
   const { booking, meta } = await BookingRepo.getBooking({
@@ -147,7 +160,12 @@ const getBooking = async ({ timezone, page, limit, keyword, status, user }) => {
     keyword,
     status,
     user,
+    worker,
+    employer,
     skip,
+    latitude,
+    longitude,
+    km,
   });
   const formatedBooking = booking.map((job) => {
     return formatBookingToTimezone(job, timezone);
@@ -158,22 +176,51 @@ const getBooking = async ({ timezone, page, limit, keyword, status, user }) => {
 
 const updateBooking = async (id, data) => {
   const Booking = await BookingRepo.findBookingById_(id);
-  if (data.shift && data.job) {
-    const [{ user, shift }, snapshot] = await Promise.all([
-      BookingRepo.getUserAndShift(data.job, data.shift),
-      BookingRepo.findJobById_(data.job),
-    ]);
-
-    data.snapshot = snapshot;
-    data.jobCreater = user;
-    data.shift = shift;
-  }
 
   if (!Booking) {
     return { error: "Booking_not_found" };
   }
+  const CANCEL_STATUS = {
+    customer: "cancelledByUser",
+    nurse: "cancelledByWorker",
+    supplier: "cancelledByEmployer",
+  };
 
-  const allowedFields = ["Booking", "note", "status", "shift", "job"];
+  if (data.customer) {
+    if (!data.currentUser.equals(Booking.user)) {
+      return { error: "Unauthorized_to_update_booking" };
+    }
+  } else if (data.supplier) {
+    const owner = data.userType === "nurse" ? Booking.worker : Booking.employer;
+    if (!data.currentUser.equals(owner)) {
+      return { error: "Unauthorized_to_update_booking" };
+    }
+  }
+  // only nurses can activate
+  if (data.status === "active" && data.userType !== "nurse") {
+    return { error: "Cannot_update_booking_to_active" };
+  }
+  if(Booking.status === "completed" || Booking.status === "cancelledByWorker" || Booking.status === "cancelledByEmployer" || Booking.status === "cancelledByUser") {
+    return { error: "Cannot_update_completed_or_cancelled_booking" };
+  }
+
+  if (data.status === "cancel") {
+    if (Booking.status !== "pending") {
+      return { error: "Cannot_cancel_non_pending_booking" };
+    }
+    data.status = data.customer
+      ? CANCEL_STATUS.customer
+      : CANCEL_STATUS[data.userType === "nurse" ? "nurse" : "supplier"];
+  }
+
+  if (
+    Booking.shift.date <
+    getCurrentDateInTimezone({ timezone: "UTC", isDateOnly: true })
+  ) {
+    return { error: "Cannot_update_past_booking" };
+  }
+
+  const allowedFields = ["status"];
 
   const updateData = {};
 
@@ -189,6 +236,13 @@ const updateBooking = async (id, data) => {
 
   Object.assign(Booking, updateData);
   await Booking.save();
+  const shiftID = Booking.shift._id.toString();
+  const jobId = Booking.job.toString();
+  const bidID = Booking.bid.toString();
+  if (Object.values(CANCEL_STATUS).includes(data.status)) {
+    void updateBidStatuses(bidID, data.status, "pending");
+    void updateShiftStatus(jobId, shiftID, "pending");
+  }
 
   return Booking;
 };
@@ -223,8 +277,7 @@ const getBookingCalender = async ({
     BookingRepo.getBookingsByUsersAndDateRange(userIds, startDate, endDate),
     getWeather({ latitude, longitude, startDate, endDate, timezone }),
   ]);
-  console.log("bookings", bookings);
-  const { calendar,meta } = formatCalendar({
+  const { calendar, meta } = formatCalendar({
     jobRoles,
     bookings,
     weather,
@@ -232,7 +285,109 @@ const getBookingCalender = async ({
 
   return { calendar, meta };
 };
+const hasShiftStarted = ({ date, startTime }) => {
+  const shiftStart = new Date(date);
+  const [hours, minutes] = startTime.split(":").map(Number);
+  shiftStart.setUTCHours(hours, minutes, 0, 0);
+  return Date.now() >= shiftStart.getTime();
+};
+const hasShiftEnded = ({ date, endTime }) => {
+  const shiftEnd = new Date(date);
+  const [hours, minutes] = endTime.split(":").map(Number);
+  shiftEnd.setUTCHours(hours, minutes, 0, 0);
 
+  return Date.now() >= shiftEnd.getTime();
+};
+const isWithinRadius = (location1, location2, radiusInKm = 1) => {
+  const [lng1, lat1] = location1.coordinates;
+  const [lng2, lat2] = location2.coordinates;
+
+  const toRadians = (degrees) => (degrees * Math.PI) / 180;
+  const earthRadius = 6371; // km
+
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLng / 2) ** 2;
+
+  const distance = 2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return distance <= radiusInKm;
+};
+const updateBookingCheckinCheckout = async (id, data) => {
+  const Booking = await BookingRepo.findBookingById_(id);
+
+  if (!Booking) {
+    return { error: "Booking_not_found" };
+  }
+  if (
+    !isWithinRadius(Booking.snapshot.location,data.location, 1)
+  ) {
+    return {
+      error: "location_outside_allowed_radius",
+    };
+  }
+  if(data.status === "checkin" && Booking.status !== "active") {
+    return { error: "Cannot_check_in_inactive_booking" };
+  }
+  if(data.status === "checkout" && Booking.status !== "inProgress") {
+    return { error: "Cannot_check_out_inactive_booking" };
+  }
+  if(data.status === "checkin") {
+    if (!hasShiftStarted(Booking.shift)) {
+      return {
+        error: "cannot_check_in_before_shift_start_time",
+      };
+    }
+    const attendance = {
+      checkIn: new Date(),
+      proofPicture: data.proofPicture || "",
+      signature: data.signature || "",
+      checkInLocation: {
+        type: "Point",
+        coordinates: [data.location.coordinates[0], data.location.coordinates[1]],
+      },
+    };
+    Booking.attendance = attendance;
+    Booking.status = "inProgress";
+  }
+  if(data.status === "checkout") {
+    if (!hasShiftEnded(Booking.shift)) {
+      return {
+        error: "cannot_check_out_before_shift_end_time",
+      };
+    }
+
+    Booking.status = "completed";
+    const attendance = Booking.attendance || {};
+    attendance.checkOut = new Date();
+    attendance.checkOutLocation = {
+      type: "Point",
+      coordinates: [data.location.coordinates[0], data.location.coordinates[1]],
+    };
+    Booking.attendance = attendance;
+  }
+
+  await Booking.save();
+
+  return Booking;
+};
+const getBookingCheckInLogs = async (bookingId,timezone) => {
+  const Booking = await BookingRepo.findBookingById_(bookingId);
+
+  if (!Booking) {
+    return { error: "Booking_not_found" };
+  }
+  const attendance = Booking.attendance?.toObject() || {};
+  const formattedAttendance = formatAttendance(attendance, timezone);
+  console.log("attendanc", formattedAttendance);
+
+  return formattedAttendance;
+};
 module.exports = {
   createBooking,
   getBooking,
@@ -240,4 +395,6 @@ module.exports = {
   deleteBooking,
   getBookingDetails,
   getBookingCalender,
+  updateBookingCheckinCheckout,
+  getBookingCheckInLogs,
 };

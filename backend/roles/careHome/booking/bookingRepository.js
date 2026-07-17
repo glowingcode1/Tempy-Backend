@@ -24,12 +24,82 @@ const getBooking = async ({
   status,
   user,
   skip,
+  worker,
+  employer,
+  latitude,
+  longitude,
+  km,
 }) => {
   const pipeline = [];
+  const baseMatch = {};
+
+  const hasGeo =
+    latitude != null &&
+    longitude != null &&
+    km != null &&
+    !isNaN(Number(latitude)) &&
+    !isNaN(Number(longitude)) &&
+    !isNaN(Number(km));
+
+
+
+  if (hasGeo) {
+    // $geoNear MUST be the first stage; filters go inside `query`
+    pipeline.push({
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [Number(longitude), Number(latitude)],
+        },
+        key: "snapshot.location",
+        distanceField: "distanceInMeters",
+        spherical: true,
+        // Remove maxDistance
+        query: baseMatch,
+      },
+    });
+
+    pipeline.push({
+      $addFields: {
+        distanceInMeters: {
+          $round: ["$distanceInMeters", 2],
+        },
+        distanceInKm: {
+          $round: [{ $divide: ["$distanceInMeters", 1000] }, 2],
+        },
+        distance: {
+          $concat: [
+            {
+              $toString: {
+                $round: [{ $divide: ["$distanceInMeters", 1000] }, 2],
+              },
+            },
+            " km",
+          ],
+        },
+      },
+    });
+  } else {
+    pipeline.push({ $match: baseMatch });
+  }
   if (user) {
     pipeline.push({
       $match: {
         user: new mongoose.Types.ObjectId(user),
+      },
+    });
+  }
+  if (worker) {
+    pipeline.push({
+      $match: {
+        worker: new mongoose.Types.ObjectId(worker),
+      },
+    });
+  }
+  if (employer) {
+    pipeline.push({
+      $match: {
+        employer: new mongoose.Types.ObjectId(employer),
       },
     });
   }
@@ -146,6 +216,8 @@ const getBooking = async ({
 
   const countFilter = {
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
+    ...(worker && { worker: new mongoose.Types.ObjectId(worker) }),
+    ...(employer && { employer: new mongoose.Types.ObjectId(employer) }),
   };
 
   const [total, active, pending, inactive, deleted, withdraw] =
@@ -380,8 +452,8 @@ const getBookingByJob = async ({
   return { jobBookings: Booking, meta };
 };
 
-const findBookingById = async (id) => {
-  return Booking.findById(id).lean().populate("user", "name email profileIcon");
+const findBookingById = async (id, projection = null) => {
+  return Booking.findById(id).select(projection).lean().populate("user", "name email profileIcon");
 };
 const findBookingByUserId = async (worker, user, customer) => {
   if (customer) {

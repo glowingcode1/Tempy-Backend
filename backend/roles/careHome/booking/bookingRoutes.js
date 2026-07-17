@@ -7,6 +7,7 @@ const {
   deleteBooking,
   getBookingDetails,
   getBookingCalender,
+  getBookingCheckInLogs,
 } = require("./bookingController"); // Assuming you have a separate controller for promo codes
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
@@ -25,19 +26,46 @@ router.get(
 );
 // Routes for Booking Management
 // Create a new Booking
-router.post("/", roleMiddleware(["admin","careHome"]), BookingRateLimiter, createBooking);
+router.post(
+  "/",
+  roleMiddleware(["admin", "careHome"]),
+  BookingRateLimiter,
+  createBooking,
+);
 
 // Get all Booking with pagination
-router.get("/", roleMiddleware(["admin","agency","nurse","careHome"]), BookingRateLimiter, getBooking);
+router.get(
+  "/",
+  roleMiddleware(["admin", "agency", "nurse", "careHome"]),
+  BookingRateLimiter,
+  getBooking,
+);
 // Get a specific Booking by ID
-router.get("/:id", roleMiddleware(["admin","agency","employee"]), BookingRateLimiter, getBookingDetails);
-
+router.get(
+  "/:id",
+  roleMiddleware(["admin", "agency", "employee"]),
+  BookingRateLimiter,
+  getBookingDetails,
+);
 
 // Update an existing Booking
-router.put("/:id", roleMiddleware(["admin","agency","employee"]), updateBooking);
+router.put(
+  "/:id",
+  roleMiddleware(["admin", "agency", "employee", "nurse"]),
+  updateBooking,
+);
+router.get(
+  "/logs/:bookingId",
+  roleMiddleware(["admin", "agency", "employee", "nurse"]),
+  getBookingCheckInLogs,
+);
 
 // Delete a Booking
-router.delete("/:id", roleMiddleware(["admin","agency","employee"]), deleteBooking);
+router.delete(
+  "/:id",
+  roleMiddleware(["admin", "agency", "employee"]),
+  deleteBooking,
+);
 router.get(
   "/calender",
   roleMiddleware(["admin", "careHome"]),

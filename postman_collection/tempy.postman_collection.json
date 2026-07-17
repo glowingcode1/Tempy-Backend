@@ -682,7 +682,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailUser}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// \n    \"password\": \"{{passwordUser}}\",\n    \"userType\": \"careHome\", //user, organizer, admin, manager, guest\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailCareHome}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// \n    \"password\": \"{{passwordCareHome}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -19699,7 +19699,7 @@
                           "    var jsonData = pm.response.json();",
                           "",
                           "    // Setting environment variables",
-                          "    pm.environment.set(\"tokenEmployee\", jsonData.data.token);",
+                          "    pm.environment.set(\"tokenNurse\", jsonData.data.token);",
                           "    pm.environment.set(\"currentUser\", jsonData.data.basicInfo._id);",
                           "",
                           "    // Extracting password from request body",
@@ -19729,7 +19729,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"email\": \"{{emailUser}}\",//destiney.balistreri@example.org\n    \"password\": \"{{passwordUser}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                      "raw": "{\n    \"email\": \"{{emailNurse}}\",//vada_yost@example.com\n    \"password\": \"{{passwordUser}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -21843,12 +21843,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{url}}app/employee/bids",
+                  "raw": "{{url}}app/nurse/bids",
                   "host": [
                     "{{url}}app"
                   ],
                   "path": [
-                    "employee",
+                    "nurse",
                     "bids"
                   ]
                 }
@@ -21861,12 +21861,12 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{url}}app/employee/bids",
+                  "raw": "{{url}}app/nurse/bids",
                   "host": [
                     "{{url}}app"
                   ],
                   "path": [
-                    "employee",
+                    "nurse",
                     "bids"
                   ],
                   "query": [
@@ -21933,6 +21933,158 @@
                     {
                       "key": "id",
                       "value": "6a473c6c26c4488cdf263e82"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "bookings",
+          "item": [
+            {
+              "name": "bookings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}app/nurse/booking",
+                  "host": [
+                    "{{url}}app"
+                  ],
+                  "path": [
+                    "nurse",
+                    "booking"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "pendng",
+                      "disabled": true
+                    },
+                    {
+                      "key": "latitude",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "longitude",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "km",
+                      "value": "1",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "checkin logs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}app/nurse/booking/logs/:bookingId",
+                  "host": [
+                    "{{url}}app"
+                  ],
+                  "path": [
+                    "nurse",
+                    "booking",
+                    "logs",
+                    ":bookingId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "bookingId",
+                      "value": "6a58b9f6f8261119ef93ba15"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "accept or reject booking",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\":\"cancel\" //active , cancel \n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}app/nurse/booking/:id",
+                  "host": [
+                    "{{url}}app"
+                  ],
+                  "path": [
+                    "nurse",
+                    "booking",
+                    ":id"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "pendng",
+                      "disabled": true
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "6a58b9f6f8261119ef93ba15"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "check in check out",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"location\": {\n        \"coordinates\": [\n            9.999,\n            9.999\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"status\":\"checkout\"//checkin checkout\n    // \"proofPicture\":\"image.png\",\n    // \"signature\":\"image.png\"\n\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}app/nurse/booking/:id?checkinCheckout=true",
+                  "host": [
+                    "{{url}}app"
+                  ],
+                  "path": [
+                    "nurse",
+                    "booking",
+                    ":id"
+                  ],
+                  "query": [
+                    {
+                      "key": "checkinCheckout",
+                      "value": "true"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "6a58b9f6f8261119ef93ba15"
                     }
                   ]
                 }

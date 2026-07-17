@@ -19,7 +19,7 @@ const createAvailability = async (data) => {
 
     if (overlapping) {
       return {
-        error: "Availability_overlaps_with_existing_entry",
+        error: "availability_overlaps_with_existing_entry",
       };
     }
 

@@ -12,7 +12,7 @@ const { customerTypes, supplierTypes } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
 
 const createJob = async (req, res) => {
-  let { name, description, type, gender, shift, location,branch } = req.body;
+  let { name, description, type, gender, shift, location,branch,image } = req.body;
   let user = req.user._id;
   const timezone = req.user.timezone;
   if (req.user.userType === "admin") {
@@ -82,6 +82,7 @@ const createJob = async (req, res) => {
     user,
     location,
     branch,
+    image,
   };
   try {
     const Job = await JobService.createJob(data);

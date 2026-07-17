@@ -50,6 +50,7 @@ const formatJobToTimezone = (job, timezone) => {
     ...job,
     perHour,
     totalHours,
+    image: getFullImageUrl(job.image),
     shift: Array.isArray(job.shift)
       ? job.shift.map(formatShift)
       : formatShift(job.shift),

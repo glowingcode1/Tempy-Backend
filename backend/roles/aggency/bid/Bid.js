@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const BidSchema = new mongoose.Schema(
   {
@@ -70,7 +69,16 @@ const BidSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected","deleted", "withdraw"],
+      enum: [
+        "pending",
+        "accepted",
+        "rejected",
+        "deleted",
+        "withdraw",
+        "cancelledByWorker",
+        "cancelledByEmployer",
+        "cancelledByUser",
+      ],
       default: "pending",
       index: true,
     },

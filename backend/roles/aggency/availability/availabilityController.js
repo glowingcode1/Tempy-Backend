@@ -75,6 +75,9 @@ const getAvailability = async (req, res) => {
   let { keyword, status, user, startDate, endDate, summary } = req.query;
   try {
     const timezone = req.user.timezone;
+    if(!user){
+      user = req.user._id;
+    }
     const { availability, meta } = await AvailabilityService.getAvailability({
       timezone,
       page,
