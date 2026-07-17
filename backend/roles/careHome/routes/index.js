@@ -7,4 +7,10 @@ router.use(auth, roleMiddleware(["careHome"]));
 router.use("/job", require("../job/jobRoutes"));
 router.use("/staff", require("../../aggency/staff/staffRoutes"));
 router.use("/booking", require("../booking/bookingRoutes"));
+router.use("/address", require("../../employee/address/addressRoutes"));
+router.use("/branches", require("../../aggency/branches/branchesRoutes"));
+router.use(
+  "/availability",
+  require("../../aggency/availability/availabilityRoutes"),
+);
 module.exports = router;

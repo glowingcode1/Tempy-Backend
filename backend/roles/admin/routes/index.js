@@ -10,7 +10,11 @@ router.use("/users", require("../usersManagement/usersRoutes"));
 router.use("/faqs", require("../faqs/faqsRoutes"));
 router.use("/support", require("../support/supportRoutes"));
 router.use("/job-roles", require("../jobRole/jobRoleRoutes"));
-
-
+router.use("/job", require("../../careHome/job/jobRoutes"));
+router.use("/bids", require("../../aggency/bid/bidRoutes"));
+router.use("/staff", require("../../aggency/staff/staffRoutes"));
+router.use("/address", require("../../employee/address/addressRoutes"));
+router.use("/branches", require("../../aggency/branches/branchesRoutes"));
+router.use("/booking", require("../../careHome/booking/bookingRoutes"));
 
 module.exports = router;
