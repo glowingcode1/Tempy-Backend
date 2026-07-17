@@ -109,6 +109,36 @@ const getBid = async ({
       preserveNullAndEmptyArrays: true,
     },
   });
+    pipeline.push({
+      $lookup: {
+        from: "jobroles",
+        let: { typeId: "$type" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$typeId"],
+              },
+            },
+          },
+          {
+            $project: {
+              department: 1,
+              title: 1,
+              status: 1,
+            },
+          },
+        ],
+        as: "type",
+      },
+    });
+
+    pipeline.push({
+      $unwind: {
+        path: "$type",
+        preserveNullAndEmptyArrays: true,
+      },
+    });
   pipeline.push({
     $lookup: {
       from: "users",
