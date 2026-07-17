@@ -14,6 +14,7 @@ const {
 } = require("../../../roles/admin/jobRole/jobRoleRepository");
 const convertToMongoArray = require("@helperUtils/convertToMongoArray");
 const { formatCalendar } = require("./formator/calendarFormatter");
+const { updateShiftStatus } = require("../job/jobRepository");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
 const WEATHER_API_URL = process.env.WEATHER_API_URL;
@@ -96,7 +97,7 @@ const createBooking = async (data) => {
     bid.shift.startTime,
     bid.shift.endTime,
     bid.bid,
-    bid.snapshot.breakMin,
+    bid.shift.breakMin,
     platformFee,
   );
 
@@ -111,8 +112,8 @@ const createBooking = async (data) => {
       date: bid.shift.date,
       startTime: bid.shift.startTime,
       endTime: bid.shift.endTime,
-      isBreak: bid.snapshot.shift.isBreak,
-      breakMin: bid.snapshot.shift.breakMin,
+      isBreak: bid.shift.isBreak,
+      breakMin: bid.shift.breakMin,
     },
     job: bid.job,
     payment: {
@@ -124,14 +125,15 @@ const createBooking = async (data) => {
     },
   };
 
-  console.log("bookingData", bookingData);
   const booking = await BookingRepo.createBooking(bookingData);
 
   if (!booking) {
     return { error: "Booking_creation_failed" };
   }
   const shiftID = booking.shift._id.toString();
-  await updateBidStatuses(bid._id);
+  const jobId = booking.job.toString();
+  void updateShiftStatus(jobId, shiftID, "booked");
+  void updateBidStatuses(bid._id);
   return booking;
 };
 

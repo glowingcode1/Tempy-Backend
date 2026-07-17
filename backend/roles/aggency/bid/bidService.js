@@ -21,7 +21,6 @@ const getBid = async ({ timezone, page, limit, keyword, status, user, jobCreator
     jobCreator,
     skip,
   });
-  console.log("bid",bid );
   const formatedBid = bid.map((job) => {
     return formatBidToTimezone(job, timezone);
   });

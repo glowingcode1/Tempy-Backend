@@ -225,6 +225,51 @@ const getJobs = async ({
   });
   pipeline.push({
     $lookup: {
+      from: "reviews",
+      let: { userId: "$user" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $eq: ["$objectUser", "$$userId"],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ],
+      as: "reviewStats",
+    },
+  });
+
+  pipeline.push({
+    $addFields: {
+      totalReviews: {
+        $ifNull: [{ $arrayElemAt: ["$reviewStats.totalReviews", 0] }, 0],
+      },
+      averageRating: {
+        $round: [
+          {
+            $ifNull: [{ $arrayElemAt: ["$reviewStats.averageRating", 0] }, 0],
+          },
+          1, // Round to 1 decimal place (optional)
+        ],
+      },
+    },
+  });
+
+  pipeline.push({
+    $project: {
+      reviewStats: 0,
+    },
+  });
+  pipeline.push({
+    $lookup: {
       from: "jobroles",
       let: { typeId: "$type" },
       pipeline: [
@@ -253,36 +298,36 @@ const getJobs = async ({
   pipeline.push({
     $unwind: { path: "$type", preserveNullAndEmptyArrays: true },
   });
-    pipeline.push({
-      $lookup: {
-        from: "branches",
-        let: { branchId: "$branch" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $eq: [
-                  "$_id",
-                  {
-                    $convert: {
-                      input: "$$branchId",
-                      to: "objectId",
-                      onError: null,
-                      onNull: null,
-                    },
+  pipeline.push({
+    $lookup: {
+      from: "branches",
+      let: { branchId: "$branch" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $eq: [
+                "$_id",
+                {
+                  $convert: {
+                    input: "$$branchId",
+                    to: "objectId",
+                    onError: null,
+                    onNull: null,
                   },
-                ],
-              },
+                },
+              ],
             },
           },
-          { $project: { name: 1, location: 1, status: 1 } },
-        ],
-        as: "branch",
-      },
-    });
-    pipeline.push({
-      $unwind: { path: "$branch", preserveNullAndEmptyArrays: true },
-    });
+        },
+        { $project: { name: 1, location: 1, status: 1 } },
+      ],
+      as: "branch",
+    },
+  });
+  pipeline.push({
+    $unwind: { path: "$branch", preserveNullAndEmptyArrays: true },
+  });
 
   pipeline.push({
     $lookup: {
@@ -380,6 +425,25 @@ const getUserAndShift = async (jobId, shiftId) => {
   };
 };
 
+const updateShiftStatus = async (jobId, shiftId, status) => {
+  const allowed = ["pending", "booked", "completed"];
+  if (!allowed.includes(status)) {
+    throw new Error(`Invalid status. Allowed: ${allowed.join(", ")}`);
+  }
+
+  const updatedJob = await Job.findOneAndUpdate(
+    { _id: jobId, "shift._id": shiftId },
+    { $set: { "shift.$.status": status } },
+    { new: true },
+  );
+
+  if (!updatedJob) {
+    throw new Error("Job or shift not found");
+  }
+
+  return updatedJob;
+};
+
 module.exports = {
   createJob,
   getJobs,
@@ -389,4 +453,5 @@ module.exports = {
   findJobById_,
   getUserAndShift,
   getJobsSummary,
+  updateShiftStatus,
 };

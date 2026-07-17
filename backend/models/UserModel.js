@@ -366,7 +366,6 @@ userSchema.methods.generateAuthToken = function () {
 userSchema.statics.findByCredentials = async (
   email,
   password,
-  userType,
   timezone,
   populateFields = []
 ) => {

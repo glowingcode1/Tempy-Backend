@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
 const { LocationSchema } = require("../shared/locations/locationSchmea");
-const {
-  ProvideServicesToSchema,
-} = require("./provideServicesToSchema");
+const { ProvideServicesToSchema } = require("./provideServicesToSchema");
 
 const agencySchema = new mongoose.Schema({
   companyName: {
@@ -11,8 +9,8 @@ const agencySchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["agency"],
-    default: "agency",
+    enum: ["ltd", "llc", "partnership", "soleTrader"], //Ltd, LLC, Partnership, Sole Trader
+    required: true,
   },
   location: {
     type: LocationSchema,
