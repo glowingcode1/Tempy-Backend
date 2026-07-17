@@ -679,7 +679,7 @@ const convertToUtcTime = (bookingDate, slotStartTime, slotEndTime, timezone) => 
 // Get the current date in user's timezone
 //Emphasizes the returned value is UTC-based, calculated using a timezone
 const getCurrentDateInTimezone = ({
-  timezone,
+  timezone="UTC",
   isDateOnly = false,
   format = "YYYY-MM-DDTHH:mm:ss.SSSZ",
 }) => {

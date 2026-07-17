@@ -205,15 +205,15 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       enum: [
         "pending", // approved, shift not started yet
+        "active", // accepted by worker, shift not started yet
         "inProgress", // worker checked in
         "completed", // worker checked out / shift done
         "cancelledByWorker",
         "cancelledByEmployer",
-        "noShow", // worker never checked in
-        "disputed",
+        "cancelledByUser",
       ],
       default: "pending",
-      index: true,
+      index: true,  
     },
     cancellation: {
       reason: { type: String, default: "" },
@@ -257,6 +257,9 @@ bookingSchema.index({
 
 bookingSchema.index({
   "attendance.checkOutLocation": "2dsphere",
+});
+bookingSchema.index({
+  "snapshot.location": "2dsphere",
 });
 const Booking = mongoose.model("Booking", bookingSchema);
 

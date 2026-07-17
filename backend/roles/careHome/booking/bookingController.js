@@ -58,13 +58,66 @@ const createBooking = async (req, res) => {
 
 const getBooking = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, user } = req.query;
+  let { keyword, status, user, latitude, longitude, km } = req.query;
 
-  const isAgency = req.user.userType === "agency";
-  const isEmployee = req.user.userType === "employee";
-  const isCareHome = req.user.userType === "careHome";
-  if (isAgency || isEmployee) {
+  const customer = customerTypes.includes(req.user.userType);
+  const supplier = supplierTypes.includes(req.user.userType);
+  const isNurse = req.user.userType === "nurse";
+  let worker,
+    employer = null;
+  if (customer) {
     user = req.user._id;
+  }
+  if (supplier) {
+    if (isNurse) {
+      worker = req.user._id;
+    } else {
+      employer = req.user._id;
+    }
+  }
+
+  const geoProvided = [latitude, longitude, km].filter(
+    (v) => v !== undefined && v !== null && v !== "",
+  );
+
+  if (geoProvided.length > 0) {
+    if (geoProvided.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: "latitude, longitude and km must all be provided together.",
+      });
+    }
+
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    const radius = Number(km);
+
+    if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
+      return res.status(400).json({
+        success: false,
+        message: "latitude, longitude and km must be valid numbers.",
+      });
+    }
+
+    if (lat < -90 || lat > 90) {
+      return res.status(400).json({
+        success: false,
+        message: "latitude must be between -90 and 90.",
+      });
+    }
+
+    if (lng < -180 || lng > 180) {
+      return res.status(400).json({
+        success: false,
+        message: "longitude must be between -180 and 180.",
+      });
+    }
+    if (radius <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "km must be greater than 0.",
+      });
+    }
   }
   try {
     const timezone = req.user.timezone;
@@ -75,6 +128,11 @@ const getBooking = async (req, res) => {
       keyword,
       status,
       user,
+      worker,
+      employer,
+      latitude,
+      longitude,
+      km,
     });
 
     return sendResponse({
@@ -96,25 +154,7 @@ const getBooking = async (req, res) => {
 };
 const updateBooking = async (req, res) => {
   const { id } = req.params;
-  let { shift, job, Booking, note, status } = req.body;
-  const isAgency = req.user.userType === "agency";
-  const allowedStatusesAgency = ["withdraw"];
-
-  if (isAgency && status && !allowedStatusesAgency.includes(status)) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "the_status_is_not_allowed_for_agency",
-    });
-  }
-  if (Boolean(job) !== Boolean(shift)) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "both_job_and_shift_are_required",
-    });
-  }
-
+  const { checkinCheckout } = req.query;
   if (
     !validateParams(req, res, {
       pathParams: ["id"],
@@ -123,48 +163,133 @@ const updateBooking = async (req, res) => {
   )
     return;
 
-  const user = req.user._id;
-
-  let data = {
-    user,
-    shift,
-    job,
-    Booking,
-    note,
-    status,
-  };
-  try {
-    const updated = await BookingService.updateBooking(id, data);
-    if (updated && updated.error) {
+  if (checkinCheckout) {
+    const isNurse = req.user.userType === "nurse";
+    const allowedStatuses = ["checkin", "checkout"];
+    const { status, location, proofPicture, signature } = req.body;
+    if (!isNurse) {
+      return sendResponse({
+        res,
+        statusCode: 403,
+        translationKey: "only_nurse_can_checkin_checkout",
+      });
+    }
+    if (!status || !allowedStatuses.includes(status)) {
       return sendResponse({
         res,
         statusCode: 400,
-        translationKey: updated.error,
+        translationKey: "invalid_status_for_checkin_checkout",
       });
     }
-
-    if (!updated) {
+    if (!location ) {
       return sendResponse({
         res,
-        statusCode: 404,
-        translationKey: "Booking_not_found",
+        statusCode: 400,
+        translationKey: "location_required_for_checkin_checkout",
+      });
+    }
+    if (status === "checkin" && (!proofPicture || !signature)) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "proofPicture_and_signature_required_for_checkin",
+      });
+    }
+    try {
+      const updated = await BookingService.updateBookingCheckinCheckout(id, {
+        status,
+        location,
+        proofPicture,
+        signature,
+      });
+      if (updated && updated.error) {
+        return sendResponse({
+          res,
+          statusCode: 400,
+          translationKey: updated.error,
+        });
+      }
+
+      if (!updated) {
+        return sendResponse({
+          res,
+          statusCode: 404,
+          translationKey: "Booking_not_found",
+        });
+      }
+
+      return sendResponse({
+        res,
+        statusCode: 200,
+        translationKey: "Booking_updated_successfully",
+        data: updated,
+      });
+    } catch (error) {
+      const readableError = getReadableErrorMessage(error);
+      return sendResponse({
+        res,
+        statusCode: readableError.statusCode,
+        translationKey: readableError.message,
+        error,
+      });
+    }
+  } else {
+    let { status } = req.body;
+    const customer = await customerTypes.includes(req.user.userType);
+    const supplier = await supplierTypes.includes(req.user.userType);
+    const userType = req.user.userType;
+    const allowedStatuses = ["active", "cancel"];
+
+    if (status && !allowedStatuses.includes(status)) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "the_status_is_not_allowed",
       });
     }
 
-    return sendResponse({
-      res,
-      statusCode: 200,
-      translationKey: "Booking_updated_successfully",
-      data: updated,
-    });
-  } catch (error) {
-    const readableError = getReadableErrorMessage(error);
-    return sendResponse({
-      res,
-      statusCode: readableError.statusCode,
-      translationKey: readableError.message,
-      error,
-    });
+    const currentUser = req.user._id;
+
+    let data = {
+      currentUser,
+      status,
+      userType,
+      customer,
+      supplier,
+    };
+    try {
+      const updated = await BookingService.updateBooking(id, data);
+      if (updated && updated.error) {
+        return sendResponse({
+          res,
+          statusCode: 400,
+          translationKey: updated.error,
+        });
+      }
+
+      if (!updated) {
+        return sendResponse({
+          res,
+          statusCode: 404,
+          translationKey: "Booking_not_found",
+        });
+      }
+
+      return sendResponse({
+        res,
+        statusCode: 200,
+        translationKey: "Booking_updated_successfully",
+        data: updated,
+      });
+    } catch (error) {
+      const readableError = getReadableErrorMessage(error);
+      return sendResponse({
+        res,
+        statusCode: readableError.statusCode,
+        translationKey: readableError.message,
+        error,
+      });
+    }
   }
 };
 
@@ -306,7 +431,45 @@ const getBookingCalender = async (req, res) => {
       statusCode: 200,
       translationKey: "Booking_fetched_successfully",
       data: calendar,
-      meta
+      meta,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+const getBookingCheckInLogs = async (req, res) => {
+  const { bookingId } = req.params;
+  const timezone = req.user.timezone;
+
+  if (
+    !validateParams(req, res, {
+      pathParams: ["bookingId"],
+      objectIdFields: ["bookingId"],
+    })
+  )
+    return;
+
+  try {
+    const logs = await BookingService.getBookingCheckInLogs(bookingId, timezone);
+    if (!logs) {
+      return sendResponse({
+        res,
+        statusCode: 404,
+        translationKey: "Booking_not_found",
+      });
+    }
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "Booking_checkin_logs_fetched_successfully",
+      data: logs,
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -325,4 +488,5 @@ module.exports = {
   deleteBooking,
   getBookingDetails,
   getBookingCalender,
+  getBookingCheckInLogs,
 };

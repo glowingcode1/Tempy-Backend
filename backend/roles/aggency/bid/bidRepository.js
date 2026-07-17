@@ -724,7 +724,7 @@ const deleteBid = async (id) => {
   return await Bid.findByIdAndUpdate(id, { status: "deleted" }, { new: true });
 };
 
-const updateBidStatuses = async (bidId) => {
+const updateBidStatuses = async (bidId, currentBidStatus = "accepted", remainingBidStatus = "rejected") => {
   const bid = await Bid.findById(bidId).select("shift._id");
 
   if (!bid) {
@@ -733,7 +733,7 @@ const updateBidStatuses = async (bidId) => {
 
   await Promise.all([
     // Accept the selected bid
-    Bid.updateOne({ _id: bidId }, { $set: { status: "accepted" } }),
+    Bid.updateOne({ _id: bidId }, { $set: { status: currentBidStatus } }),
 
     // Reject all other bids for the same shift
     Bid.updateMany(
@@ -741,7 +741,7 @@ const updateBidStatuses = async (bidId) => {
         "shift._id": bid.shift._id,
         _id: { $ne: bidId },
       },
-      { $set: { status: "rejected" } },
+        { $set: { status: remainingBidStatus } },
     ),
   ]);
 };

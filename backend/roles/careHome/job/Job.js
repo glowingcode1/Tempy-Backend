@@ -8,6 +8,10 @@ const JobSchema = new mongoose.Schema(
       type: LocationSchema,
       required: true,
     },
+    image: {
+      type: String,
+      default: "",
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
