@@ -13,8 +13,8 @@ const AvailabilitySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "busy", "onCall", "sleepover", "dayOff", "leave"],
-      default: "active",
+      enum: [ "busy", "onCall", "sleepover", "dayOff", "leave"],
+      required: true,
       index: true,
     },
     startDateTime: { type: Date, required: true },

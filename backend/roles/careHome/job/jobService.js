@@ -70,7 +70,9 @@ const getJobs = async ({
   longitude, // user's longitude
   km, // radius in kilometers
   projection,
-  summary
+  summary,
+  worker,
+  employer
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -105,6 +107,8 @@ const getJobs = async ({
     latitude,
     longitude,
     km,
+    worker,
+    employer
   });
   const formatedJobs = Jobs.map((job) => {
     return formatJobToTimezone(job, timezone);

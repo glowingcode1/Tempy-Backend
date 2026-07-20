@@ -21,7 +21,7 @@ router.use(auth);
 const BookingRateLimiter = createRateLimiter("Booking");
 router.get(
   "/calender",
-  roleMiddleware(["admin", "careHome"]),
+  roleMiddleware(["admin", "careHome","agency", "nurse"]),
   getBookingCalender,
 );
 // Routes for Booking Management
@@ -43,7 +43,7 @@ router.get(
 // Get a specific Booking by ID
 router.get(
   "/:id",
-  roleMiddleware(["admin", "agency", "employee"]),
+  roleMiddleware(["admin", "agency", "employee", "nurse", "careHome"]),
   BookingRateLimiter,
   getBookingDetails,
 );
@@ -63,7 +63,7 @@ router.get(
 // Delete a Booking
 router.delete(
   "/:id",
-  roleMiddleware(["admin", "agency", "employee"]),
+  roleMiddleware(["admin", "agency", "employee", "nurse"]),
   deleteBooking,
 );
 router.get(

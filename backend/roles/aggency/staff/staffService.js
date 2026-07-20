@@ -17,7 +17,7 @@ const {
 } = require("../../../commonModules/favorite/favoriteRepository");
 const {
   findAddressByUser,
-} = require("../../../roles/employee/address/addressRepository");
+} = require("../../nurse/address/addressRepository");
 const {
   findReviewByUser,
   findReviewByStaff,

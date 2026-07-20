@@ -12,7 +12,18 @@ const { customerTypes, supplierTypes } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
 
 const createJob = async (req, res) => {
-  let { name, description, type, gender, shift, location,branch,image } = req.body;
+  let {
+    name,
+    description,
+    type,
+    gender,
+    shift,
+    location,
+    branch,
+    image,
+    worker,
+    employer,
+  } = req.body;
   let user = req.user._id;
   const timezone = req.user.timezone;
   if (req.user.userType === "admin") {
@@ -28,7 +39,7 @@ const createJob = async (req, res) => {
 
   if (
     !validateParams(req, res, {
-      rawData: ["name", "type", "shift", "location","branch"],
+      rawData: ["name", "type", "shift", "location", "branch"],
     })
   )
     return;
@@ -72,6 +83,13 @@ const createJob = async (req, res) => {
       endTime: endUtc.format("HH:mm"),
     };
   });
+  if (employer && !worker) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "worker_required_when_employer_provided",
+    });
+  }
 
   let data = {
     name,
@@ -83,6 +101,8 @@ const createJob = async (req, res) => {
     location,
     branch,
     image,
+    worker,
+    employer,
   };
   try {
     const Job = await JobService.createJob(data);
@@ -112,16 +132,24 @@ const createJob = async (req, res) => {
 
 const getJobs = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, date, range, user, latitude, longitude, km,summary } =
+  let { keyword, status, date, range, user, latitude, longitude, km, summary } =
     req.query;
   const customer = await customerTypes.includes(req.user.userType);
   const supplier = await supplierTypes.includes(req.user.userType);
+  let employer = null;
+  let worker = null;
+  if (supplier) {
+    employer = req.user._id;
+  }
+  if (req.user.userType === "nurse") {
+    worker = req.user._id;
+  }
 
   const JOB_FIELDS = ["name", "description", "location"];
   const fields = "name,location";
   let projection = undefined;
-  if(summary){
-   projection = await buildProjection(fields, JOB_FIELDS);
+  if (summary) {
+    projection = await buildProjection(fields, JOB_FIELDS);
   }
 
   let userType = req.user.userType;
@@ -190,6 +218,8 @@ const getJobs = async (req, res) => {
       km: km ? Number(km) : undefined,
       projection,
       summary: summary === "true" ? true : false,
+      worker,
+      employer,
     });
 
     return sendResponse({
