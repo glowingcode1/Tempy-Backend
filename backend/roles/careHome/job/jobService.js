@@ -31,7 +31,7 @@ const getJobBids = async ({
   job,
   shift,
   user,
-  jobCreater,
+  jobCreator,
   dateFilter,
 
 }) => {
@@ -46,7 +46,7 @@ const getJobBids = async ({
     job,
     shift,
     user,
-    jobCreater,
+    jobCreator,
     skip,
     dateFilter,
   });

@@ -158,6 +158,7 @@ const getJobs = async (req, res) => {
     user = req.user._id;
     userType = null;
   }
+  console.log("customer", customer,"user",user);
   const geoProvided = [latitude, longitude, km].filter(
     (v) => v !== undefined && v !== null && v !== "",
   );
@@ -292,16 +293,17 @@ const getJobBids = async (req, res) => {
   const isAdmin = req.user.userType === "admin";
 
   let user = req.user._id;
-  let jobCreater = req.user._id;
+  let jobCreator = req.user._id;
   if (isAdmin) {
     user = null;
-    jobCreater = null;
+    jobCreator = null;
   }
   if (supplier) {
-    jobCreater = null;
+    jobCreator = null;
   } else if (customer) {
     user = null;
   }
+
 
   try {
     const { jobBids, meta } = await JobService.getJobBids({
@@ -313,7 +315,7 @@ const getJobBids = async (req, res) => {
       job,
       shift,
       user,
-      jobCreater,
+      jobCreator,
       dateFilter,
     });
     if (!jobBids) {

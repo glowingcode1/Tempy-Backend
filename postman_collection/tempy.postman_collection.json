@@ -13223,6 +13223,48 @@
                   "response": []
                 }
               ]
+            },
+            {
+              "name": "booking",
+              "item": [
+                {
+                  "name": "create",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}web/agency/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-16&endDate=2026-07-27",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "booking",
+                        "calender"
+                      ],
+                      "query": [
+                        {
+                          "key": "latitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "startDate",
+                          "value": "2026-07-16"
+                        },
+                        {
+                          "key": "endDate",
+                          "value": "2026-07-27"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
             }
           ],
           "auth": {
@@ -18177,6 +18219,10 @@
               "name": "job",
               "item": [
                 {
+                  "name": "New Folder",
+                  "item": []
+                },
+                {
                   "name": "get",
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true
@@ -18216,6 +18262,48 @@
                           "key": "km",
                           "value": "1",
                           "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "booking",
+              "item": [
+                {
+                  "name": "get",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}web/agency/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-16&endDate=2026-07-27",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "booking",
+                        "calender"
+                      ],
+                      "query": [
+                        {
+                          "key": "latitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "startDate",
+                          "value": "2026-07-16"
+                        },
+                        {
+                          "key": "endDate",
+                          "value": "2026-07-27"
                         }
                       ]
                     }

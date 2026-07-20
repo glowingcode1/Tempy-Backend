@@ -92,7 +92,6 @@ const getStaff = async ({
   }
 
   const { staff, meta } = await StaffRepo.getStaff({
-    bid,
     timezone,
     page,
     limit,
