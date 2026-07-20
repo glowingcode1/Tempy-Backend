@@ -24,9 +24,10 @@ const createSupportRequest = async (req, res) => {
       subject,
       message,
       status: "pending",
-      user: req.user._id
+      user: req.user._id,
     });
     await supportRequest.save();
+
     return sendResponse({
       res,
       statusCode: 201,
@@ -34,9 +35,10 @@ const createSupportRequest = async (req, res) => {
     });
   } catch (error) {
     const statusCode = error.name === "ValidationError" ? 400 : 500;
-    const translationKey = error.name === "ValidationError"
-      ? Object.values(error.errors)[0].message
-      : "internal_server";
+    const translationKey =
+      error.name === "ValidationError"
+        ? Object.values(error.errors)[0].message
+        : "internal_server";
 
     return sendResponse({
       res,
@@ -50,13 +52,17 @@ const createSupportRequest = async (req, res) => {
 const getSupportRequest = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   const { keyword, status, date, orderSort } = req.query;
-  const timezone = req.user.timezone || 'UTC';
+  const timezone = req.user.timezone || "UTC";
   try {
-    if (date && !validateParams(req, res, {
-      dateFields: {
-        date: "YYYY-MM-DD",
-      },
-    })) return;
+    if (
+      date &&
+      !validateParams(req, res, {
+        dateFields: {
+          date: "YYYY-MM-DD",
+        },
+      })
+    )
+      return;
 
     const { supportRequests, meta } = await supportService.getSupportRequest({
       page,
@@ -65,7 +71,7 @@ const getSupportRequest = async (req, res) => {
       status,
       date,
       orderSort,
-      timezone
+      timezone,
     });
 
     return sendResponse({
@@ -73,7 +79,7 @@ const getSupportRequest = async (req, res) => {
       statusCode: 200,
       translationKey: "support_requests_fetched_successfully",
       data: supportRequests,
-      meta
+      meta,
     });
   } catch (error) {
     return sendResponse({
@@ -98,7 +104,7 @@ const deleteSupportRequest = async (req, res) => {
   try {
     const result = await SupportRequest.updateOne(
       { _id: id },
-      { $set: { status: 'deleted' } }
+      { $set: { status: "deleted" } },
     );
 
     if (result.modifiedCount === 0) {
@@ -146,10 +152,9 @@ const updateSupportRequest = async (req, res) => {
   try {
     const result = await SupportRequest.updateOne(
       { _id: id },
-      { $set: { status, response } }
+      { $set: { status, response } },
     );
     const updatedRecord = await SupportRequest.findById(id);
-
 
     if (result.modifiedCount === 0) {
       return sendResponse({
@@ -162,12 +167,15 @@ const updateSupportRequest = async (req, res) => {
     await sendUserNotifications({
       recipientIds: [updatedRecord.user.toString()],
       title: `Support request updated and ${status}`,
-      body: `Your support request has been responded to and ${status} by the admin.${response ? ' Response: ' + response : ''}`,
-      data: { type: NotificationTypes.SUPPORT_REQUEST, supportRequestId: updatedRecord._id, objectType: "supportrequests" },
+      body: `Your support request has been responded to and ${status} by the admin.${response ? " Response: " + response : ""}`,
+      data: {
+        type: NotificationTypes.SUPPORT_REQUEST,
+        supportRequestId: updatedRecord._id,
+        objectType: "supportrequests",
+      },
       sender: updatedRecord.user,
       objectId: updatedRecord._id,
       image: null,
-
     });
     return sendResponse({
       res,
@@ -185,10 +193,9 @@ const updateSupportRequest = async (req, res) => {
   }
 };
 
-
 module.exports = {
   createSupportRequest,
   getSupportRequest,
   deleteSupportRequest,
-  updateSupportRequest
+  updateSupportRequest,
 };

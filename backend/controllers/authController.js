@@ -22,7 +22,6 @@ const crypto = require("crypto");
 const { registerUserUtility } = require("./authUtil");
 const { validatePhoneNumber } = require("../helperUtils/validationsUtil");
 
-
 const createAdmin = async (req, res) => {
   try {
     // Whitelist both localhost + your public IP
@@ -241,13 +240,7 @@ const login = async (req, res) => {
     const { email, password, deviceId, deviceType, timezone, userType } =
       req.body;
     const validationOptions = {
-      rawData: [
-        "email",
-        "password",
-        "deviceId",
-        "deviceType",
-        "timezone",
-      ],
+      rawData: ["email", "password", "deviceId", "deviceType", "timezone"],
     };
     if (!validateParams(req, res, validationOptions)) {
       return;
@@ -260,9 +253,6 @@ const login = async (req, res) => {
       timezone,
       populateFields,
     );
-
-
-
 
     // Check if an error occurred
     if (user.error) {
@@ -280,7 +270,6 @@ const login = async (req, res) => {
         });
       }
     }
-
 
     // Restrict admin login
     if (user.accountState.userType === "admin") {
@@ -346,7 +335,6 @@ const login = async (req, res) => {
     const userObject = user.toJSON();
 
     const token = user.generateAuthToken();
- 
 
     // Format the user response using the utility function
     let response = formatUserResponse(userObject, token, [], ["resetToken"]);
@@ -732,8 +720,6 @@ const verifyOtp = async (req, res) => {
     const token = user.generateAuthToken();
 
     let response = formatUserResponse(updatedUser, token);
-
-
 
     return sendResponse({
       res,
@@ -1219,8 +1205,6 @@ const socialAuth = async (req, res) => {
       await session.commitTransaction();
       session.endSession();
 
-
-
       return sendResponse({
         res,
         statusCode: 200,
@@ -1321,8 +1305,9 @@ const changePassword = async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     const { subAdmin } = req.query;
 
-    const userId =new mongoose.Types.ObjectId(subAdmin ? subAdmin : req.user._id);
-
+    const userId = new mongoose.Types.ObjectId(
+      subAdmin ? subAdmin : req.user._id,
+    );
 
     const validationOptions = {
       rawData: ["oldPassword", "newPassword"],

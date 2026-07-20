@@ -13,7 +13,7 @@ const supportRateLimiter = createRateLimiter("support", 10, 5);
 const auth = require("../../../middlewares/authMiddleware");
 
 
-router.get("/", supportRateLimiter,roleMiddleware(["admin"]), auth,getSupportRequest);
+router.get("/",roleMiddleware(["admin"]), auth,getSupportRequest);
 router.delete("/:id", supportRateLimiter,roleMiddleware(["admin"]), auth,deleteSupportRequest);
 router.put("/:id", supportRateLimiter,roleMiddleware(["admin"]), auth,updateSupportRequest);
 
