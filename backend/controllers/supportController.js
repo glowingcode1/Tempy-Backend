@@ -1,9 +1,6 @@
 // controllers/supportController.js
 const SupportRequest = require("../models/SupportRequest");
-const {
-  sendResponse,
-  validateParams,
-} = require("../helperUtils/responseUtil");
+const { sendResponse, validateParams } = require("../helperUtils/responseUtil");
 
 // Create a new support request
 const createSupportRequest = async (req, res) => {
@@ -23,10 +20,12 @@ const createSupportRequest = async (req, res) => {
       subject,
       message,
       status: "pending", // Set the default status
-      user: req.user._id
+      user: req.user._id,
     });
 
-   const data= await supportRequest.save();
+    console.log("user-------------->", req.user._id);
+
+    const data = await supportRequest.save();
     return sendResponse({
       res,
       statusCode: 201,
@@ -35,9 +34,10 @@ const createSupportRequest = async (req, res) => {
     });
   } catch (error) {
     const statusCode = error.name === "ValidationError" ? 400 : 500;
-    const translationKey = error.name === "ValidationError" 
-      ? Object.values(error.errors)[0].message 
-      : "internal_server";
+    const translationKey =
+      error.name === "ValidationError"
+        ? Object.values(error.errors)[0].message
+        : "internal_server";
 
     return sendResponse({
       res,
@@ -48,7 +48,6 @@ const createSupportRequest = async (req, res) => {
   }
 };
 
-
 module.exports = {
-  createSupportRequest
+  createSupportRequest,
 };

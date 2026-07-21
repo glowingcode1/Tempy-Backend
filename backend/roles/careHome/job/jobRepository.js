@@ -261,7 +261,7 @@ const getJobs = async ({
   pipeline.push({
     $lookup: {
       from: "reviews",
-      let: { userId: "$user" },
+      let: { userId: "$user._id" },
       pipeline: [
         {
           $match: {

@@ -7,10 +7,11 @@ const { User } = require("../../../../models/UserModel");
 const AdminSettings = require("../models/AdminSettings");
 const Faq = require("../models/Faq");
 const { cache, invalidate } = require("@redisCache");
+const SupportRequest = require("@SupportRequestModel");
 const ACTIVE_ADMIN_SETTINGS_CACHE_KEY = "adminSettings:active";
 
-const buildAdminSettingsCacheKey = ({ scope = "public", type }) => {
-  return `${ACTIVE_ADMIN_SETTINGS_CACHE_KEY}:${scope}:${type}`;
+const buildAdminSettingsCacheKey = ({ scope = "public", type, user }) => {
+  return `${ACTIVE_ADMIN_SETTINGS_CACHE_KEY}:${scope}:${type}:${user}`;
 };
 
 const invalidateAdminSettingsScope = async (scope) => {
@@ -24,6 +25,7 @@ const ADMIN_SETTING_SCOPES = {
   ABOUT_US: "about_us",
   PRIVACY_POLICY: "privacy_policy",
   FAQS: "faqs",
+  SUPPORT: "support",
 };
 
 // Get Terms and Conditions
@@ -251,6 +253,83 @@ const getFaqs = async (req, res) => {
   }
 };
 
+// Get Privacy Policy
+const getSupport = async (req, res) => {
+  try {
+    const { page, limit } = parsePaginationParams(req);
+    const { keyword } = req.query;
+
+    const skip = (page - 1) * limit;
+
+    const cacheKey = buildAdminSettingsCacheKey({
+      scope: ADMIN_SETTING_SCOPES.SUPPORT,
+      skip,
+      limit,
+      user: req.user._id,
+    });
+
+    const result = await cache({
+      namespace: cacheKey,
+      ttl: 86400, // 1 day
+
+      fetchFn: async () => {
+        let queryConditions = {
+          user: req.user._id,
+          status: { $ne: "deleted" },
+        };
+
+        if (keyword && keyword.trim() !== "") {
+          queryConditions.$or = [
+            { name: { $regex: keyword, $options: "i" } },
+            { ticket: { $regex: keyword, $options: "i" } },
+            { subject: { $regex: keyword, $options: "i" } },
+            { message: { $regex: keyword, $options: "i" } },
+            { response: { $regex: keyword, $options: "i" } },
+          ];
+        }
+
+        console.log("Logged In User:", req.user._id);
+
+        console.log("Query:", queryConditions);
+
+        const [supports, totalRecords] = await Promise.all([
+          SupportRequest.find(queryConditions)
+            .populate("user", "name email profileIcon")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+
+          SupportRequest.countDocuments(queryConditions),
+        ]);
+
+        console.log("Supports:", supports);
+
+        return {
+          supports,
+          totalRecords,
+        };
+      },
+    });
+
+    const meta = generateMeta(page, limit, result.totalRecords);
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "support_requests_fetched_successfully",
+      data: result.supports,
+      meta,
+    });
+  } catch (error) {
+    return sendResponse({
+      res,
+      statusCode: 500,
+      translationKey: "something_went_wrong",
+      error,
+    });
+  }
+};
+
 // Create Admin Settings
 const createAdminSettings = async (req, res) => {
   try {
@@ -432,6 +511,7 @@ module.exports = {
   updateAdminSettings,
   createAdminSettings,
   getFaqs,
+  getSupport,
   getCustomerTermsAndConditions,
   getReviewTermsAndConditions,
 };
