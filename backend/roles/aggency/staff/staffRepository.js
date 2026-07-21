@@ -1045,6 +1045,8 @@ const findStaffNearJob = async (user, jobDetails, km = 50) => {
 
   return nearby.map((s) => s.staff.toString());
 };
+const getStaffIdsByUser = (userId) =>
+  Staff.find({ user: userId }).distinct("staff");
 
 module.exports = {
   createStaff,
@@ -1059,4 +1061,5 @@ module.exports = {
   getStaffCustomer,
   findStaffByUserAndStaff,
   findStaffNearJob,
+  getStaffIdsByUser,
 };

@@ -368,7 +368,7 @@ const deleteBooking = async (req, res) => {
   }
 };
 const getBookingCalender = async (req, res) => {
-  let { latitude, longitude, startDate, endDate, brach } = req.query;
+  let { latitude, longitude, startDate, endDate, branch } = req.query;
 
   if (
     !validateParams(req, res, {
@@ -413,8 +413,11 @@ const getBookingCalender = async (req, res) => {
     const timezone = req.user.timezone;
     const user = req.user._id;
     const customer = await customerTypes.includes(req.user.userType);
+    const userType = req.user.userType;
     const supplier = await supplierTypes.includes(req.user.userType);
-    const { calendar, meta } = await BookingService.getBookingCalender({
+    const { calendar, meta } = await BookingService.getBookingCalendar({
+      customer,
+      supplier,
       timezone,
       latitude: lat,
       longitude: lon,
@@ -423,7 +426,8 @@ const getBookingCalender = async (req, res) => {
       user,
       customer,
       supplier,
-      brach,
+      branch,
+      userType,
     });
 
     return sendResponse({

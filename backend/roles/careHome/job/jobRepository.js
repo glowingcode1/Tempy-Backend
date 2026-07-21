@@ -10,6 +10,9 @@ const {
 
 const createJob = async (data) => {
   try {
+    if (data.worker || data.employer) {
+      data.isSpecial = true;
+    }
     const job = new Job(data);
     await job.save();
     return job;
@@ -160,6 +163,8 @@ const getJobs = async ({
   latitude, // user's latitude
   longitude, // user's longitude
   km, // radius in kilometers
+  worker,
+  employer,
   projection,
 }) => {
   const provideServicesToUser = await findUserById(requester);
@@ -206,6 +211,36 @@ const getJobs = async ({
     });
   } else {
     pipeline.push({ $match: baseMatch });
+  }
+  const assignmentConditions = [];
+
+  // Open jobs (both are null)
+  assignmentConditions.push({
+    worker: null,
+    employer: null,
+  });
+
+  // Assigned jobs
+  const assignedMatch = {};
+
+  if (worker) {
+    assignedMatch.worker = new mongoose.Types.ObjectId(worker);
+  }
+
+  if (employer) {
+    assignedMatch.employer = new mongoose.Types.ObjectId(employer);
+  }
+
+  if (Object.keys(assignedMatch).length) {
+    assignmentConditions.push(assignedMatch);
+  }
+
+  if (assignmentConditions.length > 0) {
+    pipeline.push({
+      $match: {
+        $or: assignmentConditions,
+      },
+    });
   }
 
   pipeline.push({
