@@ -26,7 +26,7 @@ const createBid = async (data) => {
     data.snapshot = snapshot;
     data.jobCreator = user;
     data.shift = shift;
-    data.type=snapshot.type;
+    data.type = snapshot.type;
 
     if (!shift || !user) {
       return { error: "Invalid_job_or_shift" };
@@ -48,7 +48,56 @@ const getBid = async ({
   user,
   jobCreator,
   skip,
+  dateFilter,
 }) => {
+  const now = new Date();
+
+  const startOfThisWeek = new Date(now);
+  startOfThisWeek.setDate(now.getDate() - now.getDay());
+  startOfThisWeek.setHours(0, 0, 0, 0);
+
+  const endOfThisWeek = new Date(startOfThisWeek);
+  endOfThisWeek.setDate(startOfThisWeek.getDate() + 6);
+  endOfThisWeek.setHours(23, 59, 59, 999);
+
+  const startOfNextWeek = new Date(endOfThisWeek);
+  startOfNextWeek.setDate(endOfThisWeek.getDate() + 1);
+  startOfNextWeek.setHours(0, 0, 0, 0);
+
+  const endOfNextWeek = new Date(startOfNextWeek);
+  endOfNextWeek.setDate(startOfNextWeek.getDate() + 6);
+  endOfNextWeek.setHours(23, 59, 59, 999);
+
+  const ranges = {
+    next6Hours: {
+      startDate: now,
+      endDate: new Date(Date.now() + 6 * 60 * 60 * 1000),
+    },
+    next12Hours: {
+      startDate: now,
+      endDate: new Date(Date.now() + 12 * 60 * 60 * 1000),
+    },
+    next24Hours: {
+      startDate: now,
+      endDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+    next3Days: {
+      startDate: now,
+      endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+    },
+    next7Days: {
+      startDate: now,
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+    thisWeek: {
+      startDate: startOfThisWeek,
+      endDate: endOfThisWeek,
+    },
+    nextWeek: {
+      startDate: startOfNextWeek,
+      endDate: endOfNextWeek,
+    },
+  };
 
   const pipeline = [];
   if (jobCreator) {
@@ -110,36 +159,36 @@ const getBid = async ({
       preserveNullAndEmptyArrays: true,
     },
   });
-    pipeline.push({
-      $lookup: {
-        from: "jobroles",
-        let: { typeId: "$type" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $eq: ["$_id", "$$typeId"],
-              },
+  pipeline.push({
+    $lookup: {
+      from: "jobroles",
+      let: { typeId: "$type" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $eq: ["$_id", "$$typeId"],
             },
           },
-          {
-            $project: {
-              department: 1,
-              title: 1,
-              status: 1,
-            },
+        },
+        {
+          $project: {
+            department: 1,
+            title: 1,
+            status: 1,
           },
-        ],
-        as: "type",
-      },
-    });
+        },
+      ],
+      as: "type",
+    },
+  });
 
-    pipeline.push({
-      $unwind: {
-        path: "$type",
-        preserveNullAndEmptyArrays: true,
-      },
-    });
+  pipeline.push({
+    $unwind: {
+      path: "$type",
+      preserveNullAndEmptyArrays: true,
+    },
+  });
   pipeline.push({
     $lookup: {
       from: "users",
@@ -386,12 +435,12 @@ const getBidByJob = async ({
       as: "type",
     },
   });
-    pipeline.push({
-      $unwind: {
-        path: "$type",
-        preserveNullAndEmptyArrays: true,
-      },
-    });
+  pipeline.push({
+    $unwind: {
+      path: "$type",
+      preserveNullAndEmptyArrays: true,
+    },
+  });
   pipeline.push({
     $unwind: {
       path: "$user",
@@ -468,128 +517,132 @@ const getBidByJob = async ({
     },
   });
 
-
-pipeline.push({
-  $lookup: {
-    from: "bookings",
-    let: {
-      workerId: "$user._id",
-      weekStart: startOfThisWeek,
-      weekEnd: endOfThisWeek,
-    },
-    pipeline: [
-      {
-        $match: {
-          status: { $in: ["pending", "inProgress", "completed"] },
-          $expr: {
-            $and: [
-              { $eq: ["$worker", "$$workerId"] },
-              { $gte: ["$shift.date", "$$weekStart"] },
-              { $lte: ["$shift.date", "$$weekEnd"] },
-            ],
-          },
-        },
+  pipeline.push({
+    $lookup: {
+      from: "bookings",
+      let: {
+        workerId: "$user._id",
+        weekStart: startOfThisWeek,
+        weekEnd: endOfThisWeek,
       },
-      {
-        // parse "HH:mm" -> minutes since midnight
-        $addFields: {
-          _startMin: {
-            $add: [
-              {
-                $multiply: [
-                  {
-                    $toInt: {
-                      $arrayElemAt: [{ $split: ["$shift.startTime", ":"] }, 0],
-                    },
-                  },
-                  60,
-                ],
-              },
-              {
-                $toInt: {
-                  $arrayElemAt: [{ $split: ["$shift.startTime", ":"] }, 1],
-                },
-              },
-            ],
-          },
-          _endMin: {
-            $add: [
-              {
-                $multiply: [
-                  {
-                    $toInt: {
-                      $arrayElemAt: [{ $split: ["$shift.endTime", ":"] }, 0],
-                    },
-                  },
-                  60,
-                ],
-              },
-              {
-                $toInt: {
-                  $arrayElemAt: [{ $split: ["$shift.endTime", ":"] }, 1],
-                },
-              },
-            ],
-          },
-        },
-      },
-      {
-        $addFields: {
-          _rawMin: {
-            $let: {
-              vars: { diff: { $subtract: ["$_endMin", "$_startMin"] } },
-              in: {
-                $cond: [
-                  { $lt: ["$$diff", 0] },
-                  { $add: ["$$diff", 1440] }, // overnight
-                  "$$diff",
-                ],
-              },
-            },
-          },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalHours: {
-            $sum: {
-              $divide: [
-                {
-                  $subtract: ["$_rawMin", { $ifNull: ["$shift.breakMin", 0] }],
-                },
-                60,
+      pipeline: [
+        {
+          $match: {
+            status: { $in: ["pending", "inProgress", "completed"] },
+            $expr: {
+              $and: [
+                { $eq: ["$worker", "$$workerId"] },
+                { $gte: ["$shift.date", "$$weekStart"] },
+                { $lte: ["$shift.date", "$$weekEnd"] },
               ],
             },
           },
-          totalBookings: { $sum: 1 },
         },
-      },
-    ],
-    as: "workStats_",
-  },
-});
-
-// flatten onto staff
-pipeline.push({
-  $addFields: {
-    "workStats.totalHoursWorked": {
-      $round: [
-        { $ifNull: [{ $arrayElemAt: ["$workStats_.totalHours", 0] }, 0] },
-        2,
+        {
+          // parse "HH:mm" -> minutes since midnight
+          $addFields: {
+            _startMin: {
+              $add: [
+                {
+                  $multiply: [
+                    {
+                      $toInt: {
+                        $arrayElemAt: [
+                          { $split: ["$shift.startTime", ":"] },
+                          0,
+                        ],
+                      },
+                    },
+                    60,
+                  ],
+                },
+                {
+                  $toInt: {
+                    $arrayElemAt: [{ $split: ["$shift.startTime", ":"] }, 1],
+                  },
+                },
+              ],
+            },
+            _endMin: {
+              $add: [
+                {
+                  $multiply: [
+                    {
+                      $toInt: {
+                        $arrayElemAt: [{ $split: ["$shift.endTime", ":"] }, 0],
+                      },
+                    },
+                    60,
+                  ],
+                },
+                {
+                  $toInt: {
+                    $arrayElemAt: [{ $split: ["$shift.endTime", ":"] }, 1],
+                  },
+                },
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            _rawMin: {
+              $let: {
+                vars: { diff: { $subtract: ["$_endMin", "$_startMin"] } },
+                in: {
+                  $cond: [
+                    { $lt: ["$$diff", 0] },
+                    { $add: ["$$diff", 1440] }, // overnight
+                    "$$diff",
+                  ],
+                },
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalHours: {
+              $sum: {
+                $divide: [
+                  {
+                    $subtract: [
+                      "$_rawMin",
+                      { $ifNull: ["$shift.breakMin", 0] },
+                    ],
+                  },
+                  60,
+                ],
+              },
+            },
+            totalBookings: { $sum: 1 },
+          },
+        },
       ],
+      as: "workStats_",
     },
-    "workStats.hoursAllowed": {
-      $ifNull: ["$user.weeklyHours", 0],
-    },
-    "workStats.totalBookings": {
-      $ifNull: [{ $arrayElemAt: ["$workStats_.totalBookings", 0] }, 0],
-    },
-  },
-});
+  });
 
-// pipeline.push({ $project: { workStats_: 0 } });
+  // flatten onto staff
+  pipeline.push({
+    $addFields: {
+      "workStats.totalHoursWorked": {
+        $round: [
+          { $ifNull: [{ $arrayElemAt: ["$workStats_.totalHours", 0] }, 0] },
+          2,
+        ],
+      },
+      "workStats.hoursAllowed": {
+        $ifNull: ["$user.weeklyHours", 0],
+      },
+      "workStats.totalBookings": {
+        $ifNull: [{ $arrayElemAt: ["$workStats_.totalBookings", 0] }, 0],
+      },
+    },
+  });
 
+  // pipeline.push({ $project: { workStats_: 0 } });
 
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(
@@ -711,7 +764,7 @@ pipeline.push({
 const findBidById = async (id) => {
   return Bid.findById(id).lean().populate("user", "name email profileIcon");
 };
-const findBidById_ = async (id,projection = null) => {
+const findBidById_ = async (id, projection = null) => {
   return Bid.findById(id, projection);
 };
 
@@ -724,7 +777,11 @@ const deleteBid = async (id) => {
   return await Bid.findByIdAndUpdate(id, { status: "deleted" }, { new: true });
 };
 
-const updateBidStatuses = async (bidId, currentBidStatus = "accepted", remainingBidStatus = "rejected") => {
+const updateBidStatuses = async (
+  bidId,
+  currentBidStatus = "accepted",
+  remainingBidStatus = "rejected",
+) => {
   const bid = await Bid.findById(bidId).select("shift._id");
 
   if (!bid) {
@@ -741,7 +798,7 @@ const updateBidStatuses = async (bidId, currentBidStatus = "accepted", remaining
         "shift._id": bid.shift._id,
         _id: { $ne: bidId },
       },
-        { $set: { status: remainingBidStatus } },
+      { $set: { status: remainingBidStatus } },
     ),
   ]);
 };

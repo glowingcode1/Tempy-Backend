@@ -132,7 +132,7 @@ const createJob = async (req, res) => {
 
 const getJobs = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, date, range, user, latitude, longitude, km, summary } =
+  let { keyword, status, dateFilter, user, latitude, longitude, km, summary } =
     req.query;
   const customer = await customerTypes.includes(req.user.userType);
   const supplier = await supplierTypes.includes(req.user.userType);
@@ -158,7 +158,6 @@ const getJobs = async (req, res) => {
     user = req.user._id;
     userType = null;
   }
-  console.log("customer", customer,"user",user);
   const geoProvided = [latitude, longitude, km].filter(
     (v) => v !== undefined && v !== null && v !== "",
   );
@@ -221,6 +220,7 @@ const getJobs = async (req, res) => {
       summary: summary === "true" ? true : false,
       worker,
       employer,
+      dateFilter,
     });
 
     return sendResponse({

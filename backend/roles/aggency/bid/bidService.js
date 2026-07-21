@@ -16,6 +16,7 @@ const getBid = async ({
   status,
   user,
   jobCreator,
+  dateFilter,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -28,6 +29,7 @@ const getBid = async ({
     user,
     jobCreator,
     skip,
+    dateFilter,
   });
   const formatedBid = bid.map((job) => {
     return formatBidToTimezone(job, timezone);

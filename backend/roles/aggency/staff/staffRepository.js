@@ -89,6 +89,21 @@ const getStaffCustomer = async ({
   pipeline.push({
     $unwind: { path: "$worker", preserveNullAndEmptyArrays: true },
   });
+  //branch
+    pipeline.push({
+      $lookup: {
+        from: "branches",
+        let: { branchId: "$branch" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$branchId"] } } },
+          { $project: { name: 1, location: 1, manager: 1 } },
+        ],
+        as: "branch",
+      },
+    });
+    pipeline.push({
+      $unwind: { path: "$branch", preserveNullAndEmptyArrays: true },
+    });
 
   // review stats for the customer
   pipeline.push({
@@ -400,6 +415,21 @@ const getStaff = async ({
       as: "staff",
     },
   });
+  //branch
+  pipeline.push({
+    $lookup: {
+      from: "branches",
+      let: { branchId: "$branch" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$_id", "$$branchId"] } } },
+        { $project: { name: 1, location: 1, manager: 1 } },
+      ],
+      as: "branch",
+    },
+  });
+  pipeline.push({
+    $unwind: { path: "$branch", preserveNullAndEmptyArrays: true },
+  });
 
   pipeline.push({
     $unwind: {
@@ -680,7 +710,6 @@ const getStaff = async ({
   const result = await Staff.aggregate(pipeline);
 
   const staff = result[0]?.data || [];
-  console.log("staff", staff);
 
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
@@ -732,7 +761,7 @@ const getStaff = async ({
     staff,
     meta,
   };
-};
+};;
 
 const getStaffByJob = async ({
   timezone,
@@ -948,7 +977,6 @@ const deleteStaff = async (id) => {
 const findStaffNearJob = async (user, jobDetails, km = 50) => {
   const [lng, lat] = jobDetails?.location?.coordinates || [];
   if (lng == null || lat == null) return [];
-
   const nearby = await Staff.aggregate([
     // this employer's active staff
     {
@@ -1040,7 +1068,7 @@ const findStaffNearJob = async (user, jobDetails, km = 50) => {
     },
     // keep only those within km
     { $match: { distance: { $ne: null, $lte: km * 1000 } } },
-    { $project: { _id: 1, staff: 1, distance: 1 } },
+    { $project: { _id: 1, staff: 1, distance: 1, weeklyHours: 1 } },
   ]);
 
   return nearby.map((s) => s.staff.toString());
