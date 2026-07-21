@@ -11,7 +11,7 @@ const auth = require("@middlewares/authMiddleware");
 const router = express.Router();
 const supportRateLimiter = createRateLimiter("support", 10, 5);
 router.use(auth);
-router.post("/", supportRateLimiter, createSupportRequest);
+router.post("/", createSupportRequest);
 
 
 

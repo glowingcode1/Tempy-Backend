@@ -9,8 +9,8 @@ const Faq = require("../models/Faq");
 const { cache, invalidate } = require("@redisCache");
 const ACTIVE_ADMIN_SETTINGS_CACHE_KEY = "adminSettings:active";
 
-const buildAdminSettingsCacheKey = ({ scope = "public" }) => {
-  return `${ACTIVE_ADMIN_SETTINGS_CACHE_KEY}:${scope}`;
+const buildAdminSettingsCacheKey = ({ scope = "public", type }) => {
+  return `${ACTIVE_ADMIN_SETTINGS_CACHE_KEY}:${scope}:${type}`;
 };
 
 const invalidateAdminSettingsScope = async (scope) => {
@@ -338,13 +338,13 @@ const updateAdminSettings = async (req, res) => {
   }
 
   // invalidate only touched scopes
-    await Promise.all([
-      invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.TERMS),
-      invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.ABOUT_US),
-      invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.PRIVACY_POLICY),
-      invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.REVIEW_TERMS),
-      invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.CUSTOMER_TERMS),
-    ]);
+  await Promise.all([
+    invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.TERMS),
+    invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.ABOUT_US),
+    invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.PRIVACY_POLICY),
+    invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.REVIEW_TERMS),
+    invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.CUSTOMER_TERMS),
+  ]);
 
   try {
     const settings = await AdminSettings.findByIdAndUpdate(
