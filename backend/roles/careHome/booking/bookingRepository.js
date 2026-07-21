@@ -41,8 +41,6 @@ const getBooking = async ({
     !isNaN(Number(longitude)) &&
     !isNaN(Number(km));
 
-
-
   if (hasGeo) {
     // $geoNear MUST be the first stage; filters go inside `query`
     pipeline.push({
@@ -453,7 +451,10 @@ const getBookingByJob = async ({
 };
 
 const findBookingById = async (id, projection = null) => {
-  return Booking.findById(id).select(projection).lean().populate("user", "name email profileIcon");
+  return Booking.findById(id)
+    .select(projection)
+    .lean()
+    .populate("user", "name email profileIcon");
 };
 const findBookingByUserId = async (worker, user, customer) => {
   if (customer) {
@@ -657,23 +658,100 @@ const getWeeklyHours = async (userIds = []) => {
   return userIds.map((id) => ({ userId: id, hours: map.get(String(id)) ?? 0 }));
 };
 
-const getBookingsByUsersAndDateRange = async (userIds, startDate, endDate) => {
+const getBookingsByUsersAndDateRange = async (
+  worker,
+  startDate,
+  endDate,
+) => {
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
-
   const end = new Date(endDate);
   end.setHours(23, 59, 59, 999);
 
-  return Booking.find({
-    user: { $in: userIds },
-    "shift.date": { $gte: start, $lte: end },
-  })
-    .select("shift payment worker snapshot.type status")
-    .populate({
-      path: "worker",
-      select: "name accountState",
-    })
-    .lean();
+  return Booking.aggregate([
+    {
+      $match: {
+        worker: { $in: worker },
+        "shift.date": { $gte: start, $lte: end },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        pipeline: [{ $project: { name: 1, accountState: 1 } }],
+        as: "user",
+      },
+    },
+    { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "employer",
+        foreignField: "_id",
+        pipeline: [{ $project: { name: 1, accountState: 1 } }],
+        as: "employer",
+      },
+    },
+    { $unwind: { path: "$employer", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "worker",
+        foreignField: "_id",
+        pipeline: [{ $project: { name: 1, accountState: 1 } }],
+        as: "worker",
+      },
+    },
+    { $unwind: { path: "$worker", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "availabilities",
+        let: { workerId: "$worker._id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$user", "$$workerId"] },
+                  { $lte: ["$startDateTime", end] },
+                  { $gte: ["$endDateTime", start] },
+                ],
+              },
+            },
+          },
+          { $project: { status: 1, startDateTime: 1, endDateTime: 1 } },
+        ],
+        as: "availability",
+      },
+    },
+    {
+      $project: {
+        shift: 1,
+        payment: 1,
+        worker: 1,
+        user: 1,
+        employer: 1,
+        "snapshot.type": 1,
+        status: 1,
+        availability: 1,
+      },
+    },
+  ]);
+};
+const getWorkerIdsByUserOrBranch = async (userId, branchId) => {
+  const match = {
+    $or: [
+      { user: new mongoose.Types.ObjectId(userId) },
+      ...(branchId
+        ? [{ branch: new mongoose.Types.ObjectId(branchId) }]
+        : []),
+    ],
+  };
+
+  const bookings = await Booking.find(match).distinct("worker");
+  return bookings; // array of worker ObjectIds
 };
 
 module.exports = {
@@ -690,4 +768,5 @@ module.exports = {
   filterFreeStaff,
   getWeeklyHours,
   getBookingsByUsersAndDateRange,
+  getWorkerIdsByUserOrBranch,
 };

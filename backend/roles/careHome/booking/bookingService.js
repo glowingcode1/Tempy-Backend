@@ -16,6 +16,9 @@ const convertToMongoArray = require("@helperUtils/convertToMongoArray");
 const { formatCalendar } = require("./formator/calendarFormatter");
 const { updateShiftStatus } = require("../job/jobRepository");
 const { formatAttendance } = require("./formator/formatAttendance");
+const {
+  getStaffIdsByUser,
+} = require("../../../roles/aggency/staff/staffRepository");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
 const WEATHER_API_URL = process.env.WEATHER_API_URL;
@@ -34,25 +37,30 @@ const getWeather = async ({
   endDate,
   timezone = "auto",
 }) => {
-  if (!latitude || !longitude) {
-    throw new Error(`Missing coordinates: lat=${latitude} lng=${longitude}`);
+  const DEFAULT = { daily: {}, current: {} };
+
+  if (!latitude || !longitude) return DEFAULT;
+
+  try {
+    const params = new URLSearchParams({
+      latitude,
+      longitude,
+      timezone,
+      daily: DAILY,
+      current: CURRENT,
+      start_date: toISODate(startDate),
+      end_date: toISODate(endDate),
+    });
+
+    const res = await fetch(`${process.env.WEATHER_API_URL}?${params}`);
+    const data = await res.json();
+
+    if (!res.ok) return DEFAULT;
+
+    return data;
+  } catch {
+    return DEFAULT;
   }
-  const params = new URLSearchParams({
-    latitude,
-    longitude,
-    timezone,
-    daily: DAILY,
-    current: CURRENT,
-    start_date: toISODate(startDate),
-    end_date: toISODate(endDate),
-  });
-
-  const res = await fetch(`${process.env.WEATHER_API_URL}?${params}`);
-  const data = await res.json();
-
-  if (!res.ok) throw new Error(data.reason || "Weather API failed");
-
-  return data;
 };
 
 const calculatePayment = (
@@ -200,7 +208,12 @@ const updateBooking = async (id, data) => {
   if (data.status === "active" && data.userType !== "nurse") {
     return { error: "Cannot_update_booking_to_active" };
   }
-  if(Booking.status === "completed" || Booking.status === "cancelledByWorker" || Booking.status === "cancelledByEmployer" || Booking.status === "cancelledByUser") {
+  if (
+    Booking.status === "completed" ||
+    Booking.status === "cancelledByWorker" ||
+    Booking.status === "cancelledByEmployer" ||
+    Booking.status === "cancelledByUser"
+  ) {
     return { error: "Cannot_update_completed_or_cancelled_booking" };
   }
 
@@ -262,7 +275,7 @@ const deleteBooking = async (id) => {
   return !!deleted;
 };
 
-const getBookingCalender = async ({
+const getBookingCalendar = async ({
   timezone,
   latitude,
   longitude,
@@ -270,17 +283,33 @@ const getBookingCalender = async ({
   endDate,
   user,
   branch,
+  customer,
+  supplier,
+  userType,
 }) => {
-  const userIds = await convertToMongoArray(user);
+  let worker = [];
+  if(userType === "nurse") {
+    worker = [user];
+  } else {
+    worker = await (customer
+      ? BookingRepo.getWorkerIdsByUserOrBranch(user, branch)
+      : getStaffIdsByUser(user));
+  }
   const [jobRoles, bookings, weather] = await Promise.all([
     getActiveJobRoles(),
-    BookingRepo.getBookingsByUsersAndDateRange(userIds, startDate, endDate),
+    BookingRepo.getBookingsByUsersAndDateRange(worker, startDate, endDate),
     getWeather({ latitude, longitude, startDate, endDate, timezone }),
   ]);
+
   const { calendar, meta } = formatCalendar({
     jobRoles,
     bookings,
     weather,
+    timezone,
+    userType,
+    customer,
+    supplier,
+    userId: user,
   });
 
   return { calendar, meta };
@@ -324,20 +353,18 @@ const updateBookingCheckinCheckout = async (id, data) => {
   if (!Booking) {
     return { error: "Booking_not_found" };
   }
-  if (
-    !isWithinRadius(Booking.snapshot.location,data.location, 1)
-  ) {
+  if (!isWithinRadius(Booking.snapshot.location, data.location, 1)) {
     return {
       error: "location_outside_allowed_radius",
     };
   }
-  if(data.status === "checkin" && Booking.status !== "active") {
+  if (data.status === "checkin" && Booking.status !== "active") {
     return { error: "Cannot_check_in_inactive_booking" };
   }
-  if(data.status === "checkout" && Booking.status !== "inProgress") {
+  if (data.status === "checkout" && Booking.status !== "inProgress") {
     return { error: "Cannot_check_out_inactive_booking" };
   }
-  if(data.status === "checkin") {
+  if (data.status === "checkin") {
     if (!hasShiftStarted(Booking.shift)) {
       return {
         error: "cannot_check_in_before_shift_start_time",
@@ -349,13 +376,16 @@ const updateBookingCheckinCheckout = async (id, data) => {
       signature: data.signature || "",
       checkInLocation: {
         type: "Point",
-        coordinates: [data.location.coordinates[0], data.location.coordinates[1]],
+        coordinates: [
+          data.location.coordinates[0],
+          data.location.coordinates[1],
+        ],
       },
     };
     Booking.attendance = attendance;
     Booking.status = "inProgress";
   }
-  if(data.status === "checkout") {
+  if (data.status === "checkout") {
     if (!hasShiftEnded(Booking.shift)) {
       return {
         error: "cannot_check_out_before_shift_end_time",
@@ -376,7 +406,7 @@ const updateBookingCheckinCheckout = async (id, data) => {
 
   return Booking;
 };
-const getBookingCheckInLogs = async (bookingId,timezone) => {
+const getBookingCheckInLogs = async (bookingId, timezone) => {
   const Booking = await BookingRepo.findBookingById_(bookingId);
 
   if (!Booking) {
@@ -384,7 +414,6 @@ const getBookingCheckInLogs = async (bookingId,timezone) => {
   }
   const attendance = Booking.attendance?.toObject() || {};
   const formattedAttendance = formatAttendance(attendance, timezone);
-  console.log("attendanc", formattedAttendance);
 
   return formattedAttendance;
 };
@@ -394,7 +423,7 @@ module.exports = {
   updateBooking,
   deleteBooking,
   getBookingDetails,
-  getBookingCalender,
+  getBookingCalendar,
   updateBookingCheckinCheckout,
   getBookingCheckInLogs,
 };

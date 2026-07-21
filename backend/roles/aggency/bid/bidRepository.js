@@ -49,6 +49,7 @@ const getBid = async ({
   jobCreator,
   skip,
 }) => {
+
   const pipeline = [];
   if (jobCreator) {
     pipeline.push({
@@ -621,7 +622,6 @@ pipeline.push({
   });
 
   const result = await Bid.aggregate(pipeline);
-console.log(JSON.stringify(result[0]?.data?.[0]?.workStats_, null, 2));
   const bid = result[0]?.data || [];
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 

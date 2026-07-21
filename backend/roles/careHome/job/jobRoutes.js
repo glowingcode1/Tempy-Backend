@@ -25,7 +25,7 @@ const JobRateLimiter = createRateLimiter("Jobs");
 // Create a new Job
 router.post(
   "/",
-  roleMiddleware(["admin", "careHome"]),
+  roleMiddleware(["admin", "careHome","localAuthority"]),
   JobRateLimiter,
   createJob,
 );
@@ -33,40 +33,40 @@ router.post(
 // Get all Jobs with pagination
 router.get(
   "/",
-  roleMiddleware(["admin", "careHome", "agency", "nurse"]),
+  roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority"]),
   JobRateLimiter,
   getJobs,
 );
 router.get(
   "/type",
-  roleMiddleware(["admin", "careHome", "agency", "employee"]),
+  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority"]),
   JobRateLimiter,
   getJobRole,
 );
 router.get(
   "/bids",
-  roleMiddleware(["admin", "careHome", "agency", "employee"]),
+  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority"]),
   JobRateLimiter,
   getJobBids,
 );
 router.put(
   "/bids/:id",
-  roleMiddleware(["admin", "careHome", "agency", "employee"]),
+  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority"]),
   JobRateLimiter,
   updateJobBids,
 );
 // Get a specific Job by ID
 router.get(
   "/:id",
-  roleMiddleware(["admin", "careHome", "agency", "employee"]),
+  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority"]),
   JobRateLimiter,
   getJobDetails,
 );
 
 // Update an existing Job
-router.put("/:id", roleMiddleware(["admin", "careHome"]), updateJob);
+router.put("/:id", roleMiddleware(["admin", "careHome", "localAuthority"]), updateJob);
 
 // Delete a Job
-router.delete("/:id", roleMiddleware(["admin", "careHome"]), deleteJob);
+router.delete("/:id", roleMiddleware(["admin", "careHome", "localAuthority"]), deleteJob);
 
 module.exports = router;

@@ -7,7 +7,7 @@ const {
 const AvailabilityService = require("./availabilityService");
 
 const createAvailability = async (req, res) => {
-  let { user, status = "active", startDateTime, endDateTime } = req.body;
+  let { user, status , startDateTime, endDateTime } = req.body;
   const creator = req.user._id;
 
   if (!user) {

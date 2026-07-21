@@ -8,7 +8,15 @@ const createBid = async (data) => {
   return Bid;
 };
 
-const getBid = async ({ timezone, page, limit, keyword, status, user, jobCreator }) => {
+const getBid = async ({
+  timezone,
+  page,
+  limit,
+  keyword,
+  status,
+  user,
+  jobCreator,
+}) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
   const { bid, meta } = await BidRepo.getBid({

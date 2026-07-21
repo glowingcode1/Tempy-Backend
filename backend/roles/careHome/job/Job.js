@@ -12,6 +12,17 @@ const JobSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    worker: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    employer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -27,7 +38,7 @@ const JobSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Branch",
       required: true,
-    },  
+    },
     description: {
       type: String,
       trim: true,
@@ -36,10 +47,15 @@ const JobSchema = new mongoose.Schema(
     type: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "JobType",
-      required: true,},
+      required: true,
+    },
+    isSpecial: {
+      type: Boolean,
+      default: false,
+    },
     status: {
       type: String,
-      enum: ["active", "inactive", "deleted","completed"],
+      enum: ["active", "inactive", "deleted", "completed"],
       default: "active",
       index: true,
     },
@@ -68,7 +84,7 @@ const JobSchema = new mongoose.Schema(
         },
         status: {
           type: String,
-          enum: ["pending","booked","completed"],
+          enum: ["pending", "booked", "completed"],
           default: "pending",
         },
         isBreak: {
@@ -92,6 +108,5 @@ const JobSchema = new mongoose.Schema(
 );
 JobSchema.index({ location: "2dsphere" });
 const Job = mongoose.model("Job", JobSchema);
-
 
 module.exports = Job;

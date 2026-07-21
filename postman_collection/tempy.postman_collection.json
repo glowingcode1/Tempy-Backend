@@ -632,7 +632,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailCareHome}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// \n    \"password\": \"{{passwordCareHome}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailCareHome}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// care@gmail.com\n    \"password\": \"{{passwordCareHome}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -2548,7 +2548,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"branch\":\"6a587d05da03dd8d55abcdd3\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        10,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
+                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"branch\": \"6a587d05da03dd8d55abcdd3\",\n    \"worker\":\"6a4c9304f2e273d27e49d435\",\n    \"employer\":\"6a4c91fdd6052f91236364c2\",\n        // \"gender\": \"Female\",\n    \"location\": {\n        \"coordinates\": [\n            10,\n            10\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"shift\": [\n        {\n            \"date\": \"2026-07-25\",\n            \"startTime\": \"08:00\",\n            \"endTime\": \"14:06\",\n            \"isBreak\": true,\n            \"breakMin\": 12,\n            \"isBiddingAllowed\": false\n        },\n        {\n            \"date\": \"2026-07-26\",\n            \"startTime\": \"09:00\",\n            \"endTime\": \"17:00\",\n            \"isBreak\": false\n        }\n    ]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2842,7 +2842,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a4ca7e30a3ce96c6fbba47c\"\n}",
+                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a586595fef321b4d72a2977\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2946,8 +2946,14 @@
                     },
                     "url": {
                       "raw": "{{url}}web/care-home/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-12&endDate=2026-07-18",
-                      "host": ["{{url}}web"],
-                      "path": ["care-home", "booking", "calender"],
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "care-home",
+                        "booking",
+                        "calender"
+                      ],
                       "query": [
                         {
                           "key": "latitude",
@@ -2959,15 +2965,15 @@
                         },
                         {
                           "key": "startDate",
-                          "value": "2026-07-12"
+                          "value": "2026-07-16"
                         },
                         {
                           "key": "endDate",
-                          "value": "2026-07-18"
+                          "value": "2026-07-27"
                         },
                         {
-                          "key": "bramch",
-                          "value": "",
+                          "key": "branch",
+                          "value": "6a587d05da03dd8d55abcdd3",
                           "disabled": true
                         }
                       ]
@@ -10879,7 +10885,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailUser}}\", //ivy_bosco38@example.org\n    \"password\": \"{{passwordUser}}\", //@Li123456//123456\n    \"userType\": \"agency\", //user, organizer, admin, manager, guestx\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailAgency}}\", //ivy_bosco38@example.org //adaline20@example.org\n    \"password\": \"{{passwordUser}}\", //@Li123456//123456\n    \"userType\": \"agency\", //user, organizer, admin, manager, guestx\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -12812,8 +12818,12 @@
                     },
                     "url": {
                       "raw": "{{url}}web/job",
-                      "host": ["{{url}}web"],
-                      "path": ["job"]
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "job"
+                      ]
                     }
                   },
                   "response": []
@@ -13081,6 +13091,80 @@
                         {
                           "key": "id",
                           "value": "6a58749581df5d3dff3ef06b"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "availability",
+              "item": [
+                {
+                  "name": "create",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"user\": \"{{userId}}\",\n  \"startDateTime\": \"2026-07-21T08:00:00.000Z\",\n  \"endDateTime\": \"2026-07-21T16:00:00.000Z\",\n  \"status\":\"busy\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/availability",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "availability"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "booking",
+              "item": [
+                {
+                  "name": "create",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}web/agency/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-16&endDate=2026-07-27",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "booking",
+                        "calender"
+                      ],
+                      "query": [
+                        {
+                          "key": "latitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "startDate",
+                          "value": "2026-07-16"
+                        },
+                        {
+                          "key": "endDate",
+                          "value": "2026-07-27"
                         }
                       ]
                     }
@@ -17768,6 +17852,10 @@
               "name": "job",
               "item": [
                 {
+                  "name": "New Folder",
+                  "item": []
+                },
+                {
                   "name": "get",
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true
@@ -17803,6 +17891,48 @@
                           "key": "km",
                           "value": "1",
                           "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "booking",
+              "item": [
+                {
+                  "name": "get",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}web/agency/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-16&endDate=2026-07-27",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "booking",
+                        "calender"
+                      ],
+                      "query": [
+                        {
+                          "key": "latitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "startDate",
+                          "value": "2026-07-16"
+                        },
+                        {
+                          "key": "endDate",
+                          "value": "2026-07-27"
                         }
                       ]
                     }
