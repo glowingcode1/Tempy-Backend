@@ -13,7 +13,7 @@ router.use("/job-roles", require("../jobRole/jobRoleRoutes"));
 router.use("/job", require("../../careHome/job/jobRoutes"));
 router.use("/bids", require("../../aggency/bid/bidRoutes"));
 router.use("/staff", require("../../aggency/staff/staffRoutes"));
-router.use("/address", require("../../employee/address/addressRoutes"));
+router.use("/address", require("../../nurse/address/addressRoutes"));
 router.use("/branches", require("../../aggency/branches/branchesRoutes"));
 router.use("/booking", require("../../careHome/booking/bookingRoutes"));
 

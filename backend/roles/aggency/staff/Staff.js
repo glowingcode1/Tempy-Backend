@@ -17,6 +17,11 @@ const StaffSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: true,
+    },
     name: {
       type: String,
       required: true,

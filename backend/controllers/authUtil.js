@@ -1,14 +1,20 @@
-
-
-const { validateParams, sendResponse, getReadableErrorMessage } = require("../helperUtils/responseUtil");
+const {
+  validateParams,
+  sendResponse,
+  getReadableErrorMessage,
+} = require("../helperUtils/responseUtil");
 const { formatUserResponse } = require("../helperUtils/userResponseUtil");
 const { createOrSkipDevice } = require("../models/Devices");
 const { User, USER_TYPES } = require("../models/UserModel");
 const { validatePhoneNumber } = require("../helperUtils/validationsUtil");
 const { sendEmailViaBrevo } = require("../helperUtils/emailUtil");
-const { registrationViaLinkEmailTemplate, registrationViaOtpEmailTemplate } = require("../helperUtils/emailTemplates");
-const { defaultSetNotificationPreferences } = require("./notificationPreferencesController");
-
+const {
+  registrationViaLinkEmailTemplate,
+  registrationViaOtpEmailTemplate,
+} = require("../helperUtils/emailTemplates");
+const {
+  defaultSetNotificationPreferences,
+} = require("./notificationPreferencesController");
 
 const USER_MODEL_MAP = {
   careHome: require("../models/CareHomesModel"),
@@ -23,11 +29,10 @@ const USER_MODEL_MAP = {
 };
 
 // Main utility function
-const registerUserUtility = async (req, res, options = {}) => {
+const registerUserUtility = async (req, res, staff, options = {}) => {
   const {
     autoVerify = false, // true if created by admin, false if app user
     allowAdminCreation = true, // 🔒 internal only
-
   } = options;
 
   let {
@@ -54,8 +59,6 @@ const registerUserUtility = async (req, res, options = {}) => {
     certification,
   } = req.body;
 
-
-
   let verificationStatus = "pending";
   try {
     let rawData = ["email", "password", "userType"];
@@ -77,13 +80,11 @@ const registerUserUtility = async (req, res, options = {}) => {
       "hospital",
       "localAuthority",
       "homeCareCompany",
-
     ];
 
     if (options.allowAdminCreation) {
       allowedUserTypes.push("admin");
     }
-
 
     const validationOptions = {
       rawData,
@@ -91,7 +92,7 @@ const registerUserUtility = async (req, res, options = {}) => {
       dateFields,
       enumFields: {
         userType: allowedUserTypes,
-        gender: ["", "Male", "Female", "Other"]
+        gender: ["", "Male", "Female", "Other"],
       },
       minLengthFields: { password: 6 },
     };
@@ -102,27 +103,35 @@ const registerUserUtility = async (req, res, options = {}) => {
 
     // Validate profile icon
     if (profileIcon && profileIcon.startsWith("http")) {
-      sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "url_not_accepted",
-        values: { field: "profileIcon" },
-      });
+      if (!staff) {
+        sendResponse({
+          res,
+          statusCode: 400,
+          translationKey: "url_not_accepted",
+          values: { field: "profileIcon" },
+        });
 
-      return { responseSent: true };
+        return { responseSent: true };
+      } else {
+        return { error: "url_not_accepted" };
+      }
     }
 
     // Admin token check for guest creation
     if (userType === "guest") {
       const adminToken = req.header("x-admin-access-token");
       if (adminToken !== process.env.ADMIN_ACCESS_TOKEN) {
-        sendResponse({
-          res,
-          statusCode: 401,
-          translationKey: "unauthorized_to_perform_this_action",
-        });
+        if (!staff) {
+          sendResponse({
+            res,
+            statusCode: 401,
+            translationKey: "unauthorized_to_perform_this_action",
+          });
 
-        return { responseSent: true };
+          return { responseSent: true };
+        } else {
+          return { error: "unauthorized_to_perform_this_action" };
+        }
       }
     }
 
@@ -142,10 +151,11 @@ const registerUserUtility = async (req, res, options = {}) => {
         return { responseSent: true };
       }
     }
-console.log("email", email);
 
     // Check if email exists
-    const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
+    const existingUser = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
     if (existingUser && existingUser.verificationStatus.email === "verified") {
       sendResponse({
         res,
@@ -182,13 +192,11 @@ console.log("email", email);
       }
     }
 
-const ModelToUse = USER_MODEL_MAP[userType] || require("../models/UserModel").User;
-console.log("ModelToUse", ModelToUse.modelName);
+    const ModelToUse =
+      USER_MODEL_MAP[userType] || require("../models/UserModel").User;
 
-
-
-// ✅ Create instance from the correct model
-let user = existingUser || new ModelToUse();
+    // ✅ Create instance from the correct model
+    let user = existingUser || new ModelToUse();
     Object.assign(user, {
       email,
       phoneNumber: phoneNumber || { code: "", number: "" },
@@ -225,9 +233,9 @@ let user = existingUser || new ModelToUse();
     }
 
     await user.save();
+    
 
     defaultSetNotificationPreferences(user._id);
-
 
     // Optional device handling
     if (deviceId && deviceType && deviceId !== "test") {
@@ -239,9 +247,15 @@ let user = existingUser || new ModelToUse();
       userObject.emailVerificationLink = emailVerificationLink;
     }
     const formattedResponse = formatUserResponse(userObject);
+    
 
     return { success: true, user: formattedResponse, responseSent: false };
   } catch (error) {
+      console.error("REGISTER USER ERROR");
+
+      console.error(error);
+
+      console.error(error.stack);
     if (error?.code === 11000) {
       const key = Object.keys(error?.keyPattern || {})[0];
       let translationKey = "duplicate_key";
@@ -250,6 +264,8 @@ let user = existingUser || new ModelToUse();
       if (key === "phoneNumber.code" || key === "phoneNumber.number") {
         translationKey = "phone_number_already";
       }
+
+
 
       sendResponse({
         res,

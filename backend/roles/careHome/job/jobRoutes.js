@@ -33,25 +33,25 @@ router.post(
 // Get all Jobs with pagination
 router.get(
   "/",
-  roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority"]),
+  roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority", "homeCareCompany"]),
   JobRateLimiter,
   getJobs,
 );
 router.get(
   "/type",
-  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority"]),
+  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority", "homeCareCompany"]),
   JobRateLimiter,
   getJobRole,
 );
 router.get(
   "/bids",
-  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority"]),
+  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority", "homeCareCompany"]),
   JobRateLimiter,
   getJobBids,
 );
 router.put(
   "/bids/:id",
-  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority"]),
+  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority", "homeCareCompany"]),
   JobRateLimiter,
   updateJobBids,
 );

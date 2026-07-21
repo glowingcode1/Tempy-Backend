@@ -72,7 +72,8 @@ const getJobs = async ({
   projection,
   summary,
   worker,
-  employer
+  employer,
+  dateFilter,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -108,7 +109,8 @@ const getJobs = async ({
     longitude,
     km,
     worker,
-    employer
+    employer,
+    dateFilter,
   });
   const formatedJobs = Jobs.map((job) => {
     return formatJobToTimezone(job, timezone);

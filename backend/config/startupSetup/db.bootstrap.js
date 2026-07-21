@@ -97,6 +97,10 @@ async function runDBBootstrap() {
                     email: process.env.BOOTSTRAP_GUEST_EMAIL,
                     password: process.env.BOOTSTRAP_GUEST_PASSWORD,
                     userType: "guest",
+                    location: {
+                        type: "Point",
+                        coordinates: [0, 0],
+                    },
                 });
 
                 res?.success
@@ -127,6 +131,10 @@ async function runDBBootstrap() {
                 timezone: "Asia/Karachi",
                 deviceType: "web",
                 deviceId: "test",
+                location: {
+                    type: "Point",
+                    coordinates: [0, 0],
+                },
             });
 
             if (res?.success)
