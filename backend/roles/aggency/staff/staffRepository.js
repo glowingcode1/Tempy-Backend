@@ -680,7 +680,6 @@ const getStaff = async ({
   const result = await Staff.aggregate(pipeline);
 
   const staff = result[0]?.data || [];
-  console.log("staff", staff);
 
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 

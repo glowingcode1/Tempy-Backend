@@ -158,7 +158,6 @@ const getJobs = async (req, res) => {
     user = req.user._id;
     userType = null;
   }
-  console.log("customer", customer,"user",user);
   const geoProvided = [latitude, longitude, km].filter(
     (v) => v !== undefined && v !== null && v !== "",
   );
