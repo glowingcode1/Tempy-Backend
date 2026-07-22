@@ -23,7 +23,6 @@ const createSupportRequest = async (req, res) => {
       user: req.user._id,
     });
 
-    console.log("user-------------->", req.user._id);
 
     const data = await supportRequest.save();
     return sendResponse({
