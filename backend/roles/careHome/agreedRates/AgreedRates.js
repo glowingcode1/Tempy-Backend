@@ -1,12 +1,6 @@
 const mongoose = require("mongoose");
 
-const USER_TYPES = [
-  // customers (post jobs)
-  "hospital",
-  "localAuthority",
-  "careHome",
-  "user",
-];
+const USER_TYPES = ["agency", "homeCareCompany", "nurse"];
 
 const AgreedRateSchema = new mongoose.Schema(
   {
