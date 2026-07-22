@@ -1,9 +1,7 @@
 const { getFullImageUrl } = require("@helperUtils/imageHelper");
 
-
 // Haversine — great-circle distance in km
 const getDistanceKm = (from, to) => {
-
   if (!Array.isArray(from) || !Array.isArray(to)) return null;
 
   const [lng1, lat1] = from;
@@ -32,25 +30,30 @@ const formatStaffList = (
 ) => {
   if (!users.length) return [];
 
-  const favMap = new Map(favoriteStaff.map((f) => [String(f.id), f.isFavorite]));
+  const favMap = new Map(
+    favoriteStaff.map((f) => [String(f.id), f.isFavorite]),
+  );
   const reviewMap = new Map(reviews.map((r) => [String(r.id ?? r._id), r]));
   const hoursMap = new Map(weeklyHours.map((w) => [String(w.userId), w.hours]));
-  
-  // resolve the job coords once, not per user
+
   const jobCoords = job?.location?.coordinates ?? null;
 
   return users.map((user) => {
     const id = String(user._id);
     const review = reviewMap.get(id);
     const loc = user.location;
-    
+
+    const weeklyHours = user.weeklyHours ?? 0;
+    const bookedHoursThisWeek = hoursMap.get(id) ?? 0;
 
     return {
       id,
       name: user.name ?? "",
       userType: user.userType ?? "",
-      weeklyHours: user.weeklyHours ?? 0,
-      bookedHoursThisWeek: hoursMap.get(id) ?? 0,
+      weeklyHours,
+      bookedHoursThisWeek,
+      availabilityStatus:
+        bookedHoursThisWeek >= weeklyHours ? "notAvailable" : "available",
       distanceKm: getDistanceKm(loc?.coordinates, jobCoords),
       profileIcon: user.profileIcon ? getFullImageUrl(user.profileIcon) : "",
       isFavorite: favMap.get(id) ?? false,

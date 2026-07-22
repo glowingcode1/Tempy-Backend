@@ -324,12 +324,12 @@ const login = async (req, res) => {
         translationKey: "your_account_2",
       });
     }
-    console.log("user", user);
+
 
     // Update the user's timezone
     user.timezone = timezone;
 
-    console.log("user", user);
+
 
     // Ensure toJSON method is applied to strip out sensitive data
     const userObject = user.toJSON();

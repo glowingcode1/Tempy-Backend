@@ -51,7 +51,8 @@ const createStaff = async (data, req, res) => {
     const staffRecord = await StaffRepo.createStaff(data);
     return staffRecord;
   } else {
-    const staff = await registerUserUtility(req, res);
+    const staff = await registerUserUtility(req, res, true);
+    console.log("staff", staff);
     if (!staff || staff.responseSent || staff.error) {
       return staff;
     }
@@ -218,6 +219,7 @@ const getAvailableStaff = async ({ timezone, page, limit, user, bid, job }) => {
 
   const staff = await StaffRepo.findStaffNearJob(user, jobDetails, 50);
   if (!staff?.length) return { error: "no_staff_available_nearby" };
+  console.log("staff", staff);
 
   const availableStaff = await filterFreeStaff(staff, bidDocument.shift);
   if (!availableStaff?.length)

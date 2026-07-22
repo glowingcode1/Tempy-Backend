@@ -53,6 +53,7 @@ const createStaff = async (req, res) => {
     phoneNumber,
     dob,
     gender,
+    branch,
   } = req.body;
   let user = req.user._id;
   if (req.user.userType === "admin") {
@@ -68,7 +69,7 @@ const createStaff = async (req, res) => {
   if (staff) {
     if (
       !validateParams(req, res, {
-        rawData: ["speciality", "ratePerHour", "platformPercent"],
+        rawData: ["speciality", "ratePerHour", "platformPercent","branch"],
       })
     )
       return;
@@ -101,6 +102,7 @@ const createStaff = async (req, res) => {
     phoneNumber: phoneNumber || undefined,
     dob: dob || undefined,
     gender: gender || undefined,
+    branch,
   };
   try {
     const Staff = await StaffService.createStaff(data, req, res);

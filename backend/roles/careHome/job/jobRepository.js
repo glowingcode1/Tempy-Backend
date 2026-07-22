@@ -149,7 +149,34 @@ const getJobsSummary = async ({
 
   return { Jobs, meta };
 };
+const getDateRange = (range) => {
+  const startDate = new Date();
+  const endDate = new Date();
 
+  if (range === "next24Hours") {
+    endDate.setHours(endDate.getHours() + 24);
+  } else if (range === "thisWeek") {
+    const day = startDate.getDay(); // 0 = Sunday
+    startDate.setDate(startDate.getDate() - day);
+    startDate.setHours(0, 0, 0, 0);
+
+    endDate.setTime(startDate.getTime());
+    endDate.setDate(endDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
+  } else if (range === "nextWeek") {
+    const day = startDate.getDay();
+    startDate.setDate(startDate.getDate() - day + 7);
+    startDate.setHours(0, 0, 0, 0);
+
+    endDate.setTime(startDate.getTime());
+    endDate.setDate(endDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
+  } else {
+    return null;
+  }
+
+  return { startDate, endDate };
+};
 const getJobs = async ({
   timezone,
   page,
@@ -166,7 +193,34 @@ const getJobs = async ({
   worker,
   employer,
   projection,
+  dateFilter, // optional date range filter
 }) => {
+  const now = new Date();
+
+  const addTime = (hours = 0, days = 0) =>
+    new Date(now.getTime() + (hours * 60 * 60 + days * 24 * 60 * 60) * 1000);
+
+  const getWeekRange = (weekOffset = 0) => {
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - now.getDay() + weekOffset * 7);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
+
+    return { startDate, endDate };
+  };
+
+  const ranges = {
+    next6Hours: { startDate: now, endDate: addTime(6) },
+    next12Hours: { startDate: now, endDate: addTime(12) },
+    next24Hours: { startDate: now, endDate: addTime(24) },
+    next3Days: { startDate: now, endDate: addTime(0, 3) },
+    next7Days: { startDate: now, endDate: addTime(0, 7) },
+    thisWeek: getWeekRange(),
+    nextWeek: getWeekRange(1),
+  };
   const provideServicesToUser = await findUserById(requester);
   const servicePermissions = provideServicesToUser?.provideServicesTo || {};
   const allowedUserTypes = Object.keys(servicePermissions).filter(
@@ -180,6 +234,20 @@ const getJobs = async ({
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
     ...(status ? { status } : { status: { $ne: "deleted" } }),
   };
+  if (dateFilter && ranges[dateFilter]) {
+    pipeline.push({
+      $match: {
+        shift: {
+          $elemMatch: {
+            date: {
+              $gte: ranges[dateFilter].startDate,
+              $lte: ranges[dateFilter].endDate,
+            },
+          },
+        },
+      },
+    });
+  }
 
   const hasGeo =
     latitude != null &&
@@ -222,6 +290,16 @@ const getJobs = async ({
 
   // Assigned jobs
   const assignedMatch = {};
+  if (dateFilter && ranges[dateFilter]) {
+    assignedMatch.shift = {
+      $elemMatch: {
+        date: {
+          $gte: ranges[dateFilter].startDate,
+          $lte: ranges[dateFilter].endDate,
+        },
+      },
+    };
+  }
 
   if (worker) {
     assignedMatch.worker = new mongoose.Types.ObjectId(worker);
@@ -420,15 +498,152 @@ const getJobs = async ({
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
   };
 
-  const [total, active, inactive, deleted] = await Promise.all([
-    Job.countDocuments({ ...countFilter, status: { $ne: "deleted" } }),
-    Job.countDocuments({ ...countFilter, status: "active" }),
-    Job.countDocuments({ ...countFilter, status: "inactive" }),
-    Job.countDocuments({ ...countFilter, status: "deleted" }),
+  const next24Hours = getDateRange("next24Hours");
+
+  const thisWeek = getDateRange("thisWeek");
+
+  const nextWeek = getDateRange("nextWeek");
+
+  const [
+    total,
+    active,
+    inactive,
+    deleted,
+    next6HoursCount,
+    next12HoursCount,
+    next24HoursCount,
+    next3DaysCount,
+    next7DaysCount,
+    thisWeekCount,
+    nextWeekCount,
+  ] = await Promise.all([
+    Job.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: "active",
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: "inactive",
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: "deleted",
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      shift: {
+        $elemMatch: {
+          date: {
+            $gte: ranges.next6Hours.startDate,
+            $lte: ranges.next6Hours.endDate,
+          },
+        },
+      },
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      shift: {
+        $elemMatch: {
+          date: {
+            $gte: ranges.next12Hours.startDate,
+            $lte: ranges.next12Hours.endDate,
+          },
+        },
+      },
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      shift: {
+        $elemMatch: {
+          date: {
+            $gte: ranges.next24Hours.startDate,
+            $lte: ranges.next24Hours.endDate,
+          },
+        },
+      },
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      shift: {
+        $elemMatch: {
+          date: {
+            $gte: ranges.next3Days.startDate,
+            $lte: ranges.next3Days.endDate,
+          },
+        },
+      },
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      shift: {
+        $elemMatch: {
+          date: {
+            $gte: ranges.next7Days.startDate,
+            $lte: ranges.next7Days.endDate,
+          },
+        },
+      },
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      shift: {
+        $elemMatch: {
+          date: {
+            $gte: ranges.thisWeek.startDate,
+            $lte: ranges.thisWeek.endDate,
+          },
+        },
+      },
+    }),
+
+    Job.countDocuments({
+      ...countFilter,
+      status: { $ne: "deleted" },
+      shift: {
+        $elemMatch: {
+          date: {
+            $gte: ranges.nextWeek.startDate,
+            $lte: ranges.nextWeek.endDate,
+          },
+        },
+      },
+    }),
   ]);
 
   const meta = generateMeta(page, limit, totalFiltered);
-  meta.JobsCount = { total, active, inactive, deleted };
+
+  meta.JobsCount = {
+    total,
+    active,
+    inactive,
+    deleted,
+    next6Hours: next6HoursCount,
+    next12Hours: next12HoursCount,
+    next24Hours: next24HoursCount,
+    next3Days: next3DaysCount,
+    next7Days: next7DaysCount,
+    thisWeek: thisWeekCount,
+    nextWeek: nextWeekCount,
+  };
 
   return { Jobs, meta };
 };

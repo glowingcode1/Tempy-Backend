@@ -26,18 +26,18 @@ router.get("/nurses", roleMiddleware(["admin", "agency"]), getAllNurses);
 router.post("/", roleMiddleware(["admin","agency",]), StaffRateLimiter, createStaff);
 
 // Get all Staff with pagination        
-router.get("/", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getStaff);
+router.get("/", roleMiddleware(["admin","agency","careHome","hospital"]), StaffRateLimiter, getStaff);
 // Get all Staff with pagination        
-router.get("/available", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getAvailableStaff);
+router.get("/available", roleMiddleware(["admin","agency","careHome","hospital"]), StaffRateLimiter, getAvailableStaff);
 // Get a specific Staff by ID
 router.get("/:id", roleMiddleware(["admin","agency","careHome"]), StaffRateLimiter, getStaffDetails);
 
 
 // Update an existing Staff
-router.put("/:id", roleMiddleware(["admin","agency","careHome"]), updateStaff);
+router.put("/:id", roleMiddleware(["admin","agency","careHome","hospital"]), updateStaff);
 
 
 // Delete a Staff
-router.delete("/:id", roleMiddleware(["admin","agency","employee"]), deleteStaff);
+router.delete("/:id", roleMiddleware(["admin","agency","careHome","hospital"]), deleteStaff);
 
 module.exports = router;

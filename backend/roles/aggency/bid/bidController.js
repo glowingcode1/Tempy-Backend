@@ -74,7 +74,7 @@ const createBid = async (req, res) => {
 
 const getBid = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, user } = req.query;
+  let { keyword, status, user,dateFilter } = req.query;
 
   const customer =await customerTypes.includes(req.user.userType);
   const supplier =await supplierTypes.includes(req.user.userType);
@@ -99,6 +99,7 @@ const getBid = async (req, res) => {
       status,
       user,
       jobCreator,
+      dateFilter,
     });
 
     return sendResponse({
