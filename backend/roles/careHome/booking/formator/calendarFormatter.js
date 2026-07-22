@@ -1,6 +1,7 @@
 // utils/calendarFormatter.js
 
 const { convertUtcToTimezone } = require("@helperUtils/responseUtil");
+const { getFullImageUrl } = require("@helperUtils/imageHelper");
 
 const weatherByDate = (weather = {}, timezone) => {
   const d = weather?.daily;
@@ -77,7 +78,7 @@ const buildWorkers = (
           : supplier
             ? b.employer?._id
             : null;
-    
+
     const isMyBooking = matchId ? String(matchId) === String(userId) : false;
 
     map[id].schedule[date].shifts.push({
@@ -261,4 +262,52 @@ const formatCalendar = ({
   return { meta: totals, calendar };
 };
 
-module.exports = { formatCalendar };
+const formatShiftPlan = (bookings = [], timezone) => {
+  const shiftsByDate = {};
+
+  bookings.forEach((b) => {
+    const date = convertUtcToTimezone(
+      b.shift.date,
+      timezone,
+      "YYYY-MM-DD",
+      "YYYY-MM-DDTHH:mm:ss.SSSZ",
+    );
+
+    const startTime = convertUtcToTimezone(
+      `${date}T${b.shift.startTime}:00.000Z`,
+      timezone,
+      "hh:mm A",
+      "YYYY-MM-DDTHH:mm:ss.SSSZ",
+    );
+    const endTime = convertUtcToTimezone(
+      `${date}T${b.shift.endTime}:00.000Z`,
+      timezone,
+      "hh:mm A",
+      "YYYY-MM-DDTHH:mm:ss.SSSZ",
+    );
+
+    shiftsByDate[date] ??= [];
+    shiftsByDate[date].push({
+      bookingId: b._id,
+      title: b.jobDetails?.title || "",
+      category: b.jobDetails?.category || "",
+      location: b.jobDetails?.address || "",
+      image: getFullImageUrl(b.jobDetails?.image),
+      startTime,
+      endTime,
+      totalHours: b.payment?.totalHours || 0,
+      perHour: b.payment?.perHour || 0,
+      totalAmount: b.payment?.totalAmount || 0,
+      status: b.status,
+      checkInTime: startTime,
+    });
+  });
+
+
+  return {
+    markedDates: Object.keys(shiftsByDate).sort(),
+    shiftsByDate,
+  };
+};
+
+module.exports = { formatCalendar, formatShiftPlan };
