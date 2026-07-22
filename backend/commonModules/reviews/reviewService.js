@@ -65,7 +65,7 @@ const createReview = async ({ reviewData, timezone }) => {
       return buildAppError("cannot_review_incomplete_booking", 400);
     }
        bookingId = objectId;
-    if (currentUser.accountState.usertype != "nurse") {
+    if (currentUser.accountState.userType != "nurse") {
       objectUser = targetObject.employer;
     } else {
       objectUser = targetObject.worker;

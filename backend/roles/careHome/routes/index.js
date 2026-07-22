@@ -13,4 +13,5 @@ router.use(
   "/availability",
   require("../../aggency/availability/availabilityRoutes"),
 );
+router.use("/agreed-rates", require("../agreedRates/agreedRatesRoutes"));
 module.exports = router;

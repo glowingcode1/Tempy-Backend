@@ -21,7 +21,8 @@ const reviewSchema = new mongoose.Schema(
       ref: "Bookings",
       default: null,
     },
-    subject: {// current user
+    subject: {
+      // current user
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -53,8 +54,6 @@ const reviewSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-
-
 
 const Review = mongoose.models.Review || mongoose.model("Review", reviewSchema);
 
