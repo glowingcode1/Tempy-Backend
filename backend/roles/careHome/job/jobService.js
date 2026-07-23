@@ -1,6 +1,6 @@
 const { getCurrentDateInTimezone } = require("@helperUtils/responseUtil");
 const JobRepo = require("./jobRepository");
-const { cache, invalidate } = require("@redisCache");
+
 const formatJobToTimezone = require("./formator/formatJobToTimezone");
 const {
   getBidByJob,
@@ -169,11 +169,6 @@ const deleteJob = async (id) => {
   if (!id) throw new Error("Job ID is required");
 
   const deleted = await JobRepo.deleteJob(id);
-
-  if (deleted) {
-    await invalidateJobCache();
-  }
-
   return !!deleted;
 };
 
