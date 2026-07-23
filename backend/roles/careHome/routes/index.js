@@ -5,6 +5,7 @@ const router = express.Router();
 router.use(auth, roleMiddleware(["careHome"]));
 
 router.use("/job", require("../job/jobRoutes"));
+router.use("/bid", require("../../aggency/bid/bidRoutes"));
 router.use("/staff", require("../../aggency/staff/staffRoutes"));
 router.use("/booking", require("../booking/bookingRoutes"));
 router.use("/address", require("../../nurse/address/addressRoutes"));

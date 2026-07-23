@@ -29,7 +29,7 @@ router.get("/:id", roleMiddleware(["admin","agency","nurse","homeCareCompany"]),
 
 
 // Update an existing Bid
-router.put("/:id", roleMiddleware(["admin","agency","nurse","homeCareCompany"]), updateBid);
+router.put("/:id", roleMiddleware(["admin","agency","nurse","homeCareCompany","careHome"]), updateBid);
 
 // Delete a Bid
 router.delete("/:id", roleMiddleware(["admin","agency","nurse","homeCareCompany"]), deleteBid);
