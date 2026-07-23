@@ -22,6 +22,7 @@ const { formatAttendance } = require("./formator/formatAttendance");
 const {
   getStaffIdsByUser,
 } = require("../../../roles/aggency/staff/staffRepository");
+const { customerTypes, supplierTypes } = require("@UsersModel");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
 const WEATHER_API_URL = process.env.WEATHER_API_URL;
@@ -421,7 +422,13 @@ const getBookingCheckInLogs = async (bookingId, timezone) => {
   return formattedAttendance;
 };
 
-const getShiftPlanCalendar = async ({ year, month, timezone, user, userType }) => {
+const getShiftPlanCalendar = async ({
+  year,
+  month,
+  timezone,
+  user,
+  userType,
+}) => {
   const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
   const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)); // last day of month
 
@@ -434,6 +441,15 @@ const getShiftPlanCalendar = async ({ year, month, timezone, user, userType }) =
 
   return formatShiftPlan(bookings, timezone);
 };
+
+const getEarnings = async ({ userId, userType }) => {
+  return BookingRepo.getEarnings({
+    userId,
+    userType,
+    customer: customerTypes.includes(userType),
+    supplier: supplierTypes.includes(userType),
+  });
+};
 module.exports = {
   createBooking,
   getBooking,
@@ -444,4 +460,5 @@ module.exports = {
   updateBookingCheckinCheckout,
   getBookingCheckInLogs,
   getShiftPlanCalendar,
+  getEarnings,
 };

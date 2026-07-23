@@ -9,6 +9,7 @@ const {
   getBookingCalender,
   getBookingCheckInLogs,
   getShiftPlanCalendar,
+  getEarnings,
 } = require("./bookingController"); // Assuming you have a separate controller for promo codes
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
@@ -20,6 +21,10 @@ router.use(auth);
 
 // Create a rate limiter for Promo Codes
 const BookingRateLimiter = createRateLimiter("Booking");
+
+// GET API of Earnings
+router.get("/earnings", getEarnings);
+
 router.get(
   "/calender",
   roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority"]),

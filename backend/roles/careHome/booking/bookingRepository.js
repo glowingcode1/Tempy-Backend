@@ -784,6 +784,46 @@ const getBookingsByDateRangeForUser = async ({
   ]);
 };
 
+const getEarnings = async ({ userId, userType, customer, supplier }) => {
+  const match = {
+    status: "completed",
+  };
+
+  let amountField = "$payment.totalAmount";
+
+  if (customer) {
+    match.user = new mongoose.Types.ObjectId(userId);
+    amountField = "$payment.totalAmount";
+  } else if (supplier && userType !== "nurse") {
+    match.employer = new mongoose.Types.ObjectId(userId);
+    amountField = "$payment.amountPayedToEmployer";
+  } else if (userType === "nurse") {
+    match.worker = new mongoose.Types.ObjectId(userId);
+    amountField = "$payment.amountPayedToWorker";
+  }
+
+  const pipeline = [
+    {
+      $match: match,
+    },
+    {
+      $group: {
+        _id: null,
+        totalBookings: {
+          $sum: 1,
+        },
+        totalEarnings: {
+          $sum: {
+            $ifNull: [amountField, 0],
+          },
+        },
+      },
+    },
+  ];
+
+  return Booking.aggregate(pipeline);
+};
+
 module.exports = {
   createBooking,
   getBooking,
@@ -800,4 +840,5 @@ module.exports = {
   getBookingsByUsersAndDateRange,
   getWorkerIdsByUserOrBranch,
   getBookingsByDateRangeForUser,
+  getEarnings,
 };

@@ -536,6 +536,31 @@ const getShiftPlanCalendar = async (req, res) => {
     });
   }
 };
+
+const getEarnings = async (req, res) => {
+  console.log("Earnings API called");
+  try {
+    const data = await BookingService.getEarnings({
+      userId: req.user._id,
+      userType: req.user.userType,
+    });
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "Earnings_fetched_successfully",
+      data,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
 module.exports = {
   createBooking,
   getBooking,
@@ -545,4 +570,5 @@ module.exports = {
   getBookingCalender,
   getBookingCheckInLogs,
   getShiftPlanCalendar,
+  getEarnings,
 };
