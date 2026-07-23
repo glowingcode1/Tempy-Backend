@@ -181,7 +181,7 @@ const updateBooking = async (req, res) => {
         translationKey: "invalid_status_for_checkin_checkout",
       });
     }
-    if (!location ) {
+    if (!location) {
       return sendResponse({
         res,
         statusCode: 400,
@@ -460,7 +460,10 @@ const getBookingCheckInLogs = async (req, res) => {
     return;
 
   try {
-    const logs = await BookingService.getBookingCheckInLogs(bookingId, timezone);
+    const logs = await BookingService.getBookingCheckInLogs(
+      bookingId,
+      timezone,
+    );
     if (!logs) {
       return sendResponse({
         res,
@@ -485,6 +488,54 @@ const getBookingCheckInLogs = async (req, res) => {
     });
   }
 };
+
+const getShiftPlanCalendar = async (req, res) => {
+  const { year, month } = req.query;
+
+  const y = Number(year);
+  const m = Number(month);
+
+  if (
+    !year ||
+    !month ||
+    !Number.isInteger(y) ||
+    !Number.isInteger(m) ||
+    m < 1 ||
+    m > 12
+  ) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "valid_year_and_month_are_required",
+    });
+  }
+
+  try {
+    const timezone = req.user.timezone;
+    const data = await BookingService.getShiftPlanCalendar({
+      year: y,
+      month: m,
+      timezone,
+      user: req.user._id,
+      userType: req.user.userType,
+    });
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "Booking_fetched_successfully",
+      data,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
 module.exports = {
   createBooking,
   getBooking,
@@ -493,4 +544,5 @@ module.exports = {
   getBookingDetails,
   getBookingCalender,
   getBookingCheckInLogs,
+  getShiftPlanCalendar,
 };

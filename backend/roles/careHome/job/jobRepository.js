@@ -362,16 +362,19 @@ const getJobs = async ({
 
   pipeline.push({
     $addFields: {
-      totalReviews: {
-        $ifNull: [{ $arrayElemAt: ["$reviewStats.totalReviews", 0] }, 0],
-      },
-      averageRating: {
-        $round: [
-          {
-            $ifNull: [{ $arrayElemAt: ["$reviewStats.averageRating", 0] }, 0],
-          },
-          1, // Round to 1 decimal place (optional)
-        ],
+      rating: {
+        profileIcon: "$user.profileIcon",
+        totalReviews: {
+          $ifNull: [{ $arrayElemAt: ["$reviewStats.totalReviews", 0] }, 0],
+        },
+        averageRating: {
+          $round: [
+            {
+              $ifNull: [{ $arrayElemAt: ["$reviewStats.averageRating", 0] }, 0],
+            },
+            1,
+          ],
+        },
       },
     },
   });
@@ -379,6 +382,7 @@ const getJobs = async ({
   pipeline.push({
     $project: {
       reviewStats: 0,
+      "user.profileIcon": 0, // remove duplicate profileIcon from user
     },
   });
   pipeline.push({
