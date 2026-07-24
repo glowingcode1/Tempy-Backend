@@ -33,13 +33,7 @@ const USER_MODEL_MAP = {
   guest: require("../../../models/UserModel").User,
   admin: require("../../../models/UserModel").User,
 };
-const getAllUsers = async ({
-  page,
-  limit,
-  keyword,
-  status,
-  userType,
-}) => {
+const getAllUsers = async ({ page, limit, keyword, status, userType }) => {
   const skip = (page - 1) * limit;
 
   const matchStage = {
@@ -600,6 +594,34 @@ const getAllAthletes = async ({
   };
 };
 
+const getUsersByType = async ({ page, limit, userType }) => {
+  const skip = (page - 1) * limit;
+
+  const matchStage = {
+    "verificationStatus.email": "verified",
+    "accountState.status": { $ne: "deleted" },
+  };
+
+  if (userType) {
+    matchStage["accountState.userType"] = userType;
+  }
+
+  const [users, total] = await Promise.all([
+    User.find(matchStage)
+      .select("_id name email profileIcon location accountState createdAt")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+
+    User.countDocuments(matchStage),
+  ]);
+
+  return {
+    users,
+    meta: generateMeta(page, limit, total),
+  };
+};
+
 module.exports = {
   getAllUsers,
   updateUser,
@@ -610,4 +632,5 @@ module.exports = {
   disableTwoFA,
   getUserDetailsForQRService,
   getAllAthletes,
+  getUsersByType,
 };

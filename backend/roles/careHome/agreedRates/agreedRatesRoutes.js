@@ -7,6 +7,9 @@ const {
 } = require("./agreedRatesController"); // Assuming you have a separate controller for promo codes
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
+const {
+  getUsersByType,
+} = require("../../admin/usersManagement/usersController");
 // const roleMiddleware = require("../../../middlewares/roleMiddleware");
 
 const router = express.Router();
@@ -32,6 +35,8 @@ router.get(
   JobRateLimiter,
   getAgreedRates,
 );
+
+router.get("/users", getUsersByType);
 
 // Update an existing Job
 router.put(

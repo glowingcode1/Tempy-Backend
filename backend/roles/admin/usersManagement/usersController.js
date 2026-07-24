@@ -7,7 +7,9 @@ const {
 } = require("../../../helperUtils/responseUtil.js");
 const { User } = require("@UsersModel");
 
-const { formatUserResponse } = require("../../../helperUtils/userResponseUtil.js");
+const {
+  formatUserResponse,
+} = require("../../../helperUtils/userResponseUtil.js");
 const usersService = require("./usersService.js");
 const { registerUserUtility } = require("../../../controllers/authUtil.js");
 
@@ -34,7 +36,6 @@ const createUser = async (req, res) => {
     data: result.user,
   });
 };
-
 
 const getAllUsers = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
@@ -141,19 +142,20 @@ const getAllUsers = async (req, res) => {
 const getUsers = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   const { keyword, status, userType } = req.query;
-  const currentUser = req.user
+  const currentUser = req.user;
 
-  if (currentUser.userType === "admin") { // Admin can see all users
+  if (currentUser.userType === "admin") {
+    // Admin can see all users
     try {
       const { users, meta } = await usersService.getAllUsers({
         page,
         limit,
         keyword,
         status,
-        userType
+        userType,
       });
       // Ensure toJSON method is applied to strip out sensitive data
-      const sanitizedUsers = users.map(user => {
+      const sanitizedUsers = users.map((user) => {
         // Use your updated toJSON (works for docs and plain objects)
         return formatUserResponse(User.prototype.toJSON(user));
       });
@@ -163,7 +165,7 @@ const getUsers = async (req, res) => {
         statusCode: 200,
         translationKey: "users_fetched_successfully",
         data: sanitizedUsers,
-        meta
+        meta,
       });
     } catch (error) {
       return sendResponse({
@@ -173,9 +175,9 @@ const getUsers = async (req, res) => {
         error,
       });
     }
-  } else if (["manager", "organizer"].includes(currentUser.userType)) { // Managers and Organizers can see users they created or users in their organizations
+  } else if (["manager", "organizer"].includes(currentUser.userType)) {
+    // Managers and Organizers can see users they created or users in their organizations
     try {
-
       //only staff, manager userTypes accepted
 
       if (
@@ -192,24 +194,24 @@ const getUsers = async (req, res) => {
         keyword,
         status,
         userType,
-        currentUser
+        currentUser,
       });
 
       // Filter users to only include those created by currentUser or in their organizations
-      const filteredUsers = users.filter(user => {
+      const filteredUsers = users.filter((user) => {
         if (currentUser.userType === "organizer") {
           // Organizer: users in orgs they created
           return user.organizations?.some(
-            org => org.creator.toString() === currentUser._id.toString()
+            (org) => org.creator.toString() === currentUser._id.toString(),
           );
         }
 
         if (currentUser.userType === "manager") {
           // Manager: users in orgs where they're listed in staff
-          return user.organizations?.some(
-            org => org.staff.some(
-              s => s.user.toString() === currentUser._id.toString()
-            )
+          return user.organizations?.some((org) =>
+            org.staff.some(
+              (s) => s.user.toString() === currentUser._id.toString(),
+            ),
           );
         }
 
@@ -217,7 +219,7 @@ const getUsers = async (req, res) => {
       });
 
       // Ensure toJSON method is applied to strip out sensitive data
-      const sanitizedUsers = filteredUsers.map(user => {
+      const sanitizedUsers = filteredUsers.map((user) => {
         // Use your updated toJSON (works for docs and plain objects)
         return formatUserResponse(User.prototype.toJSON(user));
       });
@@ -227,7 +229,7 @@ const getUsers = async (req, res) => {
         statusCode: 200,
         translationKey: "users_fetched_successfully",
         data: sanitizedUsers,
-        meta
+        meta,
       });
     } catch (error) {
       return sendResponse({
@@ -238,9 +240,7 @@ const getUsers = async (req, res) => {
       });
     }
   }
-
 };
-
 
 const updateUser = async (req, res) => {
   const { id } = req.params;
@@ -255,7 +255,6 @@ const updateUser = async (req, res) => {
 
   try {
     const currentUser = req.user;
-
 
     // Only admin can update other users' profiles
     if (
@@ -275,7 +274,7 @@ const updateUser = async (req, res) => {
         res,
         statusCode: result.errorCode,
         translationKey: result.message,
-        values: result.field ? { field: result.field } : undefined
+        values: result.field ? { field: result.field } : undefined,
       });
     }
 
@@ -283,7 +282,7 @@ const updateUser = async (req, res) => {
       res,
       statusCode: 200,
       translationKey: "user_profile_updated_successfully",
-      data: result
+      data: result,
     });
   } catch (error) {
     return sendResponse({
@@ -291,7 +290,7 @@ const updateUser = async (req, res) => {
       statusCode: 500,
       translationKey: "user_profile_update_error",
       values: { errorMessage: error.message },
-      error
+      error,
     });
   }
 };
@@ -373,8 +372,6 @@ const getUserDetails = async (req, res) => {
   }
 };
 
-
-
 // Setup 2FA (get QR code)
 const setupTwoFAController = async (req, res) => {
   const user = req.user;
@@ -387,7 +384,12 @@ const setupTwoFAController = async (req, res) => {
       data: { qrCode: result.qrCodeDataURL },
     });
   } catch (error) {
-    return sendResponse({ res, statusCode: 500, translationKey: "internal_server", error: error });
+    return sendResponse({
+      res,
+      statusCode: 500,
+      translationKey: "internal_server",
+      error: error,
+    });
   }
 };
 
@@ -397,7 +399,10 @@ const confirmTwoFAController = async (req, res) => {
   const { token } = req.body;
 
   try {
-    const { isValid, newlyEnabled } = await usersService.confirmTwoFA(user._id, token);
+    const { isValid, newlyEnabled } = await usersService.confirmTwoFA(
+      user._id,
+      token,
+    );
 
     if (!isValid) {
       return sendResponse({
@@ -430,7 +435,6 @@ const confirmTwoFAController = async (req, res) => {
   }
 };
 
-
 // Disable 2FA
 const disableTwoFAController = async (req, res) => {
   const user = req.user;
@@ -442,10 +446,14 @@ const disableTwoFAController = async (req, res) => {
       translationKey: "2fa_disabled_successfully",
     });
   } catch (error) {
-    return sendResponse({ res, statusCode: 500, translationKey: "internal_server", error });
+    return sendResponse({
+      res,
+      statusCode: 500,
+      translationKey: "internal_server",
+      error,
+    });
   }
 };
-
 
 const getAllAthletes = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
@@ -545,6 +553,32 @@ const getAllAthletes = async (req, res) => {
   }
 };
 
+const getUsersByType = async (req, res) => {
+  const { page, limit } = parsePaginationParams(req);
+  const { userType } = req.query;
+
+  if (!userType) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      message: "userType is required",
+    });
+  }
+
+  const { users, meta } = await usersService.getUsersByType({
+    page,
+    limit,
+    userType,
+  });
+
+  return sendResponse({
+    res,
+    statusCode: 200,
+    message: "users_fetched_successfully",
+    data: users.map((u) => formatUserResponse(u.toJSON())),
+    meta,
+  });
+};
 
 module.exports = {
   createUser,
@@ -557,4 +591,5 @@ module.exports = {
   getUserDetails,
   getAllUsers,
   getAllAthletes,
+  getUsersByType,
 };

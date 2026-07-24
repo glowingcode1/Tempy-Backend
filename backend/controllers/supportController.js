@@ -14,6 +14,8 @@ const createSupportRequest = async (req, res) => {
     return;
   }
 
+  console.log("Saving support request for user:", req.user._id);
+
   try {
     const supportRequest = new SupportRequest({
       name,
@@ -23,8 +25,9 @@ const createSupportRequest = async (req, res) => {
       user: req.user._id,
     });
 
-
     const data = await supportRequest.save();
+
+    console.log(data);
     return sendResponse({
       res,
       statusCode: 201,
