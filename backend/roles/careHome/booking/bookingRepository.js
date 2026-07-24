@@ -658,11 +658,7 @@ const getWeeklyHours = async (userIds = []) => {
   return userIds.map((id) => ({ userId: id, hours: map.get(String(id)) ?? 0 }));
 };
 
-const getBookingsByUsersAndDateRange = async (
-  worker,
-  startDate,
-  endDate,
-) => {
+const getBookingsByUsersAndDateRange = async (worker, startDate, endDate) => {
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
@@ -744,14 +740,48 @@ const getWorkerIdsByUserOrBranch = async (userId, branchId) => {
   const match = {
     $or: [
       { user: new mongoose.Types.ObjectId(userId) },
-      ...(branchId
-        ? [{ branch: new mongoose.Types.ObjectId(branchId) }]
-        : []),
+      ...(branchId ? [{ branch: new mongoose.Types.ObjectId(branchId) }] : []),
     ],
   };
 
   const bookings = await Booking.find(match).distinct("worker");
   return bookings; // array of worker ObjectIds
+};
+
+const getBookingsByDateRangeForUser = async ({
+  userId,
+  userType,
+  startDate,
+  endDate,
+}) => {
+  const match = {
+    "shift.date": { $gte: startDate, $lte: endDate },
+    status: { $ne: "deleted" },
+  };
+
+  // nurse sees own shifts, careHome/customer/employer sees shifts they created
+  if (userType === "nurse") {
+    match.worker = new mongoose.Types.ObjectId(userId);
+  } else {
+    match.user = new mongoose.Types.ObjectId(userId);
+  }
+
+  return Booking.aggregate([
+    { $match: match },
+    {
+      $lookup: {
+        from: "jobs",
+        localField: "job",
+        foreignField: "_id",
+        pipeline: [
+          { $project: { title: 1, category: 1, address: 1, image: 1 } },
+        ],
+        as: "jobDetails",
+      },
+    },
+    { $unwind: { path: "$jobDetails", preserveNullAndEmptyArrays: true } },
+    { $sort: { "shift.date": 1 } },
+  ]);
 };
 
 module.exports = {
@@ -769,4 +799,5 @@ module.exports = {
   getWeeklyHours,
   getBookingsByUsersAndDateRange,
   getWorkerIdsByUserOrBranch,
+  getBookingsByDateRangeForUser,
 };

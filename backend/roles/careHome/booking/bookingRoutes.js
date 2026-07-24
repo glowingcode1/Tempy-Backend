@@ -8,6 +8,7 @@ const {
   getBookingDetails,
   getBookingCalender,
   getBookingCheckInLogs,
+  getShiftPlanCalendar,
 } = require("./bookingController"); // Assuming you have a separate controller for promo codes
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
@@ -21,14 +22,20 @@ router.use(auth);
 const BookingRateLimiter = createRateLimiter("Booking");
 router.get(
   "/calender",
-  roleMiddleware(["admin", "careHome","agency", "nurse","localAuthority"]),
+  roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority"]),
   getBookingCalender,
+);
+
+router.get(
+  "/shifts-calender",
+  roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority"]),
+  getShiftPlanCalendar,
 );
 // Routes for Booking Management
 // Create a new Booking
 router.post(
   "/",
-  roleMiddleware(["admin", "careHome","localAuthority","agency", "nurse"]),
+  roleMiddleware(["admin", "careHome", "localAuthority", "agency", "nurse"]),
   BookingRateLimiter,
   createBooking,
 );
@@ -36,14 +43,21 @@ router.post(
 // Get all Booking with pagination
 router.get(
   "/",
-  roleMiddleware(["admin", "agency", "nurse", "careHome","localAuthority"]),
+  roleMiddleware(["admin", "agency", "nurse", "careHome", "localAuthority"]),
   BookingRateLimiter,
   getBooking,
 );
 // Get a specific Booking by ID
 router.get(
   "/:id",
-  roleMiddleware(["admin", "agency", "employee", "nurse", "careHome","localAuthority"]),
+  roleMiddleware([
+    "admin",
+    "agency",
+    "employee",
+    "nurse",
+    "careHome",
+    "localAuthority",
+  ]),
   BookingRateLimiter,
   getBookingDetails,
 );
@@ -51,21 +65,20 @@ router.get(
 // Update an existing Booking
 router.put(
   "/:id",
-  roleMiddleware(["admin", "agency", "employee", "nurse","localAuthority"]),
+  roleMiddleware(["admin", "agency", "employee", "nurse", "localAuthority"]),
   updateBooking,
 );
 router.get(
   "/logs/:bookingId",
-  roleMiddleware(["admin", "agency", "employee", "nurse","localAuthority"]),
+  roleMiddleware(["admin", "agency", "employee", "nurse", "localAuthority"]),
   getBookingCheckInLogs,
 );
 
 // Delete a Booking
 router.delete(
   "/:id",
-  roleMiddleware(["admin", "agency", "employee", "nurse","localAuthority"]),
+  roleMiddleware(["admin", "agency", "employee", "nurse", "localAuthority"]),
   deleteBooking,
 );
-
 
 module.exports = router;

@@ -13,7 +13,10 @@ const {
   getActiveJobRoles,
 } = require("../../../roles/admin/jobRole/jobRoleRepository");
 const convertToMongoArray = require("@helperUtils/convertToMongoArray");
-const { formatCalendar } = require("./formator/calendarFormatter");
+const {
+  formatCalendar,
+  formatShiftPlan,
+} = require("./formator/calendarFormatter");
 const { updateShiftStatus } = require("../job/jobRepository");
 const { formatAttendance } = require("./formator/formatAttendance");
 const {
@@ -288,7 +291,7 @@ const getBookingCalendar = async ({
   userType,
 }) => {
   let worker = [];
-  if(userType === "nurse") {
+  if (userType === "nurse") {
     worker = [user];
   } else {
     worker = await (customer
@@ -417,6 +420,20 @@ const getBookingCheckInLogs = async (bookingId, timezone) => {
 
   return formattedAttendance;
 };
+
+const getShiftPlanCalendar = async ({ year, month, timezone, user, userType }) => {
+  const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)); // last day of month
+
+  const bookings = await BookingRepo.getBookingsByDateRangeForUser({
+    userId: user,
+    userType,
+    startDate,
+    endDate,
+  });
+
+  return formatShiftPlan(bookings, timezone);
+};
 module.exports = {
   createBooking,
   getBooking,
@@ -426,4 +443,5 @@ module.exports = {
   getBookingCalendar,
   updateBookingCheckinCheckout,
   getBookingCheckInLogs,
+  getShiftPlanCalendar,
 };
