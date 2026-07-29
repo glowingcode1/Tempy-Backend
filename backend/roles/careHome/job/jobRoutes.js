@@ -25,7 +25,7 @@ const JobRateLimiter = createRateLimiter("Jobs");
 // Create a new Job
 router.post(
   "/",
-  roleMiddleware(["admin", "careHome","localAuthority"]),
+  roleMiddleware(["admin", "careHome", "localAuthority", "hospital", "user"]),
   JobRateLimiter,
   createJob,
 );
@@ -33,40 +33,92 @@ router.post(
 // Get all Jobs with pagination
 router.get(
   "/",
-  roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority", "homeCareCompany"]),
+  roleMiddleware([
+    "admin",
+    "careHome",
+    "agency",
+    "nurse",
+    "localAuthority",
+    "homeCareCompany",
+    "hospital",
+    "user",
+  ]),
   JobRateLimiter,
   getJobs,
 );
 router.get(
   "/type",
-  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority", "homeCareCompany"]),
+  roleMiddleware([
+    "admin",
+    "careHome",
+    "agency",
+    "employee",
+    "localAuthority",
+    "homeCareCompany",
+    "hospital",
+    "user",
+  ]),
   JobRateLimiter,
   getJobRole,
 );
 router.get(
   "/bids",
-  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority", "homeCareCompany"]),
+  roleMiddleware([
+    "admin",
+    "careHome",
+    "agency",
+    "employee",
+    "localAuthority",
+    "homeCareCompany",
+    "hospital",
+    "user",
+  ]),
   JobRateLimiter,
   getJobBids,
 );
 router.put(
   "/bids/:id",
-  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority", "homeCareCompany"]),
+  roleMiddleware([
+    "admin",
+    "careHome",
+    "agency",
+    "employee",
+    "localAuthority",
+    "homeCareCompany",
+    "hospital",
+    "user",
+  ]),
   JobRateLimiter,
   updateJobBids,
 );
 // Get a specific Job by ID
 router.get(
   "/:id",
-  roleMiddleware(["admin", "careHome", "agency", "employee", "localAuthority"]),
+  roleMiddleware([
+    "admin",
+    "careHome",
+    "agency",
+    "employee",
+    "localAuthority",
+    "hospital",
+    "user",
+  ]),
   JobRateLimiter,
   getJobDetails,
 );
 
 // Update an existing Job
-router.put("/:id", roleMiddleware(["admin", "careHome", "localAuthority"]), updateJob);
+router.put(
+  "/:id",
+  roleMiddleware(["admin", "careHome", "localAuthority", "hospital", "user"]),
+  updateJob,
+);
 
 // Delete a Job
-router.delete("/:id", roleMiddleware(["admin", "careHome", "localAuthority"]), deleteJob);
+router.delete(
+  "/:id",
+  roleMiddleware(["admin", "careHome", "localAuthority", "hospital", "user"]),
+  deleteJob,
+);
 
 module.exports = router;

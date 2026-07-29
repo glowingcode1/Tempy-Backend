@@ -24,6 +24,7 @@ const BRANCH_ROLES = [
   "careHome",
   "agency",
   "homeCareCompany",
+  "user",
 ];
 
 // Routes for Branch Management
@@ -41,17 +42,9 @@ router.get(
 );
 
 // Update an existing Branch
-router.put(
-  "/:id",
-  roleMiddleware(BRANCH_ROLES),
-  updateBranch,
-);
+router.put("/:id", roleMiddleware(BRANCH_ROLES), updateBranch);
 
 // Delete a Branch
-router.delete(
-  "/:id",
-  roleMiddleware(BRANCH_ROLES),
-  deleteBranch,
-);
+router.delete("/:id", roleMiddleware(BRANCH_ROLES), deleteBranch);
 
 module.exports = router;
