@@ -23,21 +23,72 @@ const StaffRateLimiter = createRateLimiter("Staff");
 // Routes for Staff Management
 // Create a new Staff
 router.get("/nurses", roleMiddleware(["admin", "agency"]), getAllNurses);
-router.post("/", roleMiddleware(["admin","agency",, "homeCareCompany"]), StaffRateLimiter, createStaff);
+router.post(
+  "/",
+  roleMiddleware(["admin", "agency", "homeCareCompany"]),
+  StaffRateLimiter,
+  createStaff,
+);
 
-// Get all Staff with pagination        
-router.get("/", roleMiddleware(["admin","agency","careHome","hospital", "localAuthority", "homeCareCompany"]), StaffRateLimiter, getStaff);
-// Get all Staff with pagination        
-router.get("/available", roleMiddleware(["admin","agency","careHome","hospital", "localAuthority"]), StaffRateLimiter, getAvailableStaff);
+// Get all Staff with pagination
+router.get(
+  "/",
+  roleMiddleware([
+    "admin",
+    "agency",
+    "careHome",
+    "hospital",
+    "localAuthority",
+    "homeCareCompany",
+  ]),
+  StaffRateLimiter,
+  getStaff,
+);
+// Get all Staff with pagination
+router.get(
+  "/available",
+  roleMiddleware(["admin", "agency", "careHome", "hospital", "localAuthority"]),
+  StaffRateLimiter,
+  getAvailableStaff,
+);
 // Get a specific Staff by ID
-router.get("/:id", roleMiddleware(["admin","agency","careHome", "localAuthority", "homeCareCompany"]), StaffRateLimiter, getStaffDetails);
-
+router.get(
+  "/:id",
+  roleMiddleware([
+    "admin",
+    "agency",
+    "careHome",
+    "localAuthority",
+    "homeCareCompany",
+  ]),
+  StaffRateLimiter,
+  getStaffDetails,
+);
 
 // Update an existing Staff
-router.put("/:id", roleMiddleware(["admin","agency","careHome","hospital", "homeCareCompany"]), updateStaff);
-
+router.put(
+  "/:id",
+  roleMiddleware([
+    "admin",
+    "agency",
+    "careHome",
+    "hospital",
+    "homeCareCompany",
+  ]),
+  updateStaff,
+);
 
 // Delete a Staff
-router.delete("/:id", roleMiddleware(["admin","agency","careHome","hospital", "homeCareCompany"]), deleteStaff);
+router.delete(
+  "/:id",
+  roleMiddleware([
+    "admin",
+    "agency",
+    "careHome",
+    "hospital",
+    "homeCareCompany",
+  ]),
+  deleteStaff,
+);
 
 module.exports = router;
