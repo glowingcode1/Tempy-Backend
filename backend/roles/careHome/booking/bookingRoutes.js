@@ -27,20 +27,41 @@ router.get("/earnings", getEarnings);
 
 router.get(
   "/calender",
-  roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority"]),
+  roleMiddleware([
+    "admin",
+    "careHome",
+    "agency",
+    "nurse",
+    "localAuthority",
+    "user",
+  ]),
   getBookingCalender,
 );
 
 router.get(
   "/shifts-calender",
-  roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority"]),
+  roleMiddleware([
+    "admin",
+    "careHome",
+    "agency",
+    "nurse",
+    "localAuthority",
+    "user",
+  ]),
   getShiftPlanCalendar,
 );
 // Routes for Booking Management
 // Create a new Booking
 router.post(
   "/",
-  roleMiddleware(["admin", "careHome", "localAuthority", "agency", "nurse"]),
+  roleMiddleware([
+    "admin",
+    "careHome",
+    "localAuthority",
+    "agency",
+    "nurse",
+    "user",
+  ]),
   BookingRateLimiter,
   createBooking,
 );
@@ -48,7 +69,14 @@ router.post(
 // Get all Booking with pagination
 router.get(
   "/",
-  roleMiddleware(["admin", "agency", "nurse", "careHome", "localAuthority"]),
+  roleMiddleware([
+    "admin",
+    "agency",
+    "nurse",
+    "careHome",
+    "localAuthority",
+    "user",
+  ]),
   BookingRateLimiter,
   getBooking,
 );
@@ -62,6 +90,8 @@ router.get(
     "nurse",
     "careHome",
     "localAuthority",
+    ,
+    "user",
   ]),
   BookingRateLimiter,
   getBookingDetails,
@@ -70,19 +100,40 @@ router.get(
 // Update an existing Booking
 router.put(
   "/:id",
-  roleMiddleware(["admin", "agency", "employee", "nurse", "localAuthority"]),
+  roleMiddleware([
+    "admin",
+    "agency",
+    "employee",
+    "nurse",
+    "localAuthority",
+    "user",
+  ]),
   updateBooking,
 );
 router.get(
   "/logs/:bookingId",
-  roleMiddleware(["admin", "agency", "employee", "nurse", "localAuthority"]),
+  roleMiddleware([
+    "admin",
+    "agency",
+    "employee",
+    "nurse",
+    "localAuthority",
+    "user",
+  ]),
   getBookingCheckInLogs,
 );
 
 // Delete a Booking
 router.delete(
   "/:id",
-  roleMiddleware(["admin", "agency", "employee", "nurse", "localAuthority"]),
+  roleMiddleware([
+    "admin",
+    "agency",
+    "employee",
+    "nurse",
+    "localAuthority",
+    "user",
+  ]),
   deleteBooking,
 );
 

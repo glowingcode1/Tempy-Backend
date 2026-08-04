@@ -12,6 +12,7 @@ const BRANCH_OWNER_TYPES = [
   "careHome",
   "agency",
   "homeCareCompany",
+  "user",
 ];
 
 const createBranch = async (req, res) => {
@@ -77,7 +78,7 @@ const createBranch = async (req, res) => {
 
 const getBranch = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, user,summary } = req.query;
+  let { keyword, status, user, summary } = req.query;
 
   const isBranchOwner = BRANCH_OWNER_TYPES.includes(req.user.userType);
 
@@ -134,8 +135,8 @@ const updateBranch = async (req, res) => {
     })
   )
     return;
-    const user = req.user._id;
-    const userType = req.user.userType;
+  const user = req.user._id;
+  const userType = req.user.userType;
 
   let data = {
     name,

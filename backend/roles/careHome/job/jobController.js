@@ -39,7 +39,7 @@ const createJob = async (req, res) => {
 
   if (
     !validateParams(req, res, {
-      rawData: ["name", "type", "shift", "location", "branch"],
+      rawData: ["name", "type", "shift", "location"],
     })
   )
     return;

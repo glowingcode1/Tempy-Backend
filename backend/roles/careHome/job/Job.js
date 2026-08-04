@@ -37,7 +37,6 @@ const JobSchema = new mongoose.Schema(
     branch: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Branch",
-      required: true,
     },
     description: {
       type: String,
