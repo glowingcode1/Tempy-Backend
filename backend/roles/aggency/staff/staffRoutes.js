@@ -47,7 +47,7 @@ router.get(
 // Get all Staff with pagination
 router.get(
   "/available",
-  roleMiddleware(["admin", "agency", "careHome", "hospital", "localAuthority"]),
+  roleMiddleware(["admin", "agency", "careHome", "hospital", "localAuthority", "user"]),
   StaffRateLimiter,
   getAvailableStaff,
 );

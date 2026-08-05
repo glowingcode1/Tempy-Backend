@@ -90,7 +90,6 @@ router.get(
     "nurse",
     "careHome",
     "localAuthority",
-    ,
     "user",
   ]),
   BookingRateLimiter,
