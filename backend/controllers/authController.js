@@ -1095,6 +1095,7 @@ const socialAuth = async (req, res) => {
     deviceType,
     timezone,
     userType,
+    location,
   } = req.body;
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -1109,6 +1110,7 @@ const socialAuth = async (req, res) => {
         "deviceType",
         "timezone",
         "userType",
+        "location",
       ],
       enumFields: {
         provider: ["google", "facebook", "apple"], // Allowed values for provider
@@ -1223,6 +1225,7 @@ const socialAuth = async (req, res) => {
           email: "verified", // Mark email as verified
         },
         accountState: { userType: userType, status: "active" },
+        location,
       });
 
       await newUser.save({ session });
