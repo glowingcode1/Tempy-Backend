@@ -40853,12 +40853,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/booking",
+                      "raw": "{{url}}app/nurse/booking",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "booking"
                       ]
                     }
@@ -40913,12 +40913,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/booking/shifts-calender?year=2026&month=7&date=2026-07-22",
+                      "raw": "{{url}}app/nurse/booking/shifts-calender?year=2026&month=7&date=2026-07-22",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "booking",
                         "shifts-calender"
                       ],
@@ -40958,12 +40958,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/staff/available",
+                      "raw": "{{url}}app/nurse/staff/available",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "staff",
                         "available"
                       ],
