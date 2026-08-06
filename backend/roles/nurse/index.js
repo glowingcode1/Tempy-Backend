@@ -1,10 +1,10 @@
-const auth = require("@middlewares/authMiddleware");
-const roleMiddleware = require("@middlewares/roleMiddleware");
+// const auth = require("@middlewares/authMiddleware");
+// const roleMiddleware = require("@middlewares/roleMiddleware");
 const express = require("express");
 
 const router = express.Router();
 
-router.use(auth, roleMiddleware(["nurse"]));
+// router.use(auth, roleMiddleware(["nurse"]));
 
 router.use("/address", require("./address/addressRoutes"));
 router.use("/bids", require("../aggency/bid/bidRoutes"));

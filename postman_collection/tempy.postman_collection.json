@@ -40875,7 +40875,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a4cac52a7b911fe25077c54\"//optional\n}",
+                      "raw": "",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -40890,6 +40890,49 @@
                       "path": [
                         "nurse",
                         "booking"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "getEarnings",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/nurse/booking/earnings",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "nurse",
+                        "booking",
+                        "earnings"
+                      ],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": null,
+                          "disabled": true
+                        },
+                        {
+                          "key": "to",
+                          "value": null,
+                          "disabled": true
+                        }
                       ]
                     }
                   },
