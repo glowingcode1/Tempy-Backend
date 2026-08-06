@@ -17,16 +17,16 @@ router.use(auth);
 const AddressRateLimiter = createRateLimiter("Addresss");
 
 
-router.post("/", roleMiddleware(["nurse"]), AddressRateLimiter, createAddress);
+router.post("/", roleMiddleware(["nurse", "user"]), AddressRateLimiter, createAddress);
 
 
-router.get("/", roleMiddleware(["nurse","admin","careHome"]), AddressRateLimiter, getAddress);
+router.get("/", roleMiddleware(["nurse","admin","careHome", "user"]), AddressRateLimiter, getAddress);
 
 
 
-router.put("/:id", roleMiddleware(["nurse"]), updateAddress);
+router.put("/:id", roleMiddleware(["nurse", "user"]), updateAddress);
 
 
-router.delete("/:id", roleMiddleware(["nurse"]), deleteAddress);
+router.delete("/:id", roleMiddleware(["nurse", "user"]), deleteAddress);
 
 module.exports = router;

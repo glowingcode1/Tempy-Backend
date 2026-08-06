@@ -34,6 +34,7 @@ router.get(
     "nurse",
     "localAuthority",
     "user",
+    "homeCareCompany"
   ]),
   getBookingCalender,
 );

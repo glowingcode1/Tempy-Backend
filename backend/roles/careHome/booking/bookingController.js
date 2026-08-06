@@ -538,7 +538,6 @@ const getShiftPlanCalendar = async (req, res) => {
 };
 
 const getEarnings = async (req, res) => {
-  console.log("Earnings API called");
   try {
     const data = await BookingService.getEarnings({
       userId: req.user._id,
