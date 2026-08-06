@@ -784,7 +784,14 @@ const getBookingsByDateRangeForUser = async ({
   ]);
 };
 
-const getEarnings = async ({ userId, userType, customer, supplier }) => {
+const getEarnings = async ({
+  userId,
+  userType,
+  customer,
+  supplier,
+  from,
+  to,
+}) => {
   const match = {
     status: "completed",
   };
@@ -802,6 +809,20 @@ const getEarnings = async ({ userId, userType, customer, supplier }) => {
     amountField = "$payment.amountPayedToWorker";
   }
 
+  if (from || to) {
+    match["shift.date"] = {};
+
+    if (from) {
+      match["shift.date"].$gte = new Date(from);
+    }
+
+    if (to) {
+      const endDate = new Date(to);
+      endDate.setHours(23, 59, 59, 999);
+      match["shift.date"].$lte = endDate;
+    }
+  }
+
   const pipeline = [
     {
       $match: match,
@@ -809,9 +830,7 @@ const getEarnings = async ({ userId, userType, customer, supplier }) => {
     {
       $group: {
         _id: null,
-        totalBookings: {
-          $sum: 1,
-        },
+        totalBookings: { $sum: 1 },
         totalEarnings: {
           $sum: {
             $ifNull: [amountField, 0],
@@ -819,9 +838,23 @@ const getEarnings = async ({ userId, userType, customer, supplier }) => {
         },
       },
     },
+    {
+      $project: {
+        _id: 0,
+        totalBookings: 1,
+        totalEarnings: 1,
+      },
+    },
   ];
 
-  return Booking.aggregate(pipeline);
+  const result = await Booking.aggregate(pipeline);
+
+  return (
+    result[0] || {
+      totalBookings: 0,
+      totalEarnings: 0,
+    }
+  );
 };
 
 module.exports = {
