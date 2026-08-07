@@ -22,6 +22,8 @@ const createBooking = async (req, res) => {
   let data = {
     bid,
     worker: worker || null,
+    createdByUserType: req.user?.userType || null,
+    createdByUserId: req.user?._id || null,
   };
   try {
     const Booking = await BookingService.createBooking(data);
