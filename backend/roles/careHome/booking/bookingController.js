@@ -22,6 +22,8 @@ const createBooking = async (req, res) => {
   let data = {
     bid,
     worker: worker || null,
+    createdByUserType: req.user?.userType || null,
+    createdByUserId: req.user?._id || null,
   };
   try {
     const Booking = await BookingService.createBooking(data);
@@ -538,11 +540,12 @@ const getShiftPlanCalendar = async (req, res) => {
 };
 
 const getEarnings = async (req, res) => {
-  console.log("Earnings API called");
   try {
     const data = await BookingService.getEarnings({
       userId: req.user._id,
       userType: req.user.userType,
+      from: req.query.from,
+      to: req.query.to,
     });
 
     return sendResponse({

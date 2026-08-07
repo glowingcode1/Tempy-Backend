@@ -325,11 +325,8 @@ const login = async (req, res) => {
       });
     }
 
-
     // Update the user's timezone
     user.timezone = timezone;
-
-
 
     // Ensure toJSON method is applied to strip out sensitive data
     const userObject = user.toJSON();
@@ -1282,7 +1279,7 @@ const checkEmailExistsAndVerified = async (req, res) => {
     }
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-    }).select("verificationStatus");
+    }).select("verificationStatus userType");
     const existsAndVerified = !!(
       user && user.verificationStatus.email === "verified"
     );
@@ -1290,7 +1287,10 @@ const checkEmailExistsAndVerified = async (req, res) => {
       res,
       statusCode: 200,
       translationKey: "email_check_success",
-      data: { exists: existsAndVerified },
+      data: {
+        exists: existsAndVerified,
+        userType: existsAndVerified ? user.userType : null,
+      },
     });
   } catch (error) {
     return sendResponse({

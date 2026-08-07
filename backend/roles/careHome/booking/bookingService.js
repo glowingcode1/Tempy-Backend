@@ -23,6 +23,7 @@ const {
   getStaffIdsByUser,
 } = require("../../../roles/aggency/staff/staffRepository");
 const { customerTypes, supplierTypes } = require("@UsersModel");
+const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
 const WEATHER_API_URL = process.env.WEATHER_API_URL;
@@ -120,6 +121,11 @@ const createBooking = async (data) => {
     branch: bid.snapshot.branch,
     snapshot: bid.snapshot,
     employer: user.accountState.userType !== "nurse" ? bid.user : null,
+    status: resolveInitialBookingStatus({
+      createdByUserType: data?.createdByUserType || null,
+      createdByUserId: data?.createdByUserId || null,
+      workerId: data?.worker || null,
+    }),
     shift: {
       _id: bid.shift._id,
       date: bid.shift.date,
@@ -442,10 +448,12 @@ const getShiftPlanCalendar = async ({
   return formatShiftPlan(bookings, timezone);
 };
 
-const getEarnings = async ({ userId, userType }) => {
+const getEarnings = async ({ userId, userType, from, to }) => {
   return BookingRepo.getEarnings({
     userId,
     userType,
+    from,
+    to,
     customer: customerTypes.includes(userType),
     supplier: supplierTypes.includes(userType),
   });
