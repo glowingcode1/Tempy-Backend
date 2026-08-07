@@ -10,16 +10,15 @@ const formatUserResponse = (
   includeFields = [],
   excludeFields = [],
 ) => {
-
   if (!userObject) return null;
-    const subAdmin =
-      userObject.orignalUserType === "subAdmin"
-        ? {
-            permissions: userObject.permissions,
-            orignalUserType: userObject.orignalUserType,
-            orignalSubAdminId: userObject.orignalSubAdminId,
-          }
-        : null;
+  const subAdmin =
+    userObject.orignalUserType === "subAdmin"
+      ? {
+          permissions: userObject.permissions,
+          orignalUserType: userObject.orignalUserType,
+          orignalSubAdminId: userObject.orignalSubAdminId,
+        }
+      : null;
   const pIcon = getFullImageUrl(userObject?.profileIcon) || null;
   const userType = userObject.accountState?.userType;
   // Construct basicInfo cleanly using conditionals
@@ -49,11 +48,12 @@ const formatUserResponse = (
       },
       blueTick: userObject.accountState?.blueTick?.isActive || false,
     },
+    completeProfile:
+      userObject.completeProfile ?? (userType === "admin" ? true : false),
     location,
     ...(subAdmin ? { subAdmin } : {}),
     averageRating: userObject.averageRating || 0,
     totalReviews: userObject.totalReviews || 0,
-
 
     metadata: {
       timezone: userObject.timezone,

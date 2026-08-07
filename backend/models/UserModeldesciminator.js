@@ -9,18 +9,20 @@ const userDescriminatorSchema = new mongoose.Schema({
   governmentIdentity: [
     {
       type: String,
-      required: true,
+      default: [],
     },
   ],
 });
-
 
 let userDescriminatorModel;
 
 const getUserDescriminatorModel = () => {
   if (!userDescriminatorModel) {
     const { User } = require("./UserModel");
-    userDescriminatorModel = User.discriminator("userDescriminator", userDescriminatorSchema);
+    userDescriminatorModel = User.discriminator(
+      "userDescriminator",
+      userDescriminatorSchema,
+    );
   }
   return userDescriminatorModel;
 };

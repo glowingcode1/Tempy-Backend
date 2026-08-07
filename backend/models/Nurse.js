@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { LocationSchema } = require("../shared/locations/locationSchmea");
-const {User} = require("./UserModel");
+const { User } = require("./UserModel");
 const { ProvideServicesToSchema } = require("./provideServicesToSchema");
 const nurseSchema = new mongoose.Schema({
   location: {
@@ -9,24 +9,24 @@ const nurseSchema = new mongoose.Schema({
   },
   taxNumber: {
     type: String,
-    required: true,
+    default: "",
   },
   governmentIdentity: [
     {
       type: String,
-      required: true,
+      default: [],
     },
   ],
   degree: [
     {
       type: String,
-      required: true,
+      default: [],
     },
   ],
   certification: [
     {
       type: String,
-      required: true,
+      default: [],
     },
   ],
   provideServicesTo: {

@@ -5,7 +5,11 @@ const {
 } = require("../helperUtils/responseUtil");
 const { formatUserResponse } = require("../helperUtils/userResponseUtil");
 const { createOrSkipDevice } = require("../models/Devices");
-const { User, USER_TYPES } = require("../models/UserModel");
+const {
+  User,
+  USER_TYPES,
+  APP_TWO_STEP_USER_TYPES,
+} = require("../models/UserModel");
 const { validatePhoneNumber } = require("../helperUtils/validationsUtil");
 const { sendEmailViaBrevo } = require("../helperUtils/emailUtil");
 const {
@@ -15,6 +19,9 @@ const {
 const {
   defaultSetNotificationPreferences,
 } = require("./notificationPreferencesController");
+const {
+  normalizeLocationValue,
+} = require("../shared/locations/locationSchmea");
 
 const USER_MODEL_MAP = {
   careHome: require("../models/CareHomesModel"),
@@ -29,6 +36,22 @@ const USER_MODEL_MAP = {
 };
 
 // Main utility function
+// This function backs the app's "signUp" (step 1) endpoint AND the
+// existing web registration endpoint.
+//
+// For userType "user" / "nurse" (app-side, two-step flow) ONLY the
+// minimal signUp fields are persisted: email, password, name,
+// profileIcon, timezone, deviceId/deviceType. Any completeProfile-only
+// fields sent in the same request (phoneNumber, gender, taxNumber,
+// governmentIdentity, degree, certification, location) are IGNORED
+// here on purpose — they must be submitted later via the dedicated
+// completeProfile API. `completeProfile` is set to false so the app
+// knows to route to the completeProfile screen instead of home.
+//
+// For every other userType (web flow: careHome, hospital, agency,
+// homeCareCompany, localAuthority, guest, admin) the previous
+// single-step behaviour is preserved and `completeProfile` is set to
+// true immediately, since those flows don't use a second step.
 const registerUserUtility = async (req, res, staff, options = {}) => {
   const {
     autoVerify = false, // true if created by admin, false if app user
@@ -165,8 +188,12 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
       return { responseSent: true };
     }
 
-    // Validate phone number
-    if (phoneNumber) {
+    const isAppTwoStepSignup = APP_TWO_STEP_USER_TYPES.includes(userType);
+
+    // Validate phone number — only relevant for the single-step (web)
+    // flow, since app user/nurse signUp never accepts phoneNumber
+    // (it's collected later in completeProfile).
+    if (!isAppTwoStepSignup && phoneNumber) {
       if (
         typeof phoneNumber !== "object" ||
         !phoneNumber.code ||
@@ -197,31 +224,59 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
 
     // ✅ Create instance from the correct model
     let user = existingUser || new ModelToUse();
-    Object.assign(user, {
-      email,
-      phoneNumber: phoneNumber || { code: "", number: "" },
-      profileIcon,
-      name,
-      username,
-      gender,
-      dob,
-      password,
-      timezone,
-      companyName,
-      type,
-      location,
-      registrationNumber,
-      validationDocument,
-      taxNumber,
-      governmentIdentity,
-      degree,
-      certification,
-      accountState: { userType, status: verificationStatus },
-      verificationStatus: {
-        email: autoVerify ? "verified" : "pending",
-        phoneNumber: "pending",
-      },
-    });
+
+    if (isAppTwoStepSignup) {
+      // --- Step 1: signUp (app user / nurse) -----------------------
+      // Only the fields collected on the app's "createAccount" signup
+      // screen are set. Everything else (phoneNumber, gender,
+      // taxNumber, governmentIdentity, degree, certification,
+      // location) is deliberately left untouched here, even if it was
+      // included in the request body, and must be submitted via the
+      // completeProfile API before the account is considered ready
+      // for the home screen.
+      Object.assign(user, {
+        email,
+        profileIcon,
+        name,
+        password,
+        timezone,
+        location: normalizeLocationValue(location),
+        accountState: { userType, status: verificationStatus },
+        verificationStatus: {
+          email: autoVerify ? "verified" : "pending",
+          phoneNumber: "pending",
+        },
+        completeProfile: false,
+      });
+    } else {
+      // --- Single-step (web) signup, unchanged behaviour -----------
+      Object.assign(user, {
+        email,
+        phoneNumber: phoneNumber || { code: "", number: "" },
+        profileIcon,
+        name,
+        username,
+        gender,
+        dob,
+        password,
+        timezone,
+        companyName,
+        type,
+        location: normalizeLocationValue(location),
+        registrationNumber,
+        validationDocument,
+        taxNumber,
+        governmentIdentity,
+        degree,
+        certification,
+        accountState: { userType, status: verificationStatus },
+        verificationStatus: {
+          email: autoVerify ? "verified" : "pending",
+          phoneNumber: "pending",
+        },
+        completeProfile: true,
+      });
+    }
 
     // Generate email verification token if not auto-verified
     let emailVerificationLink = null;
@@ -233,7 +288,6 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
     }
 
     await user.save();
-    
 
     defaultSetNotificationPreferences(user._id);
 
@@ -247,15 +301,14 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
       userObject.emailVerificationLink = emailVerificationLink;
     }
     const formattedResponse = formatUserResponse(userObject);
-    
 
     return { success: true, user: formattedResponse, responseSent: false };
   } catch (error) {
-      console.error("REGISTER USER ERROR");
+    console.error("REGISTER USER ERROR");
 
-      console.error(error);
+    console.error(error);
 
-      console.error(error.stack);
+    console.error(error.stack);
     if (error?.code === 11000) {
       const key = Object.keys(error?.keyPattern || {})[0];
       let translationKey = "duplicate_key";
@@ -264,8 +317,6 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
       if (key === "phoneNumber.code" || key === "phoneNumber.number") {
         translationKey = "phone_number_already";
       }
-
-
 
       sendResponse({
         res,

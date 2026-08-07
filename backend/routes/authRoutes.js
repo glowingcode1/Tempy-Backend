@@ -19,7 +19,8 @@ const {
   checkEmailExistsAndVerified,
   changePassword,
   createAdmin,
-  checkUserNameExists
+  checkUserNameExists,
+  completeProfile,
 } = require("../controllers/authController");
 const createRateLimiter = require("../helperUtils/rateLimiter");
 const roleMiddleware = require("../middlewares/roleMiddleware");
@@ -29,6 +30,7 @@ const router = express.Router();
 // Create a rate limiter for signup routes
 // Define rate limiters
 const signupRateLimiter = createRateLimiter("register", 15, 15); // 15 requests per 15 minutes
+const completeProfileRateLimiter = createRateLimiter("completeProfile", 15, 15); // 15 requests per 15 minutes
 const loginRateLimiter = createRateLimiter("login", 15, 15); // 15 requests per 15 minute
 const loginRateLimiterTest = createRateLimiter("loginTest", 15, 15); // 15 requests per 15 minute
 const generateOtpRateLimiter = createRateLimiter("forgotPassword", 15, 15); // 15 requests per 15 minutes
@@ -41,10 +43,26 @@ const companyDetailsRateLimiter = createRateLimiter("companyDetails", 15, 15); /
 
 // Create a rate limiter for /links
 const linkRateLimiterEmail = createRateLimiter("link/verify-email", 15, 15); // 15 requests per 15 minutes
-const resendEmailVerificationLinkRateLimiter = createRateLimiter("link/resend-email", 15, 15); // 15 requests per 15 minutes
-const sendPasswordResetLinkRateLimiter = createRateLimiter("link/send-password-reset", 15, 15); // 15 requests per 15 minutes
-const verifyPasswordResetLinkRateLimiter = createRateLimiter("link/reset-password/verify", 15, 15); // 15 requests per 15 minutes
-const resetPasswordViaLinkRateLimiter = createRateLimiter("link/reset-password", 15, 15); // 15 requests per 15 minutes
+const resendEmailVerificationLinkRateLimiter = createRateLimiter(
+  "link/resend-email",
+  15,
+  15,
+); // 15 requests per 15 minutes
+const sendPasswordResetLinkRateLimiter = createRateLimiter(
+  "link/send-password-reset",
+  15,
+  15,
+); // 15 requests per 15 minutes
+const verifyPasswordResetLinkRateLimiter = createRateLimiter(
+  "link/reset-password/verify",
+  15,
+  15,
+); // 15 requests per 15 minutes
+const resetPasswordViaLinkRateLimiter = createRateLimiter(
+  "link/reset-password",
+  15,
+  15,
+); // 15 requests per 15 minutes
 
 const changePasswordRateLimiter = createRateLimiter("changePassword", 15, 10);
 
@@ -53,6 +71,7 @@ router.post("/internal/admin/create", signupRateLimiter, createAdmin);
 router.post("/check-email-exists", checkEmailExistsAndVerified);
 router.post("/check-userName-exists", checkUserNameExists);
 router.post("/register", signupRateLimiter, register);
+router.put("/complete-profile", auth, completeProfileRateLimiter, completeProfile);
 router.post("/login", loginRateLimiter, login);
 if (process.env.NODE_ENV || "dev") {
   router.post("/login-test", loginRateLimiterTest, loginTest);
@@ -89,24 +108,39 @@ router.delete("/delete-account", auth, hardDeleteAccount);
 router.post("/social-auth", socialAuth);
 
 router.get("/link/verify-email", linkRateLimiterEmail, verifyEmailViaLink);
-router.post("/link/resend-email", resendEmailVerificationLinkRateLimiter, resendEmailVerificationLink);
-router.post("/link/send-password-reset", sendPasswordResetLinkRateLimiter, sendPasswordResetLink);
-router.get("/link/reset-password/verify", verifyPasswordResetLinkRateLimiter, verifyPasswordResetLink);
-router.post("/link/reset-password", resetPasswordViaLinkRateLimiter, resetPasswordViaLink);
+router.post(
+  "/link/resend-email",
+  resendEmailVerificationLinkRateLimiter,
+  resendEmailVerificationLink,
+);
+router.post(
+  "/link/send-password-reset",
+  sendPasswordResetLinkRateLimiter,
+  sendPasswordResetLink,
+);
+router.get(
+  "/link/reset-password/verify",
+  verifyPasswordResetLinkRateLimiter,
+  verifyPasswordResetLink,
+);
+router.post(
+  "/link/reset-password",
+  resetPasswordViaLinkRateLimiter,
+  resetPasswordViaLink,
+);
 router.post(
   "/change-password",
   changePasswordRateLimiter,
   auth,
-  changePassword
+  changePassword,
 );
-
 
 router.put(
   "/company-details",
   auth,
   companyDetailsRateLimiter,
   roleMiddleware(["organizer"]),
-  companyDetails
+  companyDetails,
 );
 
 module.exports = router;

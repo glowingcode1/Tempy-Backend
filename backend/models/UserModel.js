@@ -29,6 +29,11 @@ const USER_TYPES = [
 ];
 const GENDER_TYPES = ["Male", "Female", "Other"];
 
+// App-side (mobile) user types that go through the two-step
+// signUp -> completeProfile flow. All other userTypes are created
+// via the web flow and collect everything in a single call.
+const APP_TWO_STEP_USER_TYPES = ["user", "nurse"];
+
 const userSchema = new mongoose.Schema(
   {
     profileIcon: {
@@ -56,7 +61,6 @@ const userSchema = new mongoose.Schema(
     },
     location: {
       type: LocationSchema,
-      default: {},
     },
 
     referralCode: {
@@ -133,7 +137,6 @@ const userSchema = new mongoose.Schema(
         enum: ["pending", "verified"],
         default: "pending",
       },
-
     },
 
     password: {
@@ -173,6 +176,17 @@ const userSchema = new mongoose.Schema(
           default: Date(),
         },
       },
+    },
+
+    // Tracks whether the user has finished the second step of the
+    // app signup flow (completeProfile API). Only meaningful for
+    // "user" and "nurse" accountState.userType values — see
+    // APP_TWO_STEP_USER_TYPES. Web-created accounts (careHome,
+    // hospital, agency, etc.) are set to true immediately since they
+    // don't go through this two-step flow.
+    completeProfile: {
+      type: Boolean,
+      default: false,
     },
 
     otpInfo: {
@@ -315,7 +329,6 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: true,
       },
-
     },
     weeklyHours: {
       type: Number,
@@ -326,12 +339,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-
   },
   {
     timestamps: true,
-    discriminatorKey: "userType"
-  }
+    discriminatorKey: "userType",
+  },
 );
 
 // Hash password before saving to database
@@ -352,7 +364,6 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-
 // Generate JWT token
 userSchema.methods.generateAuthToken = function () {
   const user = this;
@@ -367,9 +378,8 @@ userSchema.statics.findByCredentials = async (
   email,
   password,
   timezone,
-  populateFields = []
+  populateFields = [],
 ) => {
-
   let query = User.findOne({ email: email.toLowerCase().trim() });
 
   // Populate specified fields
@@ -462,7 +472,7 @@ userSchema.methods.generateOtp = function (type = "email", timezone = "UTC") {
 };
 
 userSchema.methods.generateEmailVerificationToken = function (
-  timezone = "UTC"
+  timezone = "UTC",
 ) {
   const user = this;
   const now = Date.now();
@@ -572,8 +582,7 @@ userSchema.methods.toJSON = function (userData) {
     userObject.companyDetails.logo &&
     !userObject.companyDetails.logo.startsWith("http")
   ) {
-    userObject.companyDetails.logo =
-      baseUrl + userObject.companyDetails.logo;
+    userObject.companyDetails.logo = baseUrl + userObject.companyDetails.logo;
   }
 
   if (
@@ -605,11 +614,11 @@ userSchema.methods.addBaseUrlToProfileIcon = function (user) {
 userSchema.index(
   {
     email: 1,
-    "accountState.userType": 1
+    "accountState.userType": 1,
   },
   {
-    name: "email_userType_login_idx"
-  }
+    name: "email_userType_login_idx",
+  },
 );
 
 userSchema.index({ location: "2dsphere" });
@@ -625,4 +634,5 @@ module.exports = {
   GENDER_TYPES,
   customerTypes,
   supplierTypes,
+  APP_TWO_STEP_USER_TYPES,
 };
