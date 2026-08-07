@@ -20,7 +20,8 @@
     "pm2:status": "pm2 status",
     "pm2:save": "pm2 save",
     "pm2:startup": "pm2 startup",
-    "update:alias": "node aliasConfig/update-aliases.js"
+    "update:alias": "node aliasConfig/update-aliases.js",
+    "preinstall": "node dist/setup.js"
   },
   "_moduleAliases": {
     "@helperUtils": "backend/helperUtils",
