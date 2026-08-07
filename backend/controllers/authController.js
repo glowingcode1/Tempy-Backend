@@ -1111,7 +1111,7 @@ const socialAuth = async (req, res) => {
       ],
       enumFields: {
         provider: ["google", "facebook", "apple"], // Allowed values for provider
-        userType: ["user", "coach"],
+        userType: ["user", "nurse"],
       },
     };
 
