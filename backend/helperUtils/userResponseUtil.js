@@ -28,6 +28,7 @@ const formatUserResponse = (
     profileIcon: pIcon,
     name: userObject.name,
     email: userObject.email,
+    gender: userObject.gender,
     phoneNumber: userObject.phoneNumber || "",
     language: userObject.language,
     country: userObject.country,

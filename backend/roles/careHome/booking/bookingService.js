@@ -442,10 +442,12 @@ const getShiftPlanCalendar = async ({
   return formatShiftPlan(bookings, timezone);
 };
 
-const getEarnings = async ({ userId, userType }) => {
+const getEarnings = async ({ userId, userType, from, to }) => {
   return BookingRepo.getEarnings({
     userId,
     userType,
+    from,
+    to,
     customer: customerTypes.includes(userType),
     supplier: supplierTypes.includes(userType),
   });
