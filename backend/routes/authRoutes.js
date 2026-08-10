@@ -19,7 +19,7 @@ const {
   checkEmailExistsAndVerified,
   changePassword,
   createAdmin,
-  checkUserNameExists
+  checkUserNameExists,
 } = require("../controllers/authController");
 const createRateLimiter = require("../helperUtils/rateLimiter");
 const roleMiddleware = require("../middlewares/roleMiddleware");
@@ -41,10 +41,26 @@ const companyDetailsRateLimiter = createRateLimiter("companyDetails", 15, 15); /
 
 // Create a rate limiter for /links
 const linkRateLimiterEmail = createRateLimiter("link/verify-email", 15, 15); // 15 requests per 15 minutes
-const resendEmailVerificationLinkRateLimiter = createRateLimiter("link/resend-email", 15, 15); // 15 requests per 15 minutes
-const sendPasswordResetLinkRateLimiter = createRateLimiter("link/send-password-reset", 15, 15); // 15 requests per 15 minutes
-const verifyPasswordResetLinkRateLimiter = createRateLimiter("link/reset-password/verify", 15, 15); // 15 requests per 15 minutes
-const resetPasswordViaLinkRateLimiter = createRateLimiter("link/reset-password", 15, 15); // 15 requests per 15 minutes
+const resendEmailVerificationLinkRateLimiter = createRateLimiter(
+  "link/resend-email",
+  15,
+  15,
+); // 15 requests per 15 minutes
+const sendPasswordResetLinkRateLimiter = createRateLimiter(
+  "link/send-password-reset",
+  15,
+  15,
+); // 15 requests per 15 minutes
+const verifyPasswordResetLinkRateLimiter = createRateLimiter(
+  "link/reset-password/verify",
+  15,
+  15,
+); // 15 requests per 15 minutes
+const resetPasswordViaLinkRateLimiter = createRateLimiter(
+  "link/reset-password",
+  15,
+  15,
+); // 15 requests per 15 minutes
 
 const changePasswordRateLimiter = createRateLimiter("changePassword", 15, 10);
 
@@ -89,24 +105,39 @@ router.delete("/delete-account", auth, hardDeleteAccount);
 router.post("/social-auth", socialAuth);
 
 router.get("/link/verify-email", linkRateLimiterEmail, verifyEmailViaLink);
-router.post("/link/resend-email", resendEmailVerificationLinkRateLimiter, resendEmailVerificationLink);
-router.post("/link/send-password-reset", sendPasswordResetLinkRateLimiter, sendPasswordResetLink);
-router.get("/link/reset-password/verify", verifyPasswordResetLinkRateLimiter, verifyPasswordResetLink);
-router.post("/link/reset-password", resetPasswordViaLinkRateLimiter, resetPasswordViaLink);
+router.post(
+  "/link/resend-email",
+  resendEmailVerificationLinkRateLimiter,
+  resendEmailVerificationLink,
+);
+router.post(
+  "/link/send-password-reset",
+  sendPasswordResetLinkRateLimiter,
+  sendPasswordResetLink,
+);
+router.get(
+  "/link/reset-password/verify",
+  verifyPasswordResetLinkRateLimiter,
+  verifyPasswordResetLink,
+);
+router.post(
+  "/link/reset-password",
+  resetPasswordViaLinkRateLimiter,
+  resetPasswordViaLink,
+);
 router.post(
   "/change-password",
   changePasswordRateLimiter,
   auth,
-  changePassword
+  changePassword,
 );
-
 
 router.put(
   "/company-details",
   auth,
   companyDetailsRateLimiter,
   roleMiddleware(["organizer"]),
-  companyDetails
+  companyDetails,
 );
 
 module.exports = router;

@@ -133,7 +133,6 @@ const userSchema = new mongoose.Schema(
         enum: ["pending", "verified"],
         default: "pending",
       },
-
     },
 
     password: {
@@ -315,7 +314,6 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: true,
       },
-
     },
     weeklyHours: {
       type: Number,
@@ -326,12 +324,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-
   },
   {
     timestamps: true,
-    discriminatorKey: "userType"
-  }
+    discriminatorKey: "userType",
+  },
 );
 
 // Hash password before saving to database
@@ -352,7 +349,6 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-
 // Generate JWT token
 userSchema.methods.generateAuthToken = function () {
   const user = this;
@@ -367,9 +363,8 @@ userSchema.statics.findByCredentials = async (
   email,
   password,
   timezone,
-  populateFields = []
+  populateFields = [],
 ) => {
-
   let query = User.findOne({ email: email.toLowerCase().trim() });
 
   // Populate specified fields
@@ -462,7 +457,7 @@ userSchema.methods.generateOtp = function (type = "email", timezone = "UTC") {
 };
 
 userSchema.methods.generateEmailVerificationToken = function (
-  timezone = "UTC"
+  timezone = "UTC",
 ) {
   const user = this;
   const now = Date.now();
@@ -572,8 +567,7 @@ userSchema.methods.toJSON = function (userData) {
     userObject.companyDetails.logo &&
     !userObject.companyDetails.logo.startsWith("http")
   ) {
-    userObject.companyDetails.logo =
-      baseUrl + userObject.companyDetails.logo;
+    userObject.companyDetails.logo = baseUrl + userObject.companyDetails.logo;
   }
 
   if (
@@ -605,11 +599,11 @@ userSchema.methods.addBaseUrlToProfileIcon = function (user) {
 userSchema.index(
   {
     email: 1,
-    "accountState.userType": 1
+    "accountState.userType": 1,
   },
   {
-    name: "email_userType_login_idx"
-  }
+    name: "email_userType_login_idx",
+  },
 );
 
 userSchema.index({ location: "2dsphere" });

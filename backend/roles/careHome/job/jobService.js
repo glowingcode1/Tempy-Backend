@@ -5,6 +5,9 @@ const formatJobToTimezone = require("./formator/formatJobToTimezone");
 const {
   getBidByJob,
   findBidById_,
+  updateBidStatuses,
+  findByIdAndUpdate: findBidByIdAndUpdate,
+  findBidById,
 } = require("../../../roles/aggency/bid/bidRepository");
 
 const createJob = async (data) => {
@@ -14,12 +17,26 @@ const createJob = async (data) => {
 const updateJobBidStatus = async (id, status, user) => {
   const JobBid = await findBidById_(id);
 
-  if (!JobBid) {
-    return null;
+  if (!JobBid) return null;
+
+  // If a non-admin user is making the request, ensure they're the job creator
+  if (user) {
+    const jobCreatorId = String(JobBid.jobCreator || JobBid.user || "");
+    if (String(user) !== jobCreatorId) {
+      return null;
+    }
   }
-  return;
-  const updatedBid = await JobRepo.updateJobBidStatus(id, status, user);
-  return updatedBid;
+
+  // If accepting a bid, accept this and reject others for the shift
+  if (status === "accepted") {
+    await updateBidStatuses(JobBid._id, "accepted", "rejected");
+    // return the updated bid
+    return await findBidById(JobBid._id);
+  }
+
+  // Otherwise just update the bid status
+  const updated = await findBidByIdAndUpdate(id, { status });
+  return updated;
 };
 
 const getJobBids = async ({
@@ -33,7 +50,6 @@ const getJobBids = async ({
   user,
   jobCreator,
   dateFilter,
-
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -179,4 +195,5 @@ module.exports = {
   deleteJob,
   getJobBids,
   getJobDetails,
+  updateJobBidStatus,
 };

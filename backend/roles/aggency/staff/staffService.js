@@ -15,9 +15,7 @@ const {
   isFavorite,
   favoriteStaff,
 } = require("../../../commonModules/favorite/favoriteRepository");
-const {
-  findAddressByUser,
-} = require("../../nurse/address/addressRepository");
+const { findAddressByUser } = require("../../nurse/address/addressRepository");
 const {
   findReviewByUser,
   findReviewByStaff,
@@ -211,13 +209,14 @@ const getAvailableStaff = async ({ timezone, page, limit, user, bid, job }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
   const [bidDocument, jobDetails] = await Promise.all([
-    findBidById_(bid, { shift: 1, job: 1 }),
+    findBidById_(bid, { shift: 1, job: 1, user: 1 }),
     StaffRepo.findJobById_(job, { location: 1 }),
   ]);
   if (!bidDocument) return { error: "bid_not_found" };
   if (!jobDetails) return { error: "job_not_found" };
 
-  const staff = await StaffRepo.findStaffNearJob(user, jobDetails, 50);
+  const agencyId = bidDocument.user;
+  const staff = await StaffRepo.findStaffNearJob(agencyId, jobDetails, 50);
   if (!staff?.length) return { error: "no_staff_available_nearby" };
   console.log("staff", staff);
 

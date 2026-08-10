@@ -129,7 +129,7 @@ const createAdmin = async (req, res) => {
   }
 };
 
-//register
+// register
 const register = async (req, res) => {
   const result = await registerUserUtility(req, res, {
     autoVerify: false,
@@ -332,8 +332,6 @@ const login = async (req, res) => {
     const userObject = user.toJSON();
 
     const token = user.generateAuthToken();
-
-    // Format the user response using the utility function
     let response = formatUserResponse(userObject, token, [], ["resetToken"]);
 
     //deviceId and deviceToken store in db
@@ -1219,7 +1217,6 @@ const socialAuth = async (req, res) => {
         data: response,
       });
     } else {
-      // If user does not exist, treat this as a signup
       const newUser = new User({
         email,
         name,
