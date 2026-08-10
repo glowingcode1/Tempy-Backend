@@ -14,13 +14,15 @@ const userDescriminatorSchema = new mongoose.Schema({
   ],
 });
 
-
 let userDescriminatorModel;
 
 const getUserDescriminatorModel = () => {
   if (!userDescriminatorModel) {
     const { User } = require("./UserModel");
-    userDescriminatorModel = User.discriminator("userDescriminator", userDescriminatorSchema);
+    userDescriminatorModel = User.discriminator(
+      "userDescriminator",
+      userDescriminatorSchema,
+    );
   }
   return userDescriminatorModel;
 };

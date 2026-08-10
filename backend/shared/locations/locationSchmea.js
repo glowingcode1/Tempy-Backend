@@ -8,7 +8,7 @@ const LocationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["Point"]
+      enum: ["Point"],
     },
     coordinates: {
       type: [Number],
@@ -43,7 +43,7 @@ const LocationSchema = new mongoose.Schema(
       default: "",
     },
   },
-  { _id: false }
+  { _id: false },
 );
 LocationSchema.pre("validate", function () {
   if (this.coordinates?.length === 2 && !this.type) {

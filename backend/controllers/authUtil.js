@@ -164,8 +164,6 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
       });
       return { responseSent: true };
     }
-
-    // Validate phone number
     if (phoneNumber) {
       if (
         typeof phoneNumber !== "object" ||
@@ -197,6 +195,7 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
 
     // ✅ Create instance from the correct model
     let user = existingUser || new ModelToUse();
+
     Object.assign(user, {
       email,
       phoneNumber: phoneNumber || { code: "", number: "" },
@@ -233,7 +232,6 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
     }
 
     await user.save();
-    
 
     defaultSetNotificationPreferences(user._id);
 
@@ -247,15 +245,14 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
       userObject.emailVerificationLink = emailVerificationLink;
     }
     const formattedResponse = formatUserResponse(userObject);
-    
 
     return { success: true, user: formattedResponse, responseSent: false };
   } catch (error) {
-      console.error("REGISTER USER ERROR");
+    console.error("REGISTER USER ERROR");
 
-      console.error(error);
+    console.error(error);
 
-      console.error(error.stack);
+    console.error(error.stack);
     if (error?.code === 11000) {
       const key = Object.keys(error?.keyPattern || {})[0];
       let translationKey = "duplicate_key";
@@ -264,8 +261,6 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
       if (key === "phoneNumber.code" || key === "phoneNumber.number") {
         translationKey = "phone_number_already";
       }
-
-
 
       sendResponse({
         res,

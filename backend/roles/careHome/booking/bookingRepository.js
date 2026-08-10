@@ -103,9 +103,18 @@ const getBooking = async ({
   }
 
   if (status) {
+    // support multiple status values: array or comma-separated string
+    let statusMatch;
+    if (Array.isArray(status)) {
+      statusMatch = { $in: status };
+    } else if (typeof status === "string" && status.includes(",")) {
+      statusMatch = { $in: status.split(",").map((s) => s.trim()) };
+    } else {
+      statusMatch = status;
+    }
     pipeline.push({
       $match: {
-        status,
+        status: statusMatch,
       },
     });
   } else {
@@ -292,9 +301,18 @@ const getBookingByJob = async ({
   }
 
   if (status) {
+    // support multiple status values: array or comma-separated string
+    let statusMatch;
+    if (Array.isArray(status)) {
+      statusMatch = { $in: status };
+    } else if (typeof status === "string" && status.includes(",")) {
+      statusMatch = { $in: status.split(",").map((s) => s.trim()) };
+    } else {
+      statusMatch = status;
+    }
     pipeline.push({
       $match: {
-        status,
+        status: statusMatch,
       },
     });
   } else {
