@@ -101,7 +101,7 @@ const createBooking = async (data) => {
   const bid = await findBidById_(data.bid);
 
   if (!bid) return { error: "Bid_not_found" };
-  if (bid.status !== "pending") return { error: "Bid_not_available" };
+  if (bid.status !== "accepted") return { error: "Bid_not_available" };
 
   const [user] = await Promise.all([findUserById(bid.user)]);
 
