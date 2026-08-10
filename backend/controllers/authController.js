@@ -1111,7 +1111,15 @@ const socialAuth = async (req, res) => {
       ],
       enumFields: {
         provider: ["google", "facebook", "apple"], // Allowed values for provider
-        userType: ["user", "nurse"],
+        userType: [
+          "hospital",
+          "localAuthority",
+          "careHome",
+          "agency",
+          "homeCareCompany",
+          "user",
+          "nurse",
+        ],
       },
     };
 
