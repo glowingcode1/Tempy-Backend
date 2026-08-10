@@ -19,7 +19,12 @@ const createBooking = async (req, res) => {
     })
   )
     return;
-  let data = {
+
+  if (req.user?.userType === "nurse") {
+    worker = req.user._id;
+  }
+
+  const data = {
     bid,
     worker: worker || null,
     createdByUserType: req.user?.userType || null,
