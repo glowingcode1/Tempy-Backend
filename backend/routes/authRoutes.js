@@ -20,7 +20,6 @@ const {
   changePassword,
   createAdmin,
   checkUserNameExists,
-  completeProfile,
 } = require("../controllers/authController");
 const createRateLimiter = require("../helperUtils/rateLimiter");
 const roleMiddleware = require("../middlewares/roleMiddleware");
@@ -30,7 +29,6 @@ const router = express.Router();
 // Create a rate limiter for signup routes
 // Define rate limiters
 const signupRateLimiter = createRateLimiter("register", 15, 15); // 15 requests per 15 minutes
-const completeProfileRateLimiter = createRateLimiter("completeProfile", 15, 15); // 15 requests per 15 minutes
 const loginRateLimiter = createRateLimiter("login", 15, 15); // 15 requests per 15 minute
 const loginRateLimiterTest = createRateLimiter("loginTest", 15, 15); // 15 requests per 15 minute
 const generateOtpRateLimiter = createRateLimiter("forgotPassword", 15, 15); // 15 requests per 15 minutes
@@ -71,7 +69,6 @@ router.post("/internal/admin/create", signupRateLimiter, createAdmin);
 router.post("/check-email-exists", checkEmailExistsAndVerified);
 router.post("/check-userName-exists", checkUserNameExists);
 router.post("/register", signupRateLimiter, register);
-router.put("/complete-profile", auth, completeProfileRateLimiter, completeProfile);
 router.post("/login", loginRateLimiter, login);
 if (process.env.NODE_ENV || "dev") {
   router.post("/login-test", loginRateLimiterTest, loginTest);

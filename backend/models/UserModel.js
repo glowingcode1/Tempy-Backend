@@ -29,11 +29,6 @@ const USER_TYPES = [
 ];
 const GENDER_TYPES = ["Male", "Female", "Other"];
 
-// App-side (mobile) user types that go through the two-step
-// signUp -> completeProfile flow. All other userTypes are created
-// via the web flow and collect everything in a single call.
-const APP_TWO_STEP_USER_TYPES = ["user", "nurse"];
-
 const userSchema = new mongoose.Schema(
   {
     profileIcon: {
@@ -61,6 +56,7 @@ const userSchema = new mongoose.Schema(
     },
     location: {
       type: LocationSchema,
+      default: {},
     },
 
     referralCode: {
@@ -176,17 +172,6 @@ const userSchema = new mongoose.Schema(
           default: Date(),
         },
       },
-    },
-
-    // Tracks whether the user has finished the second step of the
-    // app signup flow (completeProfile API). Only meaningful for
-    // "user" and "nurse" accountState.userType values — see
-    // APP_TWO_STEP_USER_TYPES. Web-created accounts (careHome,
-    // hospital, agency, etc.) are set to true immediately since they
-    // don't go through this two-step flow.
-    completeProfile: {
-      type: Boolean,
-      default: false,
     },
 
     otpInfo: {
@@ -634,5 +619,4 @@ module.exports = {
   GENDER_TYPES,
   customerTypes,
   supplierTypes,
-  APP_TWO_STEP_USER_TYPES,
 };

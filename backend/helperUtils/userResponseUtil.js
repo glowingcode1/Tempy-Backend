@@ -19,6 +19,7 @@ const formatUserResponse = (
           orignalSubAdminId: userObject.orignalSubAdminId,
         }
       : null;
+
   const pIcon = getFullImageUrl(userObject?.profileIcon) || null;
   const userType = userObject.accountState?.userType;
   // Construct basicInfo cleanly using conditionals
@@ -48,8 +49,6 @@ const formatUserResponse = (
       },
       blueTick: userObject.accountState?.blueTick?.isActive || false,
     },
-    completeProfile:
-      userObject.completeProfile ?? (userType === "admin" ? true : false),
     location,
     ...(subAdmin ? { subAdmin } : {}),
     averageRating: userObject.averageRating || 0,

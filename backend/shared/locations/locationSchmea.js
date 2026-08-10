@@ -1,40 +1,5 @@
 const { default: mongoose } = require("mongoose");
 
-const normalizeLocationValue = (value) => {
-  if (!value || typeof value !== "object") {
-    return {
-      title: "",
-      type: "Point",
-      coordinates: [0, 0],
-      fullAddress: "",
-      city: "",
-      country: "",
-      state: "",
-      postalCode: "",
-    };
-  }
-
-  const normalized = {
-    title: value.title || "",
-    type: value.type || "Point",
-    coordinates:
-      Array.isArray(value.coordinates) && value.coordinates.length === 2
-        ? value.coordinates.map((coord) => Number(coord))
-        : [0, 0],
-    fullAddress: value.fullAddress || "",
-    city: value.city || "",
-    country: value.country || "",
-    state: value.state || "",
-    postalCode: value.postalCode || "",
-  };
-
-  if (!normalized.coordinates.every((coord) => Number.isFinite(coord))) {
-    normalized.coordinates = [0, 0];
-  }
-
-  return normalized;
-};
-
 const LocationSchema = new mongoose.Schema(
   {
     title: {
@@ -81,18 +46,11 @@ const LocationSchema = new mongoose.Schema(
   { _id: false },
 );
 LocationSchema.pre("validate", function () {
-  const normalized = normalizeLocationValue(this.toObject({ virtuals: false }));
-  this.title = normalized.title;
-  this.type = normalized.type;
-  this.coordinates = normalized.coordinates;
-  this.fullAddress = normalized.fullAddress;
-  this.city = normalized.city;
-  this.country = normalized.country;
-  this.state = normalized.state;
-  this.postalCode = normalized.postalCode;
+  if (this.coordinates?.length === 2 && !this.type) {
+    this.type = "Point";
+  }
 });
 
 module.exports = {
   LocationSchema,
-  normalizeLocationValue,
 };

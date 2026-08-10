@@ -69,7 +69,7 @@ const createStaff = async (req, res) => {
   if (staff) {
     if (
       !validateParams(req, res, {
-        rawData: ["speciality", "ratePerHour", "platformPercent","branch"],
+        rawData: ["speciality", "ratePerHour", "platformPercent", "branch"],
       })
     )
       return;
@@ -139,12 +139,12 @@ const createStaff = async (req, res) => {
 
 const getStaff = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, user,bid } = req.query;
+  let { keyword, status, user, bid } = req.query;
 
   let customer = await customerTypes.includes(req.user.userType);
   let supplier = await supplierTypes.includes(req.user.userType);
   if (user) {
-    customer = null, supplier = null;
+    ((customer = null), (supplier = null));
   } else {
     if (customer) {
       user = req.user._id;
@@ -348,21 +348,20 @@ const deleteStaff = async (req, res) => {
   }
 };
 
-
-
 const getAvailableStaff = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { user,bid,job } = req.query;
-  if(!bid ||!user||!job) {
+  let { bid, job } = req.query;
+  if (!bid || !job) {
     return sendResponse({
       res,
       statusCode: 400,
-      translationKey: "bid_user_and_job_required",
+      translationKey: "bid_and_job_required",
     });
   }
 
   try {
     const timezone = req.user.timezone;
+    const user = req.user._id;
     const { staff, meta, error } = await StaffService.getAvailableStaff({
       timezone,
       page,

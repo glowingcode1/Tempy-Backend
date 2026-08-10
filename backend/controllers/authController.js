@@ -1,9 +1,4 @@
-const {
-  User,
-  generateResetToken,
-  USER_TYPES,
-  APP_TWO_STEP_USER_TYPES,
-} = require("../models/UserModel");
+const { User, generateResetToken, USER_TYPES } = require("../models/UserModel");
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const bcrypt = require("bcryptjs");
@@ -105,7 +100,6 @@ const createAdmin = async (req, res) => {
       timezone,
       accountState: { userType: "admin", status: "active" },
       verificationStatus: { email: "verified", phoneNumber: "verified" },
-      completeProfile: true,
     });
 
     await user.save();
@@ -135,11 +129,7 @@ const createAdmin = async (req, res) => {
   }
 };
 
-// register / signUp — STEP 1 of the app flow for "user" and "nurse".
-// Collects only: profileIcon, email, name, password, deviceId,
-// deviceType (+ userType/timezone). See registerUserUtility for the
-// field-splitting logic. For every other userType (web) this remains
-// a single-step registration, unchanged.
+// register
 const register = async (req, res) => {
   const result = await registerUserUtility(req, res, {
     autoVerify: false,
@@ -163,119 +153,6 @@ const register = async (req, res) => {
     translationKey: "signup_successful",
     data: result.user,
   });
-};
-
-const completeProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-
-    if (!user) {
-      return sendResponse({
-        res,
-        statusCode: 404,
-        translationKey: "user_not_found",
-      });
-    }
-
-    const userType = user.accountState.userType;
-
-    if (!APP_TWO_STEP_USER_TYPES.includes(userType)) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "complete_profile_not_applicable",
-      });
-    }
-
-    const {
-      phoneNumber,
-      gender,
-      taxNumber,
-      governmentIdentity,
-      degree,
-      certification,
-      location,
-    } = req.body;
-
-    // Fields required for every app user/nurse completing their profile
-    const validationOptions = {
-      rawData: ["phoneNumber", "gender", "governmentIdentity", "location"],
-      enumFields: {
-        gender: ["Male", "Female", "Other"],
-      },
-    };
-
-    // Nurses additionally need their professional details
-    if (userType === "nurse") {
-      validationOptions.rawData.push("taxNumber", "degree", "certification");
-    }
-
-    if (!validateParams(req, res, validationOptions)) {
-      return;
-    }
-
-    // Validate phone number shape/validity
-    if (
-      typeof phoneNumber !== "object" ||
-      !phoneNumber.code ||
-      !phoneNumber.number ||
-      !validatePhoneNumber(`${phoneNumber.code}${phoneNumber.number}`).valid
-    ) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "invalid_phone",
-      });
-    }
-
-    // Make sure this phone number isn't already verified on another account
-    const existingPhone = await User.findOne({
-      _id: { $ne: user._id },
-      "phoneNumber.code": phoneNumber.code,
-      "phoneNumber.number": phoneNumber.number,
-      "verificationStatus.phoneNumber": "verified",
-    });
-    if (existingPhone) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "phone_number_already",
-      });
-    }
-
-    user.phoneNumber = phoneNumber;
-    user.gender = gender;
-    user.location = location;
-    user.governmentIdentity = governmentIdentity;
-
-    if (userType === "nurse") {
-      user.taxNumber = taxNumber;
-      user.degree = degree;
-      user.certification = certification;
-    }
-
-    user.completeProfile = true;
-
-    await user.save();
-
-    const userObject = user.toJSON();
-    const response = formatUserResponse(userObject);
-
-    return sendResponse({
-      res,
-      statusCode: 200,
-      translationKey: "profile_completed",
-      data: response,
-    });
-  } catch (error) {
-    const readableError = getReadableErrorMessage(error);
-    return sendResponse({
-      res,
-      statusCode: readableError.statusCode,
-      translationKey: readableError.message,
-      error,
-    });
-  }
 };
 
 const companyDetails = async (req, res) => {
@@ -767,7 +644,7 @@ const verifyOtp = async (req, res) => {
     if (type === "email") {
       user = await User.findOne({ email: email.toLowerCase() })
         .select(
-          "email accountState otpInfo verificationStatus timezone resetToken completeProfile",
+          "email accountState otpInfo verificationStatus timezone resetToken",
         )
         .session(session);
     }
@@ -778,7 +655,7 @@ const verifyOtp = async (req, res) => {
         "phoneNumber.number": phoneNumber.number,
       })
         .select(
-          "phoneNumber accountState otpInfo verificationStatus timezone resetToken completeProfile",
+          "phoneNumber accountState otpInfo verificationStatus timezone resetToken",
         )
         .session(session);
     }
@@ -837,11 +714,6 @@ const verifyOtp = async (req, res) => {
 
     const token = user.generateAuthToken();
 
-    // `completeProfile` is included on updatedUser and passed through
-    // to the app here — for userType "user"/"nurse" this tells the
-    // app whether to go to the completeProfile screen (false) or
-    // straight to the home screen (true, e.g. on a returning
-    // re-verification).
     let response = formatUserResponse(updatedUser, token);
 
     return sendResponse({
@@ -1237,7 +1109,15 @@ const socialAuth = async (req, res) => {
       ],
       enumFields: {
         provider: ["google", "facebook", "apple"], // Allowed values for provider
-        userType: ["user", "nurse"],
+        userType: [
+          "hospital",
+          "localAuthority",
+          "careHome",
+          "agency",
+          "homeCareCompany",
+          "user",
+          "nurse",
+        ],
       },
     };
 
@@ -1337,12 +1217,6 @@ const socialAuth = async (req, res) => {
         data: response,
       });
     } else {
-      // If user does not exist, treat this as a signup.
-      // NOTE: socialAuth for "user"/"nurse" still lands here with
-      // completeProfile left at its schema default (false), since
-      // location/governmentIdentity/etc. aren't collected via social
-      // login either — the app should route these users to the
-      // completeProfile screen too, same as email signUp.
       const newUser = new User({
         email,
         name,
@@ -1354,7 +1228,6 @@ const socialAuth = async (req, res) => {
         },
         accountState: { userType: userType, status: "active" },
         location,
-        completeProfile: !APP_TWO_STEP_USER_TYPES.includes(userType),
       });
 
       await newUser.save({ session });
@@ -1530,8 +1403,6 @@ const checkUserNameExists = async (req, res) => {
 module.exports = {
   createAdmin,
   register,
-  signUp: register, // alias: this IS the app's step-1 signUp endpoint
-  completeProfile, // app's step-2 endpoint (auth required)
   companyDetails,
   login,
   generateOtp,

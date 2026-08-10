@@ -9,24 +9,24 @@ const nurseSchema = new mongoose.Schema({
   },
   taxNumber: {
     type: String,
-    default: "",
+    required: true,
   },
   governmentIdentity: [
     {
       type: String,
-      default: [],
+    required: true,
     },
   ],
   degree: [
     {
       type: String,
-      default: [],
+    required: true,
     },
   ],
   certification: [
     {
       type: String,
-      default: [],
+    required: true,
     },
   ],
   provideServicesTo: {

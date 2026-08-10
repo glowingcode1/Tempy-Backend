@@ -9,7 +9,7 @@ const userDescriminatorSchema = new mongoose.Schema({
   governmentIdentity: [
     {
       type: String,
-      default: [],
+      required: true,
     },
   ],
 });
