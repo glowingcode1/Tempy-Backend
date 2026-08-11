@@ -107,6 +107,19 @@ const createBooking = async (data) => {
 
   if (!user) return { error: "User_not_found" };
 
+  if (data.worker) {
+    const conflictingBooking = await BookingRepo.findConflictingBooking(
+      data.worker,
+      bid.shift,
+    );
+
+    if (conflictingBooking) {
+      return {
+        error: "Worker_already_assigned_during_this_time",
+      };
+    }
+  }
+
   const payment = calculatePayment(
     bid.shift.startTime,
     bid.shift.endTime,

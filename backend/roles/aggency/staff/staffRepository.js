@@ -14,6 +14,7 @@ const createStaff = async (data) => {
   try {
     const existingStaff = await Staff.findOne({
       email: data.email,
+      staff: data.staff,
     });
     if (existingStaff) {
       return { error: "Staff_already_exists" };
@@ -90,20 +91,20 @@ const getStaffCustomer = async ({
     $unwind: { path: "$worker", preserveNullAndEmptyArrays: true },
   });
   //branch
-    pipeline.push({
-      $lookup: {
-        from: "branches",
-        let: { branchId: "$branch" },
-        pipeline: [
-          { $match: { $expr: { $eq: ["$_id", "$$branchId"] } } },
-          { $project: { name: 1, location: 1, manager: 1 } },
-        ],
-        as: "branch",
-      },
-    });
-    pipeline.push({
-      $unwind: { path: "$branch", preserveNullAndEmptyArrays: true },
-    });
+  pipeline.push({
+    $lookup: {
+      from: "branches",
+      let: { branchId: "$branch" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$_id", "$$branchId"] } } },
+        { $project: { name: 1, location: 1, manager: 1 } },
+      ],
+      as: "branch",
+    },
+  });
+  pipeline.push({
+    $unwind: { path: "$branch", preserveNullAndEmptyArrays: true },
+  });
 
   // review stats for the customer
   pipeline.push({
@@ -761,7 +762,7 @@ const getStaff = async ({
     staff,
     meta,
   };
-};;
+};
 
 const getStaffByJob = async ({
   timezone,
@@ -955,8 +956,11 @@ const findStaffById = async (id) => {
 const findStaffById_ = async (id) => {
   return Staff.findById(id);
 };
-const findStaffByUserAndStaff = async (user,staff) => {
-  return Staff.findOne({ user: new mongoose.Types.ObjectId(user), staff: new mongoose.Types.ObjectId(staff) });
+const findStaffByUserAndStaff = async (user, staff) => {
+  return Staff.findOne({
+    user: new mongoose.Types.ObjectId(user),
+    staff: new mongoose.Types.ObjectId(staff),
+  });
 };
 
 const findByIdAndUpdate = async (id, data) => {
@@ -971,8 +975,6 @@ const deleteStaff = async (id) => {
     { new: true },
   );
 };
-
-
 
 const findStaffNearJob = async (user, jobDetails, km = 50) => {
   const [lng, lat] = jobDetails?.location?.coordinates || [];
@@ -1076,6 +1078,108 @@ const findStaffNearJob = async (user, jobDetails, km = 50) => {
 const getStaffIdsByUser = (userId) =>
   Staff.find({ user: userId }).distinct("staff");
 
+const findStaffRequestById = async (id) => {
+  return Staff.findById(id);
+};
+
+const getMyStaffRequests = async ({ nurseId, page, limit, skip }) => {
+  const pipeline = [
+    {
+      $match: {
+        staff: new mongoose.Types.ObjectId(nurseId),
+        status: "pending",
+      },
+    },
+
+    // Agency
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "agency",
+      },
+    },
+
+    {
+      $unwind: {
+        path: "$agency",
+        preserveNullAndEmptyArrays: false,
+      },
+    },
+
+    {
+      $lookup: {
+        from: "branches",
+        localField: "branch",
+        foreignField: "_id",
+        as: "branch",
+      },
+    },
+
+    {
+      $unwind: {
+        path: "$branch",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    {
+      $project: {
+        _id: 1,
+        speciality: 1,
+        ratePerHour: 1,
+        platformPercent: 1,
+        status: 1,
+        createdAt: 1,
+
+        agency: {
+          _id: "$agency._id",
+          name: "$agency.name",
+          email: "$agency.email",
+          profileIcon: "$agency.profileIcon",
+        },
+
+        branch: {
+          _id: "$branch._id",
+          name: "$branch.name",
+          location: "$branch.location",
+        },
+      },
+    },
+
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+
+    {
+      $facet: {
+        data: [{ $skip: skip }, ...(limit === 0 ? [] : [{ $limit: limit }])],
+        totalFiltered: [
+          {
+            $count: "count",
+          },
+        ],
+      },
+    },
+  ];
+
+  const result = await Staff.aggregate(pipeline);
+
+  const requests = result[0]?.data || [];
+
+  const total = result[0]?.totalFiltered?.[0]?.count || 0;
+
+  const meta = generateMeta(page, limit, total);
+
+  return {
+    requests,
+    meta,
+  };
+};
+
 module.exports = {
   createStaff,
   getStaff,
@@ -1090,4 +1194,6 @@ module.exports = {
   findStaffByUserAndStaff,
   findStaffNearJob,
   getStaffIdsByUser,
+  findStaffRequestById,
+  getMyStaffRequests,
 };

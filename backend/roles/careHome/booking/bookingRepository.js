@@ -525,7 +525,7 @@ const filterFreeStaff = async (staffIds, shift) => {
       $match: {
         worker: { $in: workerIds },
         "shift.date": new Date(shift.date),
-        status: { $in: ["pending", "inProgress"] },
+        status: { $in: ["pending", "active", "inProgress"] },
       },
     },
     // booking start/end → minutes, with overnight correction
@@ -596,6 +596,123 @@ const filterFreeStaff = async (staffIds, shift) => {
 
   const busySet = new Set(busy.map((b) => String(b._id)));
   return staffIds.filter((id) => !busySet.has(String(id)));
+};
+
+const findConflictingBooking = async (workerId, shift) => {
+  if (!workerId || !shift?.date || !shift?.startTime || !shift?.endTime) {
+    return null;
+  }
+
+  const toMin = (time) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+
+  let requestedStart = toMin(shift.startTime);
+  let requestedEnd = toMin(shift.endTime);
+
+  // Overnight shift
+  if (requestedEnd <= requestedStart) {
+    requestedEnd += 1440;
+  }
+
+  const workerObjectId = new mongoose.Types.ObjectId(workerId);
+
+  const conflicts = await Booking.aggregate([
+    {
+      $match: {
+        worker: workerObjectId,
+
+        // Only bookings which actually occupy the worker's time
+        status: {
+          $in: ["pending", "active", "inProgress"],
+        },
+
+        "shift.date": new Date(shift.date),
+      },
+    },
+
+    {
+      $addFields: {
+        _existingStart: {
+          $add: [
+            {
+              $multiply: [
+                {
+                  $toInt: {
+                    $arrayElemAt: [{ $split: ["$shift.startTime", ":"] }, 0],
+                  },
+                },
+                60,
+              ],
+            },
+            {
+              $toInt: {
+                $arrayElemAt: [{ $split: ["$shift.startTime", ":"] }, 1],
+              },
+            },
+          ],
+        },
+
+        _existingEndRaw: {
+          $add: [
+            {
+              $multiply: [
+                {
+                  $toInt: {
+                    $arrayElemAt: [{ $split: ["$shift.endTime", ":"] }, 0],
+                  },
+                },
+                60,
+              ],
+            },
+            {
+              $toInt: {
+                $arrayElemAt: [{ $split: ["$shift.endTime", ":"] }, 1],
+              },
+            },
+          ],
+        },
+      },
+    },
+
+    {
+      $addFields: {
+        _existingEnd: {
+          $cond: [
+            {
+              $lte: ["$_existingEndRaw", "$_existingStart"],
+            },
+            {
+              $add: ["$_existingEndRaw", 1440],
+            },
+            "$_existingEndRaw",
+          ],
+        },
+      },
+    },
+
+    {
+      $match: {
+        $expr: {
+          $and: [
+            {
+              $lt: ["$_existingStart", requestedEnd],
+            },
+            {
+              $gt: ["$_existingEnd", requestedStart],
+            },
+          ],
+        },
+      },
+    },
+
+    {
+      $limit: 1,
+    },
+  ]);
+
+  return conflicts[0] || null;
 };
 
 const getWeeklyHours = async (userIds = []) => {
@@ -887,6 +1004,7 @@ module.exports = {
   getBookingByJob,
   findBookingByUserId,
   filterFreeStaff,
+  findConflictingBooking,
   getWeeklyHours,
   getBookingsByUsersAndDateRange,
   getWorkerIdsByUserOrBranch,
