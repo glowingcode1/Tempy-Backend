@@ -1185,6 +1185,10 @@ const socialAuth = async (req, res) => {
       existingUser.provider = provider; // Update the provider field to reflect the latest social login
       existingUser.timezone = timezone; // Update the timezone to reflect the user's current login
       existingUser.accountState.status = "active"; // Ensure the account is active
+      // If the client provided a desired userType (e.g. agency, careHome), update it here
+      if (userType && existingUser.accountState?.userType !== userType) {
+        existingUser.accountState.userType = userType;
+      }
       if (name !== undefined) {
         existingUser.name = name; // Update first name if provided
       }
