@@ -1,17 +1,6 @@
 const dashboardRepo = require("./dashboardRepository");
 
-
-const getDashboard = async ({ timezone, companyCoach }) => {
-  const userStats = await dashboardRepo.getUserStats({
-    timezone,
-    companyCoach,
-  });
-
-  return {
-    stats: userStats,
-  };
+const getDashboard = async () => {
+  return dashboardRepo.getDashboardStats();
 };
-
-module.exports = {
-  getDashboard,
-};
+module.exports = { getDashboard };

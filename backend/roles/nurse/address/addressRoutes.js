@@ -16,17 +16,62 @@ router.use(auth);
 // Create a rate limiter for Promo Codes
 const AddressRateLimiter = createRateLimiter("Addresss");
 
+router.post(
+  "/",
+  roleMiddleware([
+    "nurse",
+    "admin",
+    "careHome",
+    "user",
+    "agency",
+    "homeCareCompany",
+    "localAuthority",
+  ]),
+  AddressRateLimiter,
+  createAddress,
+);
 
-router.post("/", roleMiddleware(["nurse", "user"]), AddressRateLimiter, createAddress);
+router.get(
+  "/",
+  roleMiddleware([
+    "nurse",
+    "admin",
+    "careHome",
+    "user",
+    "agency",
+    "homeCareCompany",
+    "localAuthority",
+  ]),
+  AddressRateLimiter,
+  getAddress,
+);
 
+router.put(
+  "/:id",
+  roleMiddleware([
+    "nurse",
+    "admin",
+    "careHome",
+    "user",
+    "agency",
+    "homeCareCompany",
+    "localAuthority",
+  ]),
+  updateAddress,
+);
 
-router.get("/", roleMiddleware(["nurse","admin","careHome", "user"]), AddressRateLimiter, getAddress);
-
-
-
-router.put("/:id", roleMiddleware(["nurse", "user"]), updateAddress);
-
-
-router.delete("/:id", roleMiddleware(["nurse", "user"]), deleteAddress);
+router.delete(
+  "/:id",
+  roleMiddleware([
+    "nurse",
+    "admin",
+    "careHome",
+    "user",
+    "agency",
+    "homeCareCompany",
+    "localAuthority",
+  ]),
+  deleteAddress,
+);
 
 module.exports = router;

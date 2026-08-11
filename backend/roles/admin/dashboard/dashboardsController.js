@@ -1,23 +1,10 @@
-const {
-  sendResponse,
-} = require("../../../helperUtils/responseUtil");
+const { sendResponse } = require("../../../helperUtils/responseUtil");
 
 const dashboardService = require("./dashboardService");
 
-
 const getDashboard = async (req, res) => {
-  let { timezone } = req.user || "UTC";
-  let companyCoach;
-  if (req.user.userType === "coach") {
-    companyCoach = req.user._id;
-  }
-
   try {
-    const dashboard = await dashboardService.getDashboard({
-      timezone,
-      companyCoach,
-    });
-
+    const dashboard = await dashboardService.getDashboard();
     return sendResponse({
       res,
       statusCode: 200,
@@ -25,6 +12,7 @@ const getDashboard = async (req, res) => {
       data: dashboard,
     });
   } catch (error) {
+    console.error("Admin dashboard error:", error);
     return sendResponse({
       res,
       statusCode: 500,
@@ -33,9 +21,4 @@ const getDashboard = async (req, res) => {
     });
   }
 };
-
-
-
-module.exports = {
-  getDashboard,
-};
+module.exports = { getDashboard };
