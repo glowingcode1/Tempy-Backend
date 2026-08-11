@@ -425,8 +425,8 @@ const getBookingCalender = async (req, res) => {
     let user = targetUserId;
     let userType = req.user.userType;
 
-    if (req.query.user) {
-      const targetUser = await findUserById(req.query.user);
+    if (req.query.user || req.query.userId) {
+      const targetUser = await findUserById(targetUserId);
       if (!targetUser) {
         return sendResponse({
           res,
@@ -434,7 +434,7 @@ const getBookingCalender = async (req, res) => {
           translationKey: "User_not_found",
         });
       }
-      userType = targetUser.userType;
+      userType = targetUser.accountState?.userType || targetUser.userType;
       timezone = targetUser.timezone || timezone;
     }
 
