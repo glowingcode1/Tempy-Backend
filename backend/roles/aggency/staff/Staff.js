@@ -83,7 +83,7 @@ const StaffSchema = new mongoose.Schema(
   { timestamps: true },
 );
 // one record per employer↔staff pairing
-StaffSchema.index({ user: 1, staff: 1, email: 1 }, { unique: true });
+StaffSchema.index({ user: 1, staff: 1 }, { unique: true });
 
 const Staff = mongoose.model("Staff", StaffSchema);
 

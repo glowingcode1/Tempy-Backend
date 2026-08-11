@@ -396,6 +396,93 @@ const getAvailableStaff = async (req, res) => {
   }
 };
 
+const respondToStaffRequest = async (req, res) => {
+  const { id } = req.params;
+  const { action } = req.body;
+
+  if (
+    !validateParams(req, res, {
+      pathParams: ["id"],
+      objectIdFields: ["id"],
+    })
+  ) {
+    return;
+  }
+
+  if (!["accept", "reject"].includes(action)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_staff_request_action",
+    });
+  }
+
+  const nurseId = req.user._id;
+
+  try {
+    const result = await StaffService.respondToStaffRequest({
+      staffRecordId: id,
+      nurseId,
+      action,
+    });
+
+    if (result?.error) {
+      return sendResponse({
+        res,
+        statusCode: result.statusCode || 400,
+        translationKey: result.error,
+      });
+    }
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey:
+        action === "accept"
+          ? "staff_request_accepted_successfully"
+          : "staff_request_rejected_successfully",
+      data: result,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
+const getMyStaffRequests = async (req, res) => {
+  const { page, limit } = parsePaginationParams(req);
+
+  try {
+    const { requests, meta } = await StaffService.getMyStaffRequests({
+      nurseId: req.user._id,
+      page,
+      limit,
+    });
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "staff_requests_fetched_successfully",
+      data: requests,
+      meta,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
 module.exports = {
   createStaff,
   getStaff,
@@ -404,4 +491,6 @@ module.exports = {
   getStaffDetails,
   getAllNurses,
   getAvailableStaff,
+  respondToStaffRequest,
+  getMyStaffRequests,
 };
