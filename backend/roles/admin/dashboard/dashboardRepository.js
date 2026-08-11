@@ -123,6 +123,10 @@ const getUserStats = async () => {
     pendingUsers,
     customerCount,
     supplierCount,
+    careHome,
+    agency,
+    nurse,
+    user,
     usersByType,
   ] = await Promise.all([
     User.countDocuments(baseMatch),
@@ -148,6 +152,25 @@ const getUserStats = async () => {
       "accountState.userType": {
         $in: supplierTypes,
       },
+    }),
+
+    User.countDocuments({
+      ...baseMatch,
+      "accountState.userType": "careHome",
+    }),
+
+    User.countDocuments({
+      ...baseMatch,
+      "accountState.userType": "agency",
+    }),
+    User.countDocuments({
+      ...baseMatch,
+      "accountState.userType": "nurse",
+    }),
+
+    User.countDocuments({
+      ...baseMatch,
+      "accountState.userType": "user",
     }),
 
     User.aggregate([
@@ -187,9 +210,7 @@ const getUserStats = async () => {
 
   const usersByTypeFormatted = usersByType.map((item) => ({
     label:
-      customerTypeNames[item._id] ||
-      supplierTypeNames[item._id] ||
-      item._id,
+      customerTypeNames[item._id] || supplierTypeNames[item._id] || item._id,
     value: item.count,
     userType: item._id,
   }));
@@ -200,6 +221,10 @@ const getUserStats = async () => {
     pendingUsers,
     customerCount,
     supplierCount,
+    careHome,
+    agency,
+    nurse,
+    user,
     usersByType: usersByTypeFormatted,
   };
 };
@@ -209,104 +234,41 @@ const getUserStats = async () => {
 // --------------------------------------------------
 
 const getJobStats = async () => {
-  const baseMatch = {
-    status: {
-      $ne: "deleted",
-    },
-  };
+  const [totalJobs, activeJobs, inactiveJobs, completedJobs] =
+    await Promise.all([
+      Job.countDocuments(),
 
-  const [
-    totalJobs,
-    activeJobs,
-    completedJobs,
-    inactiveJobs,
-    jobStatusAggregation,
-  ] = await Promise.all([
-    Job.countDocuments(baseMatch),
+      Job.countDocuments({
+        status: "active",
+      }),
 
-    Job.countDocuments({
-      ...baseMatch,
-      status: "active",
-    }),
+      Job.countDocuments({
+        status: "inactive",
+      }),
 
-    Job.countDocuments({
-      ...baseMatch,
-      status: "completed",
-    }),
-
-    Job.countDocuments({
-      ...baseMatch,
-      status: "inactive",
-    }),
-
-    Job.aggregate([
-      {
-        $match: baseMatch,
-      },
-
-      {
-        $group: {
-          _id: "$status",
-          count: {
-            $sum: 1,
-          },
-        },
-      },
-    ]),
-  ]);
-
-  /*
-   * Your Job schema does not have a "filled" status.
-   *
-   * Therefore we determine filled jobs from bookings.
-   */
-  const filledJobsAggregation = await Booking.aggregate([
-    {
-      $match: {
-        status: {
-          $in: [
-            "pending",
-            "active",
-            "inProgress",
-            "completed",
-          ],
-        },
-      },
-    },
-
-    {
-      $group: {
-        _id: "$job",
-      },
-    },
-
-    {
-      $count: "count",
-    },
-  ]);
-
-  const filledJobs = filledJobsAggregation[0]?.count || 0;
-
-  const openJobs = Math.max(activeJobs - filledJobs, 0);
+      Job.countDocuments({
+        status: "completed",
+      }),
+    ]);
 
   return {
     totalJobs,
     activeJobs,
-    completedJobs,
     inactiveJobs,
+    completedJobs,
 
     status: [
       {
-        label: "Open",
-        value: openJobs,
+        label: "Active",
+        value: activeJobs,
       },
       {
-        label: "Filled",
-        value: filledJobs,
+        label: "Inactive",
+        value: inactiveJobs,
       },
       {
-        label: "Closed",
-        value: completedJobs + inactiveJobs,
+        label: "Completed",
+        value: completedJobs,
       },
     ],
   };
@@ -317,35 +279,30 @@ const getJobStats = async () => {
 // --------------------------------------------------
 
 const getBidStats = async () => {
-  const [
-    totalBids,
-    openBids,
-    acceptedBids,
-    rejectedBids,
-    withdrawnBids,
-  ] = await Promise.all([
-    Bid.countDocuments({
-      status: {
-        $ne: "deleted",
-      },
-    }),
+  const [totalBids, openBids, acceptedBids, rejectedBids, withdrawnBids] =
+    await Promise.all([
+      Bid.countDocuments({
+        status: {
+          $ne: "deleted",
+        },
+      }),
 
-    Bid.countDocuments({
-      status: "pending",
-    }),
+      Bid.countDocuments({
+        status: "pending",
+      }),
 
-    Bid.countDocuments({
-      status: "accepted",
-    }),
+      Bid.countDocuments({
+        status: "accepted",
+      }),
 
-    Bid.countDocuments({
-      status: "rejected",
-    }),
+      Bid.countDocuments({
+        status: "rejected",
+      }),
 
-    Bid.countDocuments({
-      status: "withdraw",
-    }),
-  ]);
+      Bid.countDocuments({
+        status: "withdraw",
+      }),
+    ]);
 
   return {
     totalBids,
@@ -384,24 +341,18 @@ const getBookingStats = async () => {
 
     Booking.countDocuments({
       status: {
-        $in: [
-          "cancelledByWorker",
-          "cancelledByEmployer",
-          "cancelledByUser",
-        ],
+        $in: ["cancelledByWorker", "cancelledByEmployer", "cancelledByUser"],
       },
     }),
   ]);
 
-  const totalFinished =
-    completedBookings + cancelledBookings;
+  const totalFinished = completedBookings + cancelledBookings;
 
   const fillRate =
     totalBookings > 0
       ? Number(
           (
-            ((completedBookings + inProgressBookings) /
-              totalBookings) *
+            ((completedBookings + inProgressBookings) / totalBookings) *
             100
           ).toFixed(2),
         )
@@ -409,12 +360,7 @@ const getBookingStats = async () => {
 
   const completionRate =
     totalBookings > 0
-      ? Number(
-          (
-            (completedBookings / totalBookings) *
-            100
-          ).toFixed(2),
-        )
+      ? Number(((completedBookings / totalBookings) * 100).toFixed(2))
       : 0;
 
   return {
@@ -434,30 +380,26 @@ const getBookingStats = async () => {
 // --------------------------------------------------
 
 const getStaffStats = async () => {
-  const [
-    totalStaff,
-    activeStaff,
-    pendingStaff,
-    inactiveStaff,
-  ] = await Promise.all([
-    Staff.countDocuments({
-      status: {
-        $ne: "deleted",
-      },
-    }),
+  const [totalStaff, activeStaff, pendingStaff, inactiveStaff] =
+    await Promise.all([
+      Staff.countDocuments({
+        status: {
+          $ne: "deleted",
+        },
+      }),
 
-    Staff.countDocuments({
-      status: "active",
-    }),
+      Staff.countDocuments({
+        status: "active",
+      }),
 
-    Staff.countDocuments({
-      status: "pending",
-    }),
+      Staff.countDocuments({
+        status: "pending",
+      }),
 
-    Staff.countDocuments({
-      status: "inactive",
-    }),
-  ]);
+      Staff.countDocuments({
+        status: "inactive",
+      }),
+    ]);
 
   return {
     totalStaff,
@@ -561,10 +503,7 @@ const getUserGrowth = async () => {
           $sum: {
             $cond: [
               {
-                $in: [
-                  "$accountState.userType",
-                  customerTypes,
-                ],
+                $in: ["$accountState.userType", customerTypes],
               },
               1,
               0,
@@ -576,10 +515,7 @@ const getUserGrowth = async () => {
           $sum: {
             $cond: [
               {
-                $in: [
-                  "$accountState.userType",
-                  supplierTypes,
-                ],
+                $in: ["$accountState.userType", supplierTypes],
               },
               1,
               0,
@@ -656,7 +592,7 @@ const getRegionalFillRates = async () => {
 
     {
       $match: {
-        "_id": {
+        _id: {
           $ne: null,
         },
       },
@@ -674,10 +610,7 @@ const getRegionalFillRates = async () => {
             {
               $multiply: [
                 {
-                  $divide: [
-                    "$completed",
-                    "$total",
-                  ],
+                  $divide: ["$completed", "$total"],
                 },
                 100,
               ],
@@ -704,9 +637,7 @@ const getRegionalFillRates = async () => {
     series: [
       {
         name: "Fill Rate",
-        data: result.map((item) =>
-          Number(item.fillRate.toFixed(2)),
-        ),
+        data: result.map((item) => Number(item.fillRate.toFixed(2))),
       },
     ],
   };
@@ -716,35 +647,19 @@ const getRegionalFillRates = async () => {
 // PLATFORM HEALTH
 // --------------------------------------------------
 
-const getPlatformHealth = async ({
-  users,
-  jobs,
-  bids,
-  bookings,
-  staff,
-}) => {
+const getPlatformHealth = async ({ users, jobs, bids, bookings, staff }) => {
   const health = [
-    users.totalUsers > 0
-      ? (users.activeUsers / users.totalUsers) * 100
-      : 0,
+    users.totalUsers > 0 ? (users.activeUsers / users.totalUsers) * 100 : 0,
 
-    jobs.totalJobs > 0
-      ? (jobs.activeJobs / jobs.totalJobs) * 100
-      : 0,
+    jobs.totalJobs > 0 ? (jobs.activeJobs / jobs.totalJobs) * 100 : 0,
 
-    bids.totalBids > 0
-      ? (bids.acceptedBids / bids.totalBids) * 100
-      : 0,
+    bids.totalBids > 0 ? (bids.acceptedBids / bids.totalBids) * 100 : 0,
 
     bookings.totalBookings > 0
-      ? (bookings.completedBookings /
-          bookings.totalBookings) *
-        100
+      ? (bookings.completedBookings / bookings.totalBookings) * 100
       : 0,
 
-    staff.totalStaff > 0
-      ? (staff.activeStaff / staff.totalStaff) * 100
-      : 0,
+    staff.totalStaff > 0 ? (staff.activeStaff / staff.totalStaff) * 100 : 0,
   ];
 
   return {
@@ -756,9 +671,7 @@ const getPlatformHealth = async ({
       "Staff Activity",
     ],
 
-    series: health.map((value) =>
-      Number(Math.min(value, 100).toFixed(2)),
-    ),
+    series: health.map((value) => Number(Math.min(value, 100).toFixed(2))),
   };
 };
 
@@ -786,10 +699,7 @@ const getEventTimeline = async () => {
       .limit(5)
       .select("bid status createdAt"),
 
-    Booking.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select("status createdAt"),
+    Booking.find().sort({ createdAt: -1 }).limit(5).select("status createdAt"),
 
     User.find({
       "accountState.status": {
@@ -840,11 +750,7 @@ const getEventTimeline = async () => {
   ];
 
   return timeline
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt) -
-        new Date(a.createdAt),
-    )
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 10);
 };
 
@@ -945,10 +851,7 @@ const getRecentActivity = async () => {
       .limit(5)
       .select("status bid createdAt"),
 
-    Booking.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select("status createdAt"),
+    Booking.find().sort({ createdAt: -1 }).limit(5).select("status createdAt"),
   ]);
 
   const activities = [
@@ -956,10 +859,8 @@ const getRecentActivity = async () => {
       id: item._id,
       type: "user",
       title: "New user registered",
-      description:
-        item.name || item.email,
-      status:
-        item.accountState?.status || "pending",
+      description: item.name || item.email,
+      status: item.accountState?.status || "pending",
       createdAt: item.createdAt,
     })),
 
@@ -992,11 +893,7 @@ const getRecentActivity = async () => {
   ];
 
   return activities
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt) -
-        new Date(a.createdAt),
-    )
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 10);
 };
 
@@ -1051,8 +948,10 @@ const getDashboardStats = async () => {
       total: users.totalUsers,
       active: users.activeUsers,
       pending: users.pendingUsers,
-      customers: users.customerCount,
-      suppliers: users.supplierCount,
+      careHome: users.careHome,
+      agency: users.agency,
+      nurse: users.nurse,
+      user: users.user,
     },
 
     usersByType: {
