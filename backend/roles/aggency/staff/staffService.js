@@ -43,24 +43,78 @@ const createStaff = async (data, req, res) => {
   if (data.staff) {
     const existing = await getUserDetailsForQRRepo(data.staff);
 
+    if (!existing) {
+      return { error: "staff_not_found" };
+    }
+
+    if (existing.userType !== "nurse") {
+      return { error: "selected_user_is_not_a_nurse" };
+    }
+
+    // Check if this nurse is already associated with this agency
+    const existingStaff = await StaffRepo.findStaffByUserAndStaff(
+      data.user,
+      data.staff,
+    );
+
+    if (existingStaff) {
+      if (existingStaff.status === "pending") {
+        return { error: "staff_request_already_pending" };
+      }
+
+      if (existingStaff.status === "active") {
+        return { error: "staff_already_active" };
+      }
+
+      if (
+        existingStaff.status === "left" ||
+        existingStaff.status === "deleted"
+      ) {
+        // Allow agency to send a new request
+        existingStaff.status = "pending";
+        existingStaff.branch = data.branch;
+        existingStaff.speciality = data.speciality;
+        existingStaff.ratePerHour = data.ratePerHour;
+        existingStaff.platformPercent = data.platformPercent;
+
+        await existingStaff.save();
+
+        return existingStaff;
+      }
+    }
+
     data.name = existing.name;
     data.email = existing.email;
     data.profileIcon = existing.profileIcon;
+
+    // Existing nurse must wait for confirmation
+    data.status = "pending";
+
     const staffRecord = await StaffRepo.createStaff(data);
-    return staffRecord;
-  } else {
-    const staff = await registerUserUtility(req, res, true);
-    console.log("staff", staff);
-    if (!staff || staff.responseSent || staff.error) {
-      return staff;
+
+    if (!staffRecord) {
+      return { error: "Staff_creation_failed" };
     }
-    if (staff.success) {
-      data.staff = staff.user.basicInfo._id;
-    }
-    const staffRecord = await StaffRepo.createStaff(data);
+
     return staffRecord;
   }
-  return null;
+
+  // New nurse registration flow
+  const staff = await registerUserUtility(req, res, true);
+
+  if (!staff || staff.responseSent || staff.error) {
+    return staff;
+  }
+
+  if (staff.success) {
+    data.staff = staff.user.basicInfo._id;
+  }
+
+  data.status = "pending";
+
+  const staffRecord = await StaffRepo.createStaff(data);
+
+  return staffRecord;
 };
 
 const getStaff = async ({
@@ -239,6 +293,57 @@ const getAvailableStaff = async ({ timezone, page, limit, user, bid, job }) => {
   return { staff: formattedStaff };
 };
 
+const respondToStaffRequest = async ({ staffRecordId, nurseId, action }) => {
+  const staffRecord = await StaffRepo.findStaffRequestById(staffRecordId);
+
+  if (!staffRecord) {
+    return {
+      error: "staff_request_not_found",
+      statusCode: 404,
+    };
+  }
+
+  // Security check:
+  // Only the nurse who received this request can accept/reject it.
+  if (staffRecord.staff.toString() !== nurseId.toString()) {
+    return {
+      error: "not_authorized_for_this_staff_request",
+      statusCode: 403,
+    };
+  }
+
+  // Request must still be pending
+  if (staffRecord.status !== "pending") {
+    return {
+      error: "staff_request_already_responded",
+      statusCode: 400,
+    };
+  }
+
+  if (action === "accept") {
+    staffRecord.status = "active";
+  }
+
+  if (action === "reject") {
+    staffRecord.status = "left";
+  }
+
+  await staffRecord.save();
+
+  return staffRecord;
+};
+
+const getMyStaffRequests = async ({ nurseId, page, limit }) => {
+  const skip = limit === 0 ? 0 : (page - 1) * limit;
+
+  return StaffRepo.getMyStaffRequests({
+    nurseId,
+    page,
+    limit,
+    skip,
+  });
+};
+
 module.exports = {
   createStaff,
   getStaff,
@@ -247,4 +352,6 @@ module.exports = {
   deleteStaff,
   getStaffDetails,
   getAllNurses,
+  respondToStaffRequest,
+  getMyStaffRequests,
 };

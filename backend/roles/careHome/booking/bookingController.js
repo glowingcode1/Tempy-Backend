@@ -10,6 +10,9 @@ const mongoose = require("mongoose");
 const moment = require("moment");
 const BookingService = require("./bookingService");
 const { customerTypes, supplierTypes } = require("@UsersModel");
+const {
+  findUserById,
+} = require("../../../roles/admin/usersManagement/usersRepository");
 
 const createBooking = async (req, res) => {
   let { bid, worker } = req.body;
@@ -417,11 +420,26 @@ const getBookingCalender = async (req, res) => {
   }
 
   try {
-    const timezone = req.user.timezone;
-    const user = req.user._id;
-    const customer = await customerTypes.includes(req.user.userType);
-    const userType = req.user.userType;
-    const supplier = await supplierTypes.includes(req.user.userType);
+    let timezone = req.user.timezone;
+    const targetUserId = req.query.user || req.query.userId || req.user._id;
+    let user = targetUserId;
+    let userType = req.user.userType;
+
+    if (req.query.user) {
+      const targetUser = await findUserById(req.query.user);
+      if (!targetUser) {
+        return sendResponse({
+          res,
+          statusCode: 404,
+          translationKey: "User_not_found",
+        });
+      }
+      userType = targetUser.userType;
+      timezone = targetUser.timezone || timezone;
+    }
+
+    const customer = customerTypes.includes(userType);
+    const supplier = supplierTypes.includes(userType);
     const { calendar, meta } = await BookingService.getBookingCalendar({
       customer,
       supplier,
@@ -431,8 +449,6 @@ const getBookingCalender = async (req, res) => {
       startDate: start,
       endDate: end,
       user,
-      customer,
-      supplier,
       branch,
       userType,
     });
