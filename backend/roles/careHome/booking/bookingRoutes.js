@@ -34,7 +34,8 @@ router.get(
     "nurse",
     "localAuthority",
     "user",
-    "homeCareCompany"
+    "homeCareCompany",
+    "hospital",
   ]),
   getBookingCalender,
 );
@@ -48,6 +49,7 @@ router.get(
     "nurse",
     "localAuthority",
     "user",
+    "hospital",
   ]),
   getShiftPlanCalendar,
 );
@@ -61,6 +63,7 @@ router.post(
     "localAuthority",
     "agency",
     "nurse",
+    "hospital",
     "user",
   ]),
   BookingRateLimiter,
@@ -77,6 +80,7 @@ router.get(
     "careHome",
     "localAuthority",
     "user",
+    "hospital",
   ]),
   BookingRateLimiter,
   getBooking,
