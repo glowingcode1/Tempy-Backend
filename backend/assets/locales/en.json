@@ -124,6 +124,7 @@
   "user_fetched_successfully": "User fetched successfully",
   "user_details_not_found": "User details not found",
   "complete_profile_details_required": "Please complete your profile before performing this action.",
+  "cannot_check_in_or_out_after_shift_end_time": "Cannot check in or check out after shift end time.",
   "key": "Key",
   "engagement_logged_successfully": "Engagement logged successfully",
   "invalid_trending_window": "Invalid trending window",
