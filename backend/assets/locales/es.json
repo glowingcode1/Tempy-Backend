@@ -1,3 +1,4 @@
 {
-	"data_fetched": "Recuperado con éxito"
+  "data_fetched": "Recuperado con éxito",
+  "Bid_rejected_due_to_nurse_unavailability": "Oferta rechazada porque la enfermera no está disponible para el turno solicitado."
 }
