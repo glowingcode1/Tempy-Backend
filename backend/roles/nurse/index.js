@@ -17,5 +17,9 @@ router.use(
   require("../aggency/availability/availabilityRoutes"),
 );
 router.use("/job-roles", require("../admin/jobRole/jobRoleRoutes"));
+router.use(
+  "/dashboard",
+  require("../aggency/supplierDashboard/supplierDashboardRoutes"),
+);
 
 module.exports = router;

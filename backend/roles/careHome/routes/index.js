@@ -15,4 +15,5 @@ router.use(
   require("../../aggency/availability/availabilityRoutes"),
 );
 router.use("/agreed-rates", require("../agreedRates/agreedRatesRoutes"));
+router.use("/dashboard", require("../customerDashboard/customerDashboardRoutes"));
 module.exports = router;

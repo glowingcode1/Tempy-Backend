@@ -1,5 +1,3 @@
-const mongoose = require("mongoose");
-
 const { User, customerTypes, supplierTypes } = require("@UsersModel");
 
 const Job = require("../../careHome/job/Job");
