@@ -9,6 +9,7 @@ const { User } = require("@UsersModel");
 
 const {
   formatUserResponse,
+  isUserProfileComplete,
 } = require("../../../helperUtils/userResponseUtil.js");
 const usersService = require("./usersService.js");
 const { registerUserUtility } = require("../../../controllers/authUtil.js");
@@ -353,14 +354,24 @@ const getUserDetails = async (req, res) => {
       });
     }
 
-    let userObject = new User(user).toJSON();
+    const userObject = user.toObject ? user.toObject() : { ...user };
 
-    const response = formatUserResponse(userObject);
+    // Remove sensitive fields while keeping discriminator data
+    delete userObject.password;
+    delete userObject.resetToken;
+    delete userObject.emailVerification;
+    delete userObject.otpInfo;
+    if (userObject.twoFA) {
+      delete userObject.twoFA.secret;
+    }
+
+    userObject.completeDetails = isUserProfileComplete(userObject);
+
     return sendResponse({
       res,
       statusCode: 200,
       translationKey: "user_fetched_successfully",
-      data: response,
+      data: userObject,
     });
   } catch (error) {
     return sendResponse({
