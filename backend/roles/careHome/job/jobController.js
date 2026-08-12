@@ -8,8 +8,9 @@ const {
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment");
 const JobService = require("./jobService");
-const { customerTypes, supplierTypes } = require("@UsersModel");
+const { customerTypes, supplierTypes, User } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
+// const { isUserProfileComplete } = require("@helperUtils/userResponseUtil");
 
 const createJob = async (req, res) => {
   let {
@@ -43,6 +44,21 @@ const createJob = async (req, res) => {
     })
   )
     return;
+
+  // if (req.user.userType !== "admin") {
+  //   const currentUser = await User.findById(req.user._id)
+  //     .select(
+  //       "accountState userType location governmentIdentity taxNumber degree certification companyName registrationNumber validationDocument",
+  //     )
+  //     .lean();
+  //   if (!isUserProfileComplete(currentUser)) {
+  //     return sendResponse({
+  //       res,
+  //       statusCode: 403,
+  //       translationKey: "complete_profile_details_required",
+  //     });
+  //   }
+  // }
   if (shift && !Array.isArray(shift)) {
     return sendResponse({
       res,
@@ -303,7 +319,6 @@ const getJobBids = async (req, res) => {
   } else if (customer) {
     user = null;
   }
-
 
   try {
     const { jobBids, meta } = await JobService.getJobBids({

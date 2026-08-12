@@ -4,6 +4,68 @@ const { notify } = require("@appEngagement/engagementEventsRoutes");
 const { createVerificationLink } = require("../models/UserModel");
 const { getFullImageUrl } = require("@helperUtils/imageHelper");
 
+const hasValidLocation = (location = {}) => {
+  if (!location || typeof location !== "object") return false;
+  const hasCoordinates =
+    Array.isArray(location.coordinates) && location.coordinates.length === 2;
+  const hasAddressFields =
+    !!location.fullAddress ||
+    !!location.city ||
+    !!location.country ||
+    !!location.state ||
+    !!location.postalCode;
+  return hasCoordinates || hasAddressFields;
+};
+
+const isUserProfileComplete = (userObject = {}) => {
+  const userType =
+    userObject.accountState?.userType || userObject.userType || "user";
+  const locationComplete = hasValidLocation(userObject.location);
+
+  if (userType === "admin") return true;
+
+  if (userType === "user" || userType === "userDescriminator") {
+    return (
+      locationComplete &&
+      Array.isArray(userObject.governmentIdentity) &&
+      userObject.governmentIdentity.length > 0
+    );
+  }
+
+  if (userType === "nurse") {
+    return (
+      locationComplete &&
+      Boolean(userObject.taxNumber) &&
+      Array.isArray(userObject.governmentIdentity) &&
+      userObject.governmentIdentity.length > 0 &&
+      Array.isArray(userObject.degree) &&
+      userObject.degree.length > 0 &&
+      Array.isArray(userObject.certification) &&
+      userObject.certification.length > 0
+    );
+  }
+
+  if (
+    [
+      "agency",
+      "homeCareCompany",
+      "hospital",
+      "localAuthority",
+      "careHome",
+    ].includes(userType)
+  ) {
+    return (
+      locationComplete &&
+      Boolean(userObject.companyName) &&
+      Boolean(userObject.registrationNumber) &&
+      Array.isArray(userObject.validationDocument) &&
+      userObject.validationDocument.length > 0
+    );
+  }
+
+  return false;
+};
+
 const formatUserResponse = (
   userObject,
   token = null,
@@ -53,6 +115,7 @@ const formatUserResponse = (
     ...(subAdmin ? { subAdmin } : {}),
     averageRating: userObject.averageRating || 0,
     totalReviews: userObject.totalReviews || 0,
+    completeDetails: isUserProfileComplete(userObject),
 
     metadata: {
       timezone: userObject.timezone,
@@ -142,4 +205,5 @@ const formatUserProfileIconOnly = (userObject) => {
 module.exports = {
   formatUserResponse,
   formatUserProfileIconOnly,
+  isUserProfileComplete,
 };

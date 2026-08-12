@@ -8,7 +8,8 @@ const {
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment");
 const BidService = require("./bidService");
-const { customerTypes, supplierTypes } = require("@UsersModel");
+const { customerTypes, supplierTypes, User } = require("@UsersModel");
+// const { isUserProfileComplete } = require("@helperUtils/userResponseUtil");
 
 const createBid = async (req, res) => {
   let { shift, job, bid, note } = req.body;
@@ -31,6 +32,21 @@ const createBid = async (req, res) => {
     })
   )
     return;
+
+  // if (req.user.userType !== "admin") {
+  //   const currentUser = await User.findById(req.user._id)
+  //     .select(
+  //       "accountState userType location governmentIdentity taxNumber degree certification companyName registrationNumber validationDocument",
+  //     )
+  //     .lean();
+  //   if (!isUserProfileComplete(currentUser)) {
+  //     return sendResponse({
+  //       res,
+  //       statusCode: 403,
+  //       translationKey: "complete_profile_details_required",
+  //     });
+  //   }
+  // }
 
   let data = {
     user,
@@ -74,10 +90,10 @@ const createBid = async (req, res) => {
 
 const getBid = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, user,dateFilter } = req.query;
+  let { keyword, status, user, dateFilter } = req.query;
 
-  const customer =await customerTypes.includes(req.user.userType);
-  const supplier =await supplierTypes.includes(req.user.userType);
+  const customer = await customerTypes.includes(req.user.userType);
+  const supplier = await supplierTypes.includes(req.user.userType);
   let jobCreator = req.user._id;
   if (customer) {
     jobCreator = req.user._id;
@@ -152,6 +168,7 @@ const updateBid = async (req, res) => {
 
   let data = {
     user,
+    userType: req.user.userType,
     shift,
     job,
     bid,
