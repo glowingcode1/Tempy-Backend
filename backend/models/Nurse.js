@@ -14,19 +14,19 @@ const nurseSchema = new mongoose.Schema({
   governmentIdentity: [
     {
       type: String,
-    required: true,
+      required: true,
     },
   ],
   degree: [
     {
       type: String,
-    required: true,
+      required: true,
     },
   ],
   certification: [
     {
       type: String,
-    required: true,
+      required: true,
     },
   ],
   provideServicesTo: {

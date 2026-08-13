@@ -11,6 +11,7 @@ const {
   createResetPasswordLink,
   generateResetToken,
 } = require("./userModelHelpers");
+const { isUserProfileComplete } = require("@helperUtils/completeDetailsUtil");
 
 const customerTypes = ["careHome", "hospital", "localAuthority", "user"];
 const supplierTypes = ["agency", "homeCareCompany", "nurse"];
@@ -172,6 +173,10 @@ const userSchema = new mongoose.Schema(
           default: Date(),
         },
       },
+      completeDetails: {
+        type: Boolean,
+        default: false,
+      },
     },
 
     otpInfo: {
@@ -327,7 +332,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    discriminatorKey: "userType",
+    discriminatorKey: "accountState.userType",
   },
 );
 
@@ -346,6 +351,7 @@ userSchema.pre("save", async function (next) {
     user.email = user.email.toLowerCase().trim();
   }
 
+  user.accountState.completeDetails = isUserProfileComplete(user.toObject());
   next();
 });
 

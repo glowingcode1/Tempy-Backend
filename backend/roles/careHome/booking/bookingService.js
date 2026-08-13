@@ -350,6 +350,13 @@ const hasShiftEnded = ({ date, endTime }) => {
 
   return Date.now() >= shiftEnd.getTime();
 };
+const hasShiftPassed = ({ date, endTime }) => {
+  if (!date || !endTime) return false;
+  const shiftEnd = new Date(date);
+  const [hours, minutes] = endTime.split(":").map(Number);
+  shiftEnd.setUTCHours(hours, minutes, 0, 0);
+  return Date.now() > shiftEnd.getTime();
+};
 const isWithinRadius = (location1, location2, radiusInKm = 1) => {
   const [lng1, lat1] = location1.coordinates;
   const [lng2, lat2] = location2.coordinates;
@@ -386,6 +393,11 @@ const updateBookingCheckinCheckout = async (id, data) => {
   }
   if (data.status === "checkout" && Booking.status !== "inProgress") {
     return { error: "Cannot_check_out_inactive_booking" };
+  }
+  if (hasShiftPassed(Booking.shift)) {
+    return {
+      error: "cannot_check_in_or_out_after_shift_end_time",
+    };
   }
   if (data.status === "checkin") {
     if (!hasShiftStarted(Booking.shift)) {
