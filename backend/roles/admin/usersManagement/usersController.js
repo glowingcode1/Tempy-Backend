@@ -9,10 +9,10 @@ const { User } = require("@UsersModel");
 
 const {
   formatUserResponse,
-  isUserProfileComplete,
 } = require("../../../helperUtils/userResponseUtil.js");
 const usersService = require("./usersService.js");
 const { registerUserUtility } = require("../../../controllers/authUtil.js");
+const { isUserProfileComplete } = require("@helperUtils/completeDetailsUtil.js");
 
 const createUser = async (req, res) => {
   const result = await registerUserUtility(req, res, {

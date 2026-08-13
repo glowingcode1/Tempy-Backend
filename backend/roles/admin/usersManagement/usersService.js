@@ -23,16 +23,13 @@ const {
 const { sendEmailViaBrevo } = require("../../../helperUtils/emailUtil");
 const { createOrSkipDevice } = require("../../../models/Devices");
 const { formatAthletes } = require("./formator/formatAthletes");
+const {
+  REQUIRED_FIELDS_BY_USER_TYPE,
+  isUserProfileComplete,
+} = require("@helperUtils/completeDetailsUtil");
+const { USER_MODEL_MAP } = require("@helperUtils/userModelMapUtil");
 
 const APP_NAME = "CoachCritic App";
-
-const USER_MODEL_MAP = {
-  careHome: require("../../../models/CareHomesModel"),
-  agency: require("../../../models/AgencyModel"),
-  user: require("../../../models/UserModel").User,
-  guest: require("../../../models/UserModel").User,
-  admin: require("../../../models/UserModel").User,
-};
 const getAllUsers = async ({ page, limit, keyword, status, userType }) => {
   const skip = (page - 1) * limit;
 
@@ -209,68 +206,79 @@ const getAllUsers = async ({ page, limit, keyword, status, userType }) => {
 
 const updateUser = async (req, res, options = {}) => {
   const { userId } = options;
-  const {
-    validationDocument,
-    companyName,
-    type,
-    phoneNumber,
-    profileIcon,
-    name,
-    timezone,
-    location,
-    username,
-    gender,
-    registrationNumber,
-    dob,
-    deviceId,
-    deviceType,
-    status,
-    notifications,
-    blueTick,
-  } = req.body;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const user_ = await User.findById(userId).session(session);
-    if (!user_) throw new Error("User not found");
-    const userType = user_.accountState.userType;
-    const ModelToUse =
-      USER_MODEL_MAP[userType] || require("../../../models/UserModel").User;
-    const user = await ModelToUse.findById(userId).session(session);
-    if (!user) throw new Error("User not found with the specific model");
+    const user = await User.findById(userId).session(session);
 
-    // Validate profileIcon
-    if (profileIcon && profileIcon.startsWith("http")) {
-      return {
-        errorCode: 400,
-        message: "url_not_accepted",
-        field: "profileIcon",
-      };
+    if (!user) {
+      throw new Error("User not found");
     }
 
-    /*   // Check if email exists
-      const existingUser = await User.findOne({ _id: { $ne: userId }, email: email.trim().toLowerCase() });
-      if (existingUser && existingUser.verificationStatus.email === "verified") {
-        sendResponse({
-          res,
-          statusCode: 400,
-          translationKey: "email_already",
-        });
-        return { responseSent: true };
-      }
-   */
+    const userType = user.accountState?.userType;
 
-    // Validate phone number if provided
-    if (phoneNumber) {
+    // -----------------------------------------
+    // Basic profile fields
+    // -----------------------------------------
+
+    const basicEditableFields = [
+      "name",
+      "location",
+      "dob",
+      "gender",
+      "profileIcon",
+      "timezone",
+      "username",
+      "companyName",
+      "type",
+      "registrationNumber",
+      "validationDocument",
+    ];
+
+    basicEditableFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        user.set(field, req.body[field]);
+      }
+    });
+
+    // -----------------------------------------
+    // Role-specific / complete profile fields
+    // -----------------------------------------
+
+    const typeSpecificFields = REQUIRED_FIELDS_BY_USER_TYPE[userType] || [];
+
+    const roleSpecificData = {};
+
+    typeSpecificFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        roleSpecificData[field] = req.body[field];
+      }
+    });
+
+    if (Object.keys(roleSpecificData).length > 0) {
+      user.set(roleSpecificData, undefined, {
+        strict: false,
+      });
+    }
+
+    // -----------------------------------------
+    // Phone
+    // -----------------------------------------
+
+    if (req.body.phoneNumber !== undefined) {
+      const phoneNumber = req.body.phoneNumber;
+
       if (
         typeof phoneNumber !== "object" ||
         !phoneNumber.code ||
         !phoneNumber.number
-        // !validatePhoneNumber(`${phoneNumber.code}${phoneNumber.number}`).valid
       ) {
-        return { errorCode: 400, message: "invalid_phone" };
+        return {
+          errorCode: 400,
+          message: "invalid_phone",
+        };
       }
 
       const existingPhone = await User.findOne({
@@ -281,37 +289,31 @@ const updateUser = async (req, res, options = {}) => {
       });
 
       if (existingPhone) {
-        return { errorCode: 409, message: "phone_number_already" };
+        return {
+          errorCode: 409,
+          message: "phone_number_already",
+        };
       }
 
       user.phoneNumber = phoneNumber;
       user.verificationStatus.phoneNumber = "pending";
     }
-    if (companyName) {
-      user.companyName = companyName;
-    }
-    if (type) {
-      user.type = type;
-    }
-    if (registrationNumber) {
-      user.registrationNumber = registrationNumber;
-    }
-    if (location) {
-      user.location = location;
-    }
-    if (validationDocument) {
-      user.validationDocument = validationDocument;
+
+    // -----------------------------------------
+    // Status
+    // -----------------------------------------
+
+    if (req.body.status !== undefined) {
+      user.accountState.status = req.body.status;
     }
 
-    if (name) user.name = name;
-    if (profileIcon) user.profileIcon = profileIcon;
-    if (timezone) user.timezone = timezone;
-    if (username) user.username = username;
-    if (gender) user.gender = gender;
-    if (dob) user.dob = dob;
-    if (status) user.accountState.status = status;
-    if (blueTick !== undefined) {
-      if (!user.accountState) user.accountState = {};
+    // -----------------------------------------
+    // Blue tick
+    // -----------------------------------------
+
+    if (req.body.blueTick !== undefined) {
+      const blueTick = req.body.blueTick;
+
       if (!user.accountState.blueTick) {
         user.accountState.blueTick = {};
       }
@@ -327,7 +329,11 @@ const updateUser = async (req, res, options = {}) => {
       user.markModified("accountState.blueTick");
     }
 
-    if (notifications && typeof notifications === "object") {
+    // -----------------------------------------
+    // Notifications
+    // -----------------------------------------
+
+    if (req.body.notifications && typeof req.body.notifications === "object") {
       const allowedKeys = [
         "email",
         "push",
@@ -337,31 +343,23 @@ const updateUser = async (req, res, options = {}) => {
       ];
 
       allowedKeys.forEach((key) => {
-        if (notifications[key] !== undefined) {
-          user.notifications[key] = notifications[key];
+        if (req.body.notifications[key] !== undefined) {
+          user.notifications[key] = req.body.notifications[key];
         }
       });
     }
 
+    // -----------------------------------------
+    // Save
+    // -----------------------------------------
+
     await user.save({ session });
-
-    // Device handling
-    if (deviceId && deviceType) {
-      createOrSkipDevice(user._id, deviceId, deviceType);
-    }
-
-    //if status is updated then send email to user
-    if (status) {
-      const mBody = accountStatusEmailTemplate(status, user.name);
-      await sendEmailViaBrevo([user.email], "Account Status", mBody);
-    }
 
     await session.commitTransaction();
 
     userCache.del(userId.toString());
-    const userObject = user.toJSON();
 
-    return formatUserResponse(userObject, null, [], ["resetToken"]);
+    return formatUserResponse(user.toJSON(), null, [], ["resetToken"]);
   } catch (error) {
     await session.abortTransaction();
     throw error;
