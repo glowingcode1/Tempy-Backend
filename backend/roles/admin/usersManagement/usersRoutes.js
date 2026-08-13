@@ -10,6 +10,7 @@ const {
   disableTwoFAController,
   getAllUsers,
   getAllAthletes,
+  completeUserDetails,
 } = require("./usersController");
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
@@ -24,6 +25,9 @@ const apiRateLimiterUsers = createRateLimiter("/users");
 const apiRateLimiterUserDetail = createRateLimiter("/users/details");
 const apiRateLimiterUserCreation = createRateLimiter("/users/create");
 const apiRateLimiterUserUpdate = createRateLimiter("/users/update");
+const apiRateLimiterUserCompleteDetails = createRateLimiter(
+  "/users/complete-details",
+);
 const apiRateLimiterUserDeletion = createRateLimiter("/users/delete");
 const apiRateLimiterUserTwoFA = createRateLimiter("/users/twofa/setup", 3, 10); // 3 requests per 10 minutes
 const apiRateLimiterTwoFAConfirm = createRateLimiter(

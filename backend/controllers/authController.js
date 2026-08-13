@@ -21,6 +21,7 @@ const validator = require("validator");
 const crypto = require("crypto");
 const { registerUserUtility } = require("./authUtil");
 const { validatePhoneNumber } = require("../helperUtils/validationsUtil");
+const { USER_MODEL_MAP } = require("@helperUtils/userModelMapUtil");
 
 const createAdmin = async (req, res) => {
   try {
@@ -1096,47 +1097,34 @@ const socialAuth = async (req, res) => {
   session.startTransaction();
 
   try {
-    const validationOptions = {
-      rawData: [
-        "provider",
-        "socialId",
-        "name",
-        "deviceId",
-        "deviceType",
-        "timezone",
-        "userType",
-        "location",
-      ],
-      enumFields: {
-        provider: ["google", "facebook", "apple"], // Allowed values for provider
-        userType: [
-          "hospital",
-          "localAuthority",
-          "careHome",
-          "agency",
-          "homeCareCompany",
-          "user",
-          "nurse",
+    // Only fields needed for BOTH login and signup are strictly required up front
+    if (
+      !validateParams(req, res, {
+        rawData: [
+          "provider",
+          "socialId",
+          "name",
+          "deviceId",
+          "deviceType",
+          "timezone",
         ],
-      },
-    };
-
-    if (!validateParams(req, res, validationOptions)) {
+        enumFields: { provider: ["google", "facebook", "apple"] },
+      })
+    ) {
+      await session.abortTransaction();
+      session.endSession();
       return;
     }
 
-    //if no email is provided, then create it from socialId
     if (!email) {
-      if (provider === "google") {
-        email = `${socialId}@google.com`;
-      } else if (provider === "facebook") {
-        email = `${socialId}@facebook.com`;
-      } else if (provider === "apple") {
-        email = `${socialId}@apple.com`;
-      }
+      if (provider === "google") email = `${socialId}@google.com`;
+      else if (provider === "facebook") email = `${socialId}@facebook.com`;
+      else if (provider === "apple") email = `${socialId}@apple.com`;
     }
 
     if (!validator.isEmail(email)) {
+      await session.abortTransaction();
+      session.endSession();
       return sendResponse({
         res,
         statusCode: 400,
@@ -1145,17 +1133,17 @@ const socialAuth = async (req, res) => {
       });
     }
 
-    // Normalize email to lowercase
     email = email.trim().toLowerCase();
-    // Find user by socialId or email
+
     let existingUser = await User.findOne({
       $or: [{ [`${provider}Id`]: socialId }, { email }],
-    });
+    }).session(session);
 
-    // If user exists, update or link the social provider
-    let providerLinked = false;
+    // ---------- LOGIN (no userType/location required) ----------
     if (existingUser) {
       if (existingUser.accountState.status === "suspended") {
+        await session.abortTransaction();
+        session.endSession();
         return sendResponse({
           res,
           statusCode: 403,
@@ -1163,43 +1151,33 @@ const socialAuth = async (req, res) => {
         });
       }
 
-      // Check if the social ID is already linked, if not, link it
-      if (provider === "google" && !existingUser.googleId) {
-        existingUser.googleId = socialId; // Link Google account
-        providerLinked = true;
-      } else if (provider === "facebook" && !existingUser.facebookId) {
-        existingUser.facebookId = socialId; // Link Facebook account
-        providerLinked = true;
-      } else if (provider === "apple" && !existingUser.appleId) {
-        existingUser.appleId = socialId; // Link Apple account
-        providerLinked = true;
+      if (provider === "google" && !existingUser.googleId)
+        existingUser.googleId = socialId;
+      else if (provider === "facebook" && !existingUser.facebookId)
+        existingUser.facebookId = socialId;
+      else if (provider === "apple" && !existingUser.appleId)
+        existingUser.appleId = socialId;
+
+      if (req.body.email && existingUser.email !== email) {
+        existingUser.email = email;
+        existingUser.verificationStatus.email = "verified";
       }
 
-      //if existingUser.email is not set, update it
-      if (req.body.email && existingUser.email !== req.body.email) {
-        existingUser.email = email; // Update the email to the one provided
-        existingUser.verificationStatus.email = "verified"; // Mark email as verified
-      }
-
-      // Always update the provider and timezone, regardless of providerLinked status
-      existingUser.provider = provider; // Update the provider field to reflect the latest social login
-      existingUser.timezone = timezone; // Update the timezone to reflect the user's current login
-      existingUser.accountState.status = "active"; // Ensure the account is active
-      // If the client provided a desired userType (e.g. agency, careHome), update it here
-      if (userType && existingUser.accountState?.userType !== userType) {
-        existingUser.accountState.userType = userType;
-      }
-      if (name !== undefined) {
-        existingUser.name = name; // Update first name if provided
-      }
+      existingUser.provider = provider;
+      existingUser.timezone = timezone;
+      existingUser.accountState.status = "active";
+      if (name !== undefined) existingUser.name = name;
 
       await existingUser.save({ session });
-      const token = existingUser.generateAuthToken();
+      await session.commitTransaction();
+      session.endSession();
 
-      // Ensure toJSON method is applied to strip out sensitive data
-      const userObject = new User(existingUser).toJSON();
-
-      const response = formatUserResponse(userObject, token);
+      // Re-hydrate via the correct discriminator so nothing is stripped from the response
+      const ModelToUse =
+        USER_MODEL_MAP[existingUser.accountState.userType] || User;
+      const hydratedUser = await ModelToUse.findById(existingUser._id);
+      const token = hydratedUser.generateAuthToken();
+      const response = formatUserResponse(hydratedUser.toJSON(), token);
 
       if (
         typeof deviceId === "string" &&
@@ -1207,12 +1185,8 @@ const socialAuth = async (req, res) => {
         deviceId !== "test" &&
         typeof deviceType === "string"
       ) {
-        // Save device information
         createOrSkipDevice(existingUser._id, deviceId, deviceType);
       }
-
-      await session.commitTransaction();
-      session.endSession();
 
       return sendResponse({
         res,
@@ -1220,57 +1194,61 @@ const socialAuth = async (req, res) => {
         translationKey: "login_success",
         data: response,
       });
-    } else {
-      const newUser = new User({
-        email,
-        name,
-        provider, // Set the initial provider
-        [`${provider}Id`]: socialId, // Dynamically store the provider ID
-        timezone,
-        verificationStatus: {
-          email: "verified", // Mark email as verified
-        },
-        accountState: { userType: userType, status: "active" },
-        location,
-      });
-
-      await newUser.save({ session });
-
-      // Generate a token for the new user
-      const token = newUser.generateAuthToken();
-
-      const jUser = newUser.toJSON();
-      const response = formatUserResponse(jUser, token);
-
-      if (
-        typeof deviceId === "string" &&
-        deviceId.trim() &&
-        deviceId !== "test" &&
-        typeof deviceType === "string"
-      ) {
-        // Save device information
-        createOrSkipDevice(newUser._id, deviceId, deviceType);
-      }
-
-      await session.commitTransaction();
-      session.endSession();
-
-      return sendResponse({
-        res,
-        statusCode: 201,
-        translationKey: "signup_successful",
-        data: response,
-      });
     }
+
+    // ---------- SIGNUP (userType/location required here only) ----------
+    if (
+      !validateParams(req, res, {
+        rawData: ["userType", "location"],
+        enumFields: { userType: USER_TYPES },
+      })
+    ) {
+      await session.abortTransaction();
+      session.endSession();
+      return;
+    }
+
+    const newUser = new User({
+      email,
+      name,
+      provider,
+      [`${provider}Id`]: socialId,
+      timezone,
+      verificationStatus: { email: "verified" },
+      accountState: { userType, status: "active" },
+      location,
+    });
+
+    await newUser.save({ session });
+    await session.commitTransaction();
+    session.endSession();
+
+    const token = newUser.generateAuthToken();
+    const response = formatUserResponse(newUser.toJSON(), token);
+
+    if (
+      typeof deviceId === "string" &&
+      deviceId.trim() &&
+      deviceId !== "test" &&
+      typeof deviceType === "string"
+    ) {
+      createOrSkipDevice(newUser._id, deviceId, deviceType);
+    }
+
+    return sendResponse({
+      res,
+      statusCode: 201,
+      translationKey: "signup_successful",
+      data: response,
+    });
   } catch (error) {
-    // Rollback transaction in case of any error
     await session.abortTransaction();
     session.endSession();
     return sendResponse({
       res,
       statusCode: 500,
       translationKey: error.message,
-      error: error,
+      error,
     });
   }
 };
@@ -1288,7 +1266,7 @@ const checkEmailExistsAndVerified = async (req, res) => {
     }
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-    }).select("verificationStatus userType");
+    }).select("verificationStatus accountState.userType");
     const existsAndVerified = !!(
       user && user.verificationStatus.email === "verified"
     );
@@ -1298,7 +1276,7 @@ const checkEmailExistsAndVerified = async (req, res) => {
       translationKey: "email_check_success",
       data: {
         exists: existsAndVerified,
-        userType: existsAndVerified ? user.userType : null,
+        userType: existsAndVerified ? user.accountState.userType : null,
       },
     });
   } catch (error) {
