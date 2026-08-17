@@ -121,9 +121,9 @@ const getEarnings = async ({ userId, timezone, userType }) => {
   const weekStart = now.clone().startOf("isoWeek");
 
   return {
-    available: false,
+    // available: false,
 
-    currency: "USD",
+    // currency: "USD",
 
     thisMonth: {
       amount: 0,

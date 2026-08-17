@@ -631,7 +631,7 @@ const getShiftPlanCalendar = async (req, res) => {
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "Booking_fetched_successfully",
+      translationKey: "Shift_Plans_fetched_successfully",
       data,
     });
   } catch (error) {
