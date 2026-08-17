@@ -3,6 +3,7 @@ const resolveInitialBookingStatus = ({
   createdByUserId,
   workerId,
 }) => {
+
   if (
     createdByUserType === "nurse" &&
     createdByUserId != null &&
