@@ -287,12 +287,13 @@ const formatShiftPlan = (bookings = [], timezone) => {
     );
 
     shiftsByDate[date] ??= [];
+
     shiftsByDate[date].push({
       bookingId: b._id,
-      title: b.jobDetails?.title || "",
-      category: b.jobDetails?.category || "",
-      location: b.jobDetails?.address || "",
-      image: getFullImageUrl(b.jobDetails?.image),
+      name: b.snapshot?.name || "",
+      jobType: b.snapshot?.type || "",
+      location: b.snapshot?.location || "",
+      image: getFullImageUrl(b.snapshot?.image),
       startTime,
       endTime,
       totalHours: b.payment?.totalHours || 0,
@@ -302,7 +303,6 @@ const formatShiftPlan = (bookings = [], timezone) => {
       checkInTime: startTime,
     });
   });
-
 
   return {
     markedDates: Object.keys(shiftsByDate).sort(),

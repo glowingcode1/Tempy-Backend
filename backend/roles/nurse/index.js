@@ -17,6 +17,7 @@ router.use(
   require("../aggency/availability/availabilityRoutes"),
 );
 router.use("/job-roles", require("../admin/jobRole/jobRoleRoutes"));
+router.use("/home", require("./home/homeRoutes"));
 router.use(
   "/dashboard",
   require("../aggency/supplierDashboard/supplierDashboardRoutes"),

@@ -131,6 +131,7 @@ const createJob = async (req, res) => {
         translationKey: "Job_creation_failed",
       });
     }
+    
     return sendResponse({
       res,
       statusCode: 201,
