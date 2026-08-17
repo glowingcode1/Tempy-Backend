@@ -9,6 +9,8 @@ const {
 const moment = require("moment");
 const StaffService = require("./staffService");
 const { customerTypes, supplierTypes } = require("@UsersModel");
+const { sendUserNotifications } = require("@notificationsUtil");
+const { NotificationTypes } = require("@NotificationsModel");
 
 const getAllNurses = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
@@ -119,6 +121,31 @@ const createStaff = async (req, res) => {
         statusCode: 400,
         translationKey: Staff.error,
       });
+    }
+
+    if (staff) {
+      const nurseId = Staff.staff?._id || Staff.staff || staff;
+
+      if (nurseId) {
+        void sendUserNotifications({
+          recipientIds: [nurseId],
+
+          title: "New Staff Request",
+
+          body: `You have received a new staff request from ${req.user.name || "a customer"}.`,
+
+          data: {
+            type: NotificationTypes.NEW_BOOKING,
+            objectType: "Staff",
+          },
+
+          sender: req.user._id,
+
+          objectId: Staff._id,
+
+          saveNotification: true,
+        });
+      }
     }
     return sendResponse({
       res,
@@ -433,6 +460,37 @@ const respondToStaffRequest = async (req, res) => {
         translationKey: result.error,
       });
     }
+    const requesterId =
+      result.user || result.requester || result.createdBy || result.employer;
+
+    if (requesterId) {
+      const isAccepted = action === "accept";
+
+      void sendUserNotifications({
+        recipientIds: [requesterId],
+
+        title: isAccepted ? "Staff Request Accepted" : "Staff Request Rejected",
+
+        body: isAccepted
+          ? `${req.user.name || "The nurse"} has accepted your staff request.`
+          : `${req.user.name || "The nurse"} has rejected your staff request.`,
+
+        data: {
+          type: isAccepted
+            ? NotificationTypes.STAFF_REQUEST_ACCEPTED
+            : NotificationTypes.STAFF_REQUEST_REJECTED,
+
+          objectType: "Staff",
+        },
+
+        sender: nurseId,
+
+        objectId: result._id || id,
+
+        saveNotification: true,
+      });
+    }
+
     return sendResponse({
       res,
       statusCode: 200,
