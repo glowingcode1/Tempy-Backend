@@ -35,7 +35,7 @@ const findUserById = async (id, projection = null) => {
 };
 
 const getUserDetailsForQRRepo = async (id) => {
-  return User.findById(id).select("profileIcon name email phoneNumber");
+  return User.findById(id).select("profileIcon name email phoneNumber accountState");
 };
 
 // Update and save

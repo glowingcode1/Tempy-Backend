@@ -72,7 +72,6 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
     const allowedUserTypes = [
       "guest",
       "user",
-      "coach",
       "careHome",
       "agency",
       "user",

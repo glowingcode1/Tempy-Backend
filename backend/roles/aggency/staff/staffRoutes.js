@@ -24,7 +24,11 @@ const StaffRateLimiter = createRateLimiter("Staff");
 
 // Routes for Staff Management
 // Create a new Staff
-router.get("/nurses", roleMiddleware(["admin", "agency"]), getAllNurses);
+router.get(
+  "/nurses",
+  roleMiddleware(["admin", "agency", "homeCareCompany"]),
+  getAllNurses,
+);
 router.get("/requests", roleMiddleware(["nurse"]), getMyStaffRequests);
 router.post(
   "/",
@@ -57,6 +61,7 @@ router.get(
     "hospital",
     "localAuthority",
     "user",
+    "homeCareCompany",
   ]),
   StaffRateLimiter,
   getAvailableStaff,

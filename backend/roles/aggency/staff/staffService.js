@@ -36,6 +36,7 @@ const getAllNurses = async ({ timezone, page, limit, keyword, status }) => {
     limit,
     keyword,
     status,
+    userType: "nurse",
   });
   return { staff: users, meta };
 };
@@ -47,7 +48,7 @@ const createStaff = async (data, req, res) => {
       return { error: "staff_not_found" };
     }
 
-    if (existing.userType !== "nurse") {
+    if (existing.accountState?.userType !== "nurse") {
       return { error: "selected_user_is_not_a_nurse" };
     }
 
@@ -211,7 +212,7 @@ const getStaffDetails = async (id, user, timezone, customer, supplier) => {
     error = "staff_not_found";
     return { error };
   }
-  if (staff.userType !== "nurse") {
+  if (staff.acountState?.userType !== "nurse") {
     error = "this_user_is_not_a_staff_member";
     return { error };
   }
