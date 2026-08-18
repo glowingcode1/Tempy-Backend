@@ -16,5 +16,6 @@ router.use(
   "/dashboard",
   require("../careHome/customerDashboard/customerDashboardRoutes"),
 );
+router.use("/address", require("../nurse/address/addressRoutes"));
 
 module.exports = router;
