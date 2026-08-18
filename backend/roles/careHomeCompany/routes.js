@@ -20,5 +20,6 @@ router.use(
   "/dashboard",
   require("../aggency/supplierDashboard/supplierDashboardRoutes"),
 );
+router.use("/address", require("../nurse/address/addressRoutes"));
 
 module.exports = router;
