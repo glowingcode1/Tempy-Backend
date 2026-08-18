@@ -3,7 +3,7 @@ const {
   getReadableErrorMessage,
 } = require("@helperUtils/responseUtil");
 
-const homeService = require("./homeService");
+const homeService = require("./customerHomeService");
 
 const getHome = async (req, res) => {
   try {
@@ -24,7 +24,7 @@ const getHome = async (req, res) => {
       data: home,
     });
   } catch (error) {
-    console.error("Home API error:", error);
+    console.error("Customer Home API error:", error);
 
     const readableError = getReadableErrorMessage(error);
 

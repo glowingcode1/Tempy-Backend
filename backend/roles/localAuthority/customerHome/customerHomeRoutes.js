@@ -1,6 +1,6 @@
 const express = require("express");
 
-const { getHome } = require("./homeController");
+const { getHome } = require("./customerHomeController");
 
 const auth = require("@middlewares/authMiddleware");
 const createRateLimiter = require("@helperUtils/rateLimiter");

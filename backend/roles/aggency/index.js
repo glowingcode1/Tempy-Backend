@@ -13,6 +13,10 @@ router.use("/staff", require("./staff/staffRoutes"));
 router.use("/branches", require("./branches/branchesRoutes"));
 router.use("/availability", require("./availability/availabilityRoutes"));
 router.use("/job-roles", require("../admin/jobRole/jobRoleRoutes"));
-router.use("/dashboard", require("./supplierDashboard/supplierDashboardRoutes"));
+router.use("/home", require("../careHomeCompany/employeeHome/employeeHomeRoutes"));
+router.use(
+  "/dashboard",
+  require("./supplierDashboard/supplierDashboardRoutes"),
+);
 
 module.exports = router;

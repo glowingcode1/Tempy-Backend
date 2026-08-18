@@ -3,7 +3,7 @@ const {
   getReadableErrorMessage,
 } = require("@helperUtils/responseUtil");
 
-const homeService = require("./homeService");
+const homeService = require("./employeeHomeService");
 
 const getHome = async (req, res) => {
   try {
