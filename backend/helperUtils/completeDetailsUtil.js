@@ -15,7 +15,7 @@ const REQUIRED_FIELDS_BY_USER_TYPE = {
     "validationDocument",
   ],
   nurse: ["taxNumber", "governmentIdentity", "degree", "certification"],
-  user: ["name", "location"],
+  user: ["taxNumber", "governmentIdentity"],
   guest: [],
   admin: [],
   // TODO: add "employee" here once its discriminator schema exists (see Issue 2)
