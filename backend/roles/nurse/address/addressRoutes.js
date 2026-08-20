@@ -27,6 +27,7 @@ router.post(
     "homeCareCompany",
     "localAuthority",
     "admin",
+    "hospital",
   ]),
   AddressRateLimiter,
   createAddress,
@@ -43,6 +44,7 @@ router.get(
     "homeCareCompany",
     "localAuthority",
     "admin",
+    "hospital",
   ]),
   AddressRateLimiter,
   getAddress,
@@ -59,6 +61,7 @@ router.put(
     "homeCareCompany",
     "localAuthority",
     "admin",
+    "hospital",
   ]),
   updateAddress,
 );
@@ -74,6 +77,7 @@ router.delete(
     "homeCareCompany",
     "localAuthority",
     "admin",
+    "hospital",
   ]),
   deleteAddress,
 );
