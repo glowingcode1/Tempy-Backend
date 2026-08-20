@@ -13,9 +13,12 @@ const { customerTypes, supplierTypes } = require("@UsersModel");
 const {
   findUserById,
 } = require("../../../roles/admin/usersManagement/usersRepository");
+const { sendUserNotifications } = require("@notificationsUtil");
+const { NotificationTypes } = require("@NotificationsModel");
 
 const createBooking = async (req, res) => {
   let { bid, worker } = req.body;
+
   if (
     !validateParams(req, res, {
       rawData: ["bid"],
@@ -33,8 +36,10 @@ const createBooking = async (req, res) => {
     createdByUserType: req.user?.userType || null,
     createdByUserId: req.user?._id || null,
   };
+
   try {
     const Booking = await BookingService.createBooking(data);
+
     if (!Booking) {
       return sendResponse({
         res,
@@ -42,6 +47,7 @@ const createBooking = async (req, res) => {
         translationKey: "Booking_creation_failed",
       });
     }
+
     if (Booking && Booking.error) {
       return sendResponse({
         res,
@@ -49,6 +55,84 @@ const createBooking = async (req, res) => {
         translationKey: Booking.error,
       });
     }
+
+    /**
+     * ==============================
+     * BOOKING CREATED NOTIFICATION
+     * ==============================
+     */
+
+    // Depending on your Booking response structure,
+    // these should contain the relevant user IDs.
+    const customerId =
+      Booking.jobCreator ||
+      Booking.customer ||
+      Booking.employer ||
+      Booking.job?.user ||
+      null;
+
+    const workerId = Booking.worker?._id || Booking.worker || null;
+
+    const jobName = Booking.job?.name || Booking.jobName || "your job";
+
+    /**
+     * If customer creates booking:
+     * notify the selected worker/nurse.
+     */
+    if (
+      req.user.userType !== "nurse" &&
+      workerId &&
+      workerId.toString() !== req.user._id.toString()
+    ) {
+      void sendUserNotifications({
+        recipientIds: [workerId],
+
+        title: "New Booking Created",
+
+        body: `A new booking has been created for ${jobName}.`,
+
+        data: {
+          type: NotificationTypes.NEW_BOOKING,
+          objectType: "Booking",
+        },
+
+        sender: req.user._id,
+
+        objectId: Booking._id,
+
+        saveNotification: true,
+      });
+    }
+
+    /**
+     * If nurse creates booking:
+     * notify the customer.
+     */
+    if (
+      req.user.userType === "nurse" &&
+      customerId &&
+      customerId.toString() !== req.user._id.toString()
+    ) {
+      void sendUserNotifications({
+        recipientIds: [customerId],
+
+        title: "Booking Created",
+
+        body: `A booking has been created for your job ${jobName}.`,
+
+        data: {
+          type: NotificationTypes.NEW_BOOKING,
+          objectType: "Booking",
+        },
+
+        sender: req.user._id,
+
+        objectId: Booking._id,
+
+        saveNotification: true,
+      });
+    }
+
     return sendResponse({
       res,
       statusCode: 201,
@@ -57,6 +141,7 @@ const createBooking = async (req, res) => {
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
+
     return sendResponse({
       res,
       statusCode: readableError.statusCode,
@@ -546,7 +631,7 @@ const getShiftPlanCalendar = async (req, res) => {
     return sendResponse({
       res,
       statusCode: 200,
-      translationKey: "Booking_fetched_successfully",
+      translationKey: "Shift_Plans_fetched_successfully",
       data,
     });
   } catch (error) {

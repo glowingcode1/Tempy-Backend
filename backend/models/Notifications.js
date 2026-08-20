@@ -17,7 +17,15 @@ const NotificationTypes = {
   SUPPORT_REQUEST: "support_request",
   INCOMING_CALL: "incoming_call",
   BOOKING: "booking",
-
+  NEW_BID: "new_bid",
+  BID_ACCEPTED: "bid_accepted",
+  BID_REJECTED: "bid_rejected",
+  BID_WITHDRAWN: "bid_withdrawn",
+  JOB_UPDATED: "job_updated",
+  JOB_CANCELLED: "job_cancelled",
+  NEW_JOB: "new_job",
+  NEW_STAFF: "new_staff",
+  NEW_BOOKING: "new_booking",
 };
 
 // Define the NotificationSchema

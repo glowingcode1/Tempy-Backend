@@ -1,33 +1,39 @@
-const admin = require("firebase-admin");
-const fs = require('fs');
-const path = require('path');
+const { getApps, initializeApp, cert } = require("firebase-admin/app");
+const { getMessaging } = require("firebase-admin/messaging");
 
-const folderPath = path.join(__dirname, '../secretAssets');
-const filePath = path.join(folderPath, 'serviceAccountKey.json');
+const fs = require("fs");
+const path = require("path");
 
-// Create folder if it doesn't exist
-if (!fs.existsSync(folderPath)) {
-  fs.mkdirSync(folderPath, { recursive: true });
-}
+const folderPath = path.join(__dirname, "../secretAssets");
+const filePath = path.join(folderPath, "serviceAccountKey.json");
 
-// Create file if it doesn't exist
 if (!fs.existsSync(filePath)) {
-  fs.writeFileSync(filePath, '{}'); // Creates an empty JSON file
+  throw new Error(`Firebase service account file not found: ${filePath}`);
 }
 
-const serviceAccount = require("../secretAssets/serviceAccountKey.json");
+const serviceAccount = require(filePath);
 
-try {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://coachcritic-50810.firebaseio.com",
-  });
-
-  // Log after successful initialization
-  console.log('Firebase Admin SDK initialized successfully.');
-} catch (error) {
-  // Log any errors during initialization
-  console.error('Error initializing Firebase Admin SDK:', error);
+if (
+  !serviceAccount.project_id ||
+  !serviceAccount.client_email ||
+  !serviceAccount.private_key
+) {
+  throw new Error("Invalid Firebase serviceAccountKey.json");
 }
-module.exports = admin;
 
+// Get existing Firebase app or initialize it
+const app =
+  getApps().length > 0
+    ? getApps()[0]
+    : initializeApp({
+        credential: cert(serviceAccount),
+        databaseURL: "https://coachcritic-50810.firebaseio.com",
+      });
+
+// Get Firebase Cloud Messaging instance
+const messaging = getMessaging(app);
+
+module.exports = {
+  app,
+  messaging,
+};

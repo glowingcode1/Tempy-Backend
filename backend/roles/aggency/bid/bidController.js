@@ -9,6 +9,8 @@ const {
 const moment = require("moment");
 const BidService = require("./bidService");
 const { customerTypes, supplierTypes, User } = require("@UsersModel");
+const { sendUserNotifications } = require("@notificationsUtil");
+const { NotificationTypes } = require("@NotificationsModel");
 // const { isUserProfileComplete } = require("@helperUtils/userResponseUtil");
 
 const createBid = async (req, res) => {
@@ -69,6 +71,27 @@ const createBid = async (req, res) => {
         res,
         statusCode: 400,
         translationKey: Bid.error,
+      });
+    }
+
+    if (Bid.jobCreator) {
+      void sendUserNotifications({
+        recipientIds: [Bid.jobCreator],
+
+        title: "New Bid Received",
+
+        body: `New Bid ${bid} on your job ${job?.name || "your job"}.`,
+
+        data: {
+          type: NotificationTypes.NEW_BID,
+          objectType: "Bid",
+        },
+
+        sender: user,
+
+        objectId: Bid._id,
+
+        saveNotification: true,
       });
     }
     return sendResponse({

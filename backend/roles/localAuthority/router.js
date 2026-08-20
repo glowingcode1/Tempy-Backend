@@ -11,9 +11,11 @@ router.use("/job", require("../careHome/job/jobRoutes"));
 router.use("/branches", require("../aggency/branches/branchesRoutes"));
 router.use("/booking", require("../careHome/booking/bookingRoutes"));
 router.use("/staff", require("../aggency/staff/staffRoutes"));
+router.use("/home", require("./customerHome/customerHomeRoutes"));
 router.use(
   "/dashboard",
   require("../careHome/customerDashboard/customerDashboardRoutes"),
 );
+router.use("/address", require("../nurse/address/addressRoutes"));
 
 module.exports = router;

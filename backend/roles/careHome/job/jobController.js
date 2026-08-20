@@ -10,6 +10,8 @@ const moment = require("moment");
 const JobService = require("./jobService");
 const { customerTypes, supplierTypes, User } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
+const { sendUserNotifications } = require("@notificationsUtil");
+const { NotificationTypes } = require("@NotificationsModel");
 // const { isUserProfileComplete } = require("@helperUtils/userResponseUtil");
 
 const createJob = async (req, res) => {
@@ -129,6 +131,7 @@ const createJob = async (req, res) => {
         translationKey: "Job_creation_failed",
       });
     }
+    
     return sendResponse({
       res,
       statusCode: 201,
@@ -281,6 +284,58 @@ const updateJobBids = async (req, res) => {
         res,
         statusCode: 404,
         translationKey: "JobBid_not_found",
+      });
+    }
+
+    if (updatedBid.user) {
+      let title = "Bid Status Updated";
+      let body = `Your bid status has been updated to ${status}.`;
+
+      let notificationType = NotificationTypes.GENERAL;
+
+      if (status === "accepted") {
+        title = "Bid Accepted";
+
+        body = "Your bid has been accepted by the customer.";
+
+        notificationType = NotificationTypes.BID_ACCEPTED;
+      }
+
+      if (status === "rejected") {
+        title = "Bid Rejected";
+
+        body = "Your bid has been rejected by the customer.";
+
+        notificationType = NotificationTypes.BID_REJECTED;
+      }
+
+      if (status === "withdraw") {
+        title = "Bid Withdrawn";
+
+        body = "The bid has been withdrawn.";
+
+        notificationType = NotificationTypes.BID_WITHDRAWN;
+      }
+
+      void sendUserNotifications({
+        recipientIds: [updatedBid.user],
+
+        title,
+
+        body,
+
+        data: {
+          type: NotificationTypes.BOOKING,
+          objectType: "Bid",
+          jobId: updatedBid.job,
+          status,
+        },
+
+        sender: req.user._id,
+
+        objectId: updatedBid._id,
+
+        saveNotification: true,
       });
     }
 
@@ -498,6 +553,27 @@ const deleteJob = async (req, res) => {
         res,
         statusCode: 404,
         translationKey: "Job_not_found",
+      });
+    }
+    if (Array.isArray(deleted.bidderIds) && deleted.bidderIds.length > 0) {
+      void sendUserNotifications({
+        recipientIds: deleted.bidderIds,
+
+        title: "Job Cancelled",
+
+        body: `The job "${deleted.name || "job"}" has been cancelled.`,
+
+        data: {
+          type: NotificationTypes.JOB_CANCELLED,
+          objectType: "Job",
+          jobId: id,
+        },
+
+        sender: req.user._id,
+
+        objectId: id,
+
+        saveNotification: true,
       });
     }
 

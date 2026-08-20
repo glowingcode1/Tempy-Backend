@@ -105,6 +105,7 @@ const createBooking = async (data) => {
 
   const [user] = await Promise.all([findUserById(bid.user)]);
 
+
   if (!user) return { error: "User_not_found" };
 
   if (data.worker) {
@@ -135,8 +136,8 @@ const createBooking = async (data) => {
     snapshot: bid.snapshot,
     employer: user.accountState.userType !== "nurse" ? bid.user : null,
     status: resolveInitialBookingStatus({
-      createdByUserType: data?.createdByUserType || null,
-      createdByUserId: data?.createdByUserId || null,
+      createdByUserType: user.accountState.userType,
+      createdByUserId: user._id,
       workerId: data?.worker || null,
     }),
     shift: {
@@ -156,7 +157,6 @@ const createBooking = async (data) => {
       totalAmount: +(bid.bid - payment.platformAmount).toFixed(2),
     },
   };
-
   const booking = await BookingRepo.createBooking(bookingData);
 
   if (!booking) {

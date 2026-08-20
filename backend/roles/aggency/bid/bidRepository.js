@@ -23,14 +23,13 @@ const createBid = async (data) => {
       findJobById_(data.job),
     ]);
 
+    if (!shift || !user || !snapshot) {
+      return { error: "Invalid_job_or_shift" };
+    }
     data.snapshot = snapshot;
     data.jobCreator = user;
     data.shift = shift;
     data.type = snapshot.type;
-
-    if (!shift || !user) {
-      return { error: "Invalid_job_or_shift" };
-    }
     const job = new Bid(data);
     await job.save();
     return job;

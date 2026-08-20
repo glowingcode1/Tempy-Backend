@@ -909,7 +909,18 @@ const getBookingsByDateRangeForUser = async ({
         localField: "job",
         foreignField: "_id",
         pipeline: [
-          { $project: { title: 1, category: 1, address: 1, image: 1 } },
+          {
+            $project: {
+              shift: 1,
+              payment: 1,
+              worker: 1,
+              user: 1,
+              employer: 1,
+              snapshot: 1,
+              status: 1,
+              availability: 1,
+            },
+          },
         ],
         as: "jobDetails",
       },

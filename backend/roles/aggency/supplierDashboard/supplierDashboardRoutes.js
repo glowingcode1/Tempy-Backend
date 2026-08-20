@@ -14,7 +14,7 @@ const apiRateLimiter = createRateLimiter("Dashboard");
 // Get all dashboards with pagination
 router.get(
   "/",
-  roleMiddleware(["agency", "nurse", "homeCareCompany"]),
+  roleMiddleware(["agency", "nurse", "homeCareCompany", "admin"]),
   apiRateLimiter,
   getSupplierDashboard,
 );
