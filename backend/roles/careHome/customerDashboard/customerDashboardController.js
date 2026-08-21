@@ -4,7 +4,7 @@ const customerDashboardService = require("./customerDashboardService");
 
 const getCustomerDashboard = async (req, res) => {
   try {
-    const userId = req.params.userId || req.user?._id;
+    const userId = req.query.userId || req.user?._id;
     const dashboard = await customerDashboardService.getCustomerDashboard({
       userId,
     });

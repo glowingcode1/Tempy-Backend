@@ -131,7 +131,7 @@ const createJob = async (req, res) => {
         translationKey: "Job_creation_failed",
       });
     }
-    
+
     return sendResponse({
       res,
       statusCode: 201,
@@ -264,9 +264,7 @@ const updateJobBids = async (req, res) => {
   const { status } = req.body;
   let user = null;
   const isAdmin = req.user.userType === "admin";
-  if (!isAdmin) {
-    user = req.user._id;
-  }
+  if (!isAdmin) user = req.user._id;
 
   if (
     !validateParams(req, res, {
@@ -278,63 +276,82 @@ const updateJobBids = async (req, res) => {
     return;
 
   try {
-    const updatedBid = await JobService.updateJobBidStatus(id, status, user);
-    if (!updatedBid) {
+    const result = await JobService.updateJobBidStatus(id, status, user);
+
+    if (!result) {
       return sendResponse({
         res,
         statusCode: 404,
         translationKey: "JobBid_not_found",
       });
     }
+    if (result.error) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: result.error,
+      });
+    }
 
-    if (updatedBid.user) {
+    const { updatedBid, booking, isNurse } = result;
+
+    // 1) always tell the bid creator (supplier) what happened to their bid
+    if (updatedBid?.user) {
       let title = "Bid Status Updated";
       let body = `Your bid status has been updated to ${status}.`;
-
       let notificationType = NotificationTypes.GENERAL;
 
       if (status === "accepted") {
         title = "Bid Accepted";
-
-        body = "Your bid has been accepted by the customer.";
-
+        body = isNurse
+          ? "Your bid has been accepted. You're booked for the shift."
+          : "Your bid has been accepted. Please assign a worker to this job.";
         notificationType = NotificationTypes.BID_ACCEPTED;
-      }
-
-      if (status === "rejected") {
+      } else if (status === "rejected") {
         title = "Bid Rejected";
-
         body = "Your bid has been rejected by the customer.";
-
         notificationType = NotificationTypes.BID_REJECTED;
-      }
-
-      if (status === "withdraw") {
+      } else if (status === "withdraw") {
         title = "Bid Withdrawn";
-
         body = "The bid has been withdrawn.";
-
         notificationType = NotificationTypes.BID_WITHDRAWN;
       }
 
       void sendUserNotifications({
         recipientIds: [updatedBid.user],
-
         title,
-
         body,
-
         data: {
-          type: NotificationTypes.BOOKING,
+          type: notificationType,
           objectType: "Bid",
           jobId: updatedBid.job,
           status,
         },
-
         sender: req.user._id,
-
         objectId: updatedBid._id,
+        saveNotification: true,
+      });
+    }
 
+    // 2) direct-nurse acceptance also created a booking — tell the job creator
+    if (
+      status === "accepted" &&
+      isNurse &&
+      booking &&
+      !booking.error &&
+      updatedBid?.jobCreator
+    ) {
+      void sendUserNotifications({
+        recipientIds: [updatedBid.jobCreator],
+        title: "Booking Created",
+        body: "A nurse has been booked for your job.",
+        data: {
+          type: NotificationTypes.NEW_BOOKING,
+          objectType: "Booking",
+          jobId: updatedBid.job,
+        },
+        sender: req.user._id,
+        objectId: booking._id,
         saveNotification: true,
       });
     }

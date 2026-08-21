@@ -22,6 +22,7 @@ const NotificationTypes = {
   BID_REJECTED: "bid_rejected",
   BID_WITHDRAWN: "bid_withdrawn",
   JOB_UPDATED: "job_updated",
+  JOB_ASSIGNED: "job_assigned",
   JOB_CANCELLED: "job_cancelled",
   NEW_JOB: "new_job",
   NEW_STAFF: "new_staff",

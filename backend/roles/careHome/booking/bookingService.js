@@ -21,6 +21,7 @@ const { updateShiftStatus } = require("../job/jobRepository");
 const { formatAttendance } = require("./formator/formatAttendance");
 const {
   getStaffIdsByUser,
+  findStaffByUserAndStaff,
 } = require("../../../roles/aggency/staff/staffRepository");
 const { customerTypes, supplierTypes } = require("@UsersModel");
 const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
@@ -99,26 +100,36 @@ const calculatePayment = (
 
 const createBooking = async (data) => {
   const bid = await findBidById_(data.bid);
-
   if (!bid) return { error: "Bid_not_found" };
   if (bid.status !== "accepted") return { error: "Bid_not_available" };
+  const bidder = await findUserById(bid.user);
+  if (!bidder) return { error: "User_not_found" };
 
-  const [user] = await Promise.all([findUserById(bid.user)]);
+  const bidderIsNurse = bidder.accountState?.userType === "nurse";
 
+  if (bidderIsNurse) {
+    return { error: "Booking_already_handled_on_bid_acceptance" };
+  }
 
-  if (!user) return { error: "User_not_found" };
+  if (!data.worker) {
+    return { error: "worker_required_to_assign_staff" };
+  }
 
-  if (data.worker) {
-    const conflictingBooking = await BookingRepo.findConflictingBooking(
-      data.worker,
-      bid.shift,
-    );
+  const staffRecord = await findStaffByUserAndStaff(bid.user, data.worker);
+  if (!staffRecord || staffRecord.status !== "active") {
+    return { error: "worker_not_active_staff_of_this_supplier" };
+  }
 
-    if (conflictingBooking) {
-      return {
-        error: "Worker_already_assigned_during_this_time",
-      };
-    }
+  if (data.createdByUserId && !bid.user.equals(data.createdByUserId)) {
+    return { error: "Unauthorized_to_assign_staff_for_this_bid" };
+  }
+
+  const conflictingBooking = await BookingRepo.findConflictingBooking(
+    data.worker,
+    bid.shift,
+  );
+  if (conflictingBooking) {
+    return { error: "Worker_already_assigned_during_this_time" };
   }
 
   const payment = calculatePayment(
@@ -131,14 +142,15 @@ const createBooking = async (data) => {
 
   const bookingData = {
     ...data,
+    bid: bid._id,
     user: bid.jobCreator,
     branch: bid.snapshot.branch,
     snapshot: bid.snapshot,
-    employer: user.accountState.userType !== "nurse" ? bid.user : null,
+    employer: bid.user,
     status: resolveInitialBookingStatus({
-      createdByUserType: user.accountState.userType,
-      createdByUserId: user._id,
-      workerId: data?.worker || null,
+      createdByUserType: data.createdByUserType,
+      createdByUserId: data.createdByUserId,
+      workerId: data.worker,
     }),
     shift: {
       _id: bid.shift._id,
@@ -157,15 +169,18 @@ const createBooking = async (data) => {
       totalAmount: +(bid.bid - payment.platformAmount).toFixed(2),
     },
   };
-  const booking = await BookingRepo.createBooking(bookingData);
 
+  const booking = await BookingRepo.createBooking(bookingData);
   if (!booking) {
     return { error: "Booking_creation_failed" };
   }
+
   const shiftID = booking.shift._id.toString();
   const jobId = booking.job.toString();
+
   void updateShiftStatus(jobId, shiftID, "booked");
-  void updateBidStatuses(bid._id);
+  void updateBidStatuses(bid._id, "accepted");
+
   return booking;
 };
 

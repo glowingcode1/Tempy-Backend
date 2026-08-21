@@ -3,7 +3,7 @@ const supplierDashboardService = require("./supplierDashboardService");
 
 const getSupplierDashboard = async (req, res) => {
   try {
-    const userId = req.params.userId || req.user?._id;
+    const userId = req.query.userId || req.user?._id;
 
     const dashboard = await supplierDashboardService.getSupplierDashboard({
       userId,
