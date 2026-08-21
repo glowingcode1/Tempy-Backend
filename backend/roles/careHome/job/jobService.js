@@ -1,5 +1,7 @@
 const { getCurrentDateInTimezone } = require("@helperUtils/responseUtil");
 const JobRepo = require("./jobRepository");
+const BookingRepo = require("../booking/bookingRepository");
+const BookingService = require("../booking/bookingService");
 
 const formatJobToTimezone = require("./formator/formatJobToTimezone");
 const {
@@ -9,17 +11,17 @@ const {
   findByIdAndUpdate: findBidByIdAndUpdate,
   findBidById,
 } = require("../../../roles/aggency/bid/bidRepository");
+const { findUserById } = require("../../admin/usersManagement/usersRepository");
 
 const createJob = async (data) => {
   const Job = await JobRepo.createJob(data);
   return Job;
 };
+
 const updateJobBidStatus = async (id, status, user) => {
   const JobBid = await findBidById_(id);
-
   if (!JobBid) return null;
 
-  // If a non-admin user is making the request, ensure they're the job creator
   if (user) {
     const jobCreatorId = String(JobBid.jobCreator || JobBid.user || "");
     if (String(user) !== jobCreatorId) {
@@ -27,16 +29,48 @@ const updateJobBidStatus = async (id, status, user) => {
     }
   }
 
-  // If accepting a bid, accept this and reject others for the shift
   if (status === "accepted") {
+    // accept this bid, reject the rest for the same shift
     await updateBidStatuses(JobBid._id, "accepted", "rejected");
-    // return the updated bid
-    return await findBidById(JobBid._id);
+
+    const bidder = await findUserById(JobBid.user);
+    const isNurse = bidder?.accountState?.userType === "nurse";
+
+    if (!isNurse) {
+      // Agency bid: stop here — agency still has to pick a worker via createBooking
+      const updatedBid = await findBidById_(JobBid._id);
+      return { updatedBid, booking: null, isNurse: false };
+    }
+
+    // Direct nurse bid: same-day conflict check, then book immediately
+    const conflict = await BookingRepo.findConflictingBooking(
+      JobBid.user,
+      JobBid.shift,
+    );
+    if (conflict) {
+      await findBidByIdAndUpdate(JobBid._id, { status: "rejected" });
+      return { error: "Bid_rejected_due_to_nurse_unavailability" };
+    }
+
+    const booking = await BookingService.createBooking({
+      bid: JobBid._id,
+      worker: JobBid.user,
+      createdByUserType: "nurse", // forces resolveInitialBookingStatus -> "active"
+      createdByUserId: JobBid.user,
+    });
+
+    if (booking?.error) {
+      await findBidByIdAndUpdate(JobBid._id, { status: "pending" });
+      return { error: booking.error };
+    }
+
+    const updatedBid = await findBidById_(JobBid._id);
+    return { updatedBid, booking, isNurse: true };
   }
 
-  // Otherwise just update the bid status
+  // rejected / withdraw — just update the bid
   const updated = await findBidByIdAndUpdate(id, { status });
-  return updated;
+  return { updatedBid: updated };
 };
 
 const getJobBids = async ({

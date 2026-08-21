@@ -3,15 +3,7 @@ const supplierDashboardService = require("./supplierDashboardService");
 
 const getSupplierDashboard = async (req, res) => {
   try {
-    const userId = req.user?._id;
-
-    if (!userId) {
-      return sendResponse({
-        res,
-        statusCode: 401,
-        translationKey: "unauthorized",
-      });
-    }
+    const userId = req.query.userId || req.user?._id;
 
     const dashboard = await supplierDashboardService.getSupplierDashboard({
       userId,

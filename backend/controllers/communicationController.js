@@ -13,7 +13,6 @@ const { NotificationExp } = require("../models/Notifications");
  * @param {Object} res - Express response object
  */
 
-
 const sendEmailMailgun = async (req, res) => {
   const { title, emails, subject, body, config } = req.body;
   // Validate required parameters
@@ -130,97 +129,18 @@ const sendUserNotifications = async ({
   title,
   body,
   data = {},
-  sender = null, // Optional: sender ID
-  objectId = null, // Optional: object ID
+  sender = null,
+  objectId = null,
   meta = {},
-  saveNotification = true, // send false if you don't want to save notification in db
-  image = null, // optional image url
+  saveNotification = true,
+  image = null,
 }) => {
-  //
-
   setImmediate(async () => {
     try {
-      // Fetch devices for all the user IDs
-      const recipientDevices = await Devices.find({
-        userId: { $in: recipientIds },
-      }).select("userId devices");
-
-      // Check if recipientDevices exist
-      if (recipientDevices && recipientDevices.length > 0) {
-        // Flatten the devices array and associate it with the userId
-        const flattenedDevices = recipientDevices.flatMap((userDevice) =>
-          userDevice.devices.map((device) => ({
-            userId: userDevice.userId,
-            deviceId: device.deviceId,
-            deviceType: device.deviceType,
-          })),
-        );
-
-        // Group devices by userId and ensure no duplicate device IDs
-        const devicesByUser = flattenedDevices.reduce((acc, device) => {
-          if (!acc[device.userId]) {
-            acc[device.userId] = new Set(); // Use Set to avoid duplicate device IDs
-          }
-          acc[device.userId].add(device); // Add device to Set (duplicates are automatically filtered out)
-          return acc;
-        }, {});
-        // Prepare responses array to track sending status
-        const responses = [];
-
-        // Send notifications and gather responses
-        for (const userId in devicesByUser) {
-          const userDevices = Array.from(devicesByUser[userId]).map(
-            (device) => ({
-              deviceId: device.deviceId,
-              deviceType: device.deviceType,
-            }),
-          ); // Convert Set to Array and include deviceType
-
-          //apply .toString to all values in data object
-          const dataWithStringValues = Object.fromEntries(
-            Object.entries({
-              ...data,
-              meta: meta || {},
-            }).map(([key, value]) => {
-              if (value === undefined || value === null) {
-                return [key, ""];
-              }
-
-              if (typeof value === "object") {
-                return [key, JSON.stringify(value)];
-              }
-
-              return [key, value.toString()];
-            }),
-          );
-
-          // Send notifications without awaiting
-          const sendNotificationPromise = sendNotification(userDevices, {
-            title,
-            body,
-            data: {
-              ...dataWithStringValues, // Additional data payload
-              subjectId: sender ? sender.toString() : null, // Convert subjectId to plain text
-              objectId: objectId ? objectId.toString() : null, // Ensure objectId is also plain text
-            },
-            image,
-          });
-
-          const sendNotificationResponse = await sendNotificationPromise;
-          responses.push({ userId, sendNotificationResponse });
-        }
-
-        //log all response using json.stringify for better readability
-        //  logger.log("Notification responses:", responses);
-
-        // Process the notifications after sending them
-        if (!saveNotification) {
-          return;
-        }
-
-        // Once all notifications are sent, prepare notifications to save
-        const notificationsToSave = responses.map(({ userId }) => ({
-          type: data.type || "system", // Assign a default type if not provided
+      // --- Always save the notification records first, regardless of devices ---
+      if (saveNotification) {
+        const notificationsToSave = recipientIds.map((userId) => ({
+          type: data.type || "general",
           subjectId: sender,
           objectId: objectId,
           objectType: data.objectType || "general",
@@ -230,10 +150,63 @@ const sendUserNotifications = async ({
           body,
           meta,
         }));
-        // Save all notifications in a batch to the database
         await NotificationExp.insertMany(notificationsToSave);
+      }
+
+      // --- Then attempt push delivery, independently ---
+      const recipientDevices = await Devices.find({
+        userId: { $in: recipientIds },
+      }).select("userId devices");
+
+      if (recipientDevices && recipientDevices.length > 0) {
+        const flattenedDevices = recipientDevices.flatMap((userDevice) =>
+          userDevice.devices.map((device) => ({
+            userId: userDevice.userId,
+            deviceId: device.deviceId,
+            deviceType: device.deviceType,
+          })),
+        );
+
+        const devicesByUser = flattenedDevices.reduce((acc, device) => {
+          if (!acc[device.userId]) {
+            acc[device.userId] = new Set();
+          }
+          acc[device.userId].add(device);
+          return acc;
+        }, {});
+
+        for (const userId in devicesByUser) {
+          const userDevices = Array.from(devicesByUser[userId]).map(
+            (device) => ({
+              deviceId: device.deviceId,
+              deviceType: device.deviceType,
+            }),
+          );
+
+          const dataWithStringValues = Object.fromEntries(
+            Object.entries({ ...data, meta: meta || {} }).map(
+              ([key, value]) => {
+                if (value === undefined || value === null) return [key, ""];
+                if (typeof value === "object")
+                  return [key, JSON.stringify(value)];
+                return [key, value.toString()];
+              },
+            ),
+          );
+
+          await sendNotification(userDevices, {
+            title,
+            body,
+            data: {
+              ...dataWithStringValues,
+              subjectId: sender ? sender.toString() : null,
+              objectId: objectId ? objectId.toString() : null,
+            },
+            image,
+          });
+        }
       } else {
-        logger.log("No devices found for the provided user IDs.");
+        console.log("[notif] No devices found for recipients:", recipientIds);
       }
     } catch (error) {
       console.error("Error sending notifications in background:", error);

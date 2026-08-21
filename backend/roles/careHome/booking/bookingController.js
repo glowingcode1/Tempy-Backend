@@ -56,81 +56,40 @@ const createBooking = async (req, res) => {
       });
     }
 
-    /**
-     * ==============================
-     * BOOKING CREATED NOTIFICATION
-     * ==============================
-     */
-
-    // Depending on your Booking response structure,
-    // these should contain the relevant user IDs.
-    const customerId =
-      Booking.jobCreator ||
-      Booking.customer ||
-      Booking.employer ||
-      Booking.job?.user ||
-      null;
-
     const workerId = Booking.worker?._id || Booking.worker || null;
-
     const jobName = Booking.job?.name || Booking.jobName || "your job";
 
-    /**
-     * If customer creates booking:
-     * notify the selected worker/nurse.
-     */
-    if (
-      req.user.userType !== "nurse" &&
-      workerId &&
-      workerId.toString() !== req.user._id.toString()
-    ) {
-      void sendUserNotifications({
-        recipientIds: [workerId],
-
-        title: "New Booking Created",
-
-        body: `A new booking has been created for ${jobName}.`,
-
-        data: {
-          type: NotificationTypes.NEW_BOOKING,
-          objectType: "Booking",
-        },
-
-        sender: req.user._id,
-
-        objectId: Booking._id,
-
-        saveNotification: true,
-      });
-    }
-
-    /**
-     * If nurse creates booking:
-     * notify the customer.
-     */
-    if (
-      req.user.userType === "nurse" &&
-      customerId &&
-      customerId.toString() !== req.user._id.toString()
-    ) {
-      void sendUserNotifications({
-        recipientIds: [customerId],
-
-        title: "Booking Created",
-
-        body: `A booking has been created for your job ${jobName}.`,
-
-        data: {
-          type: NotificationTypes.NEW_BOOKING,
-          objectType: "Booking",
-        },
-
-        sender: req.user._id,
-
-        objectId: Booking._id,
-
-        saveNotification: true,
-      });
+    if (workerId) {
+      if (Booking.status === "pending") {
+        // Agency assigned a specific worker — needs their accept/reject
+        void sendUserNotifications({
+          recipientIds: [workerId],
+          title: "New Job Offer",
+          body: `You've been assigned to ${jobName}. Please accept or decline this offer.`,
+          data: {
+            type: NotificationTypes.JOB_ASSIGNED,
+            objectType: "Booking",
+            jobId: Booking.job?._id || Booking.job,
+          },
+          sender: req.user._id,
+          objectId: Booking._id,
+          saveNotification: true,
+        });
+      } else if (
+        Booking.status === "active" &&
+        String(workerId) !== String(req.user._id)
+      ) {
+        // Fallback for any other creation path
+        void sendUserNotifications({
+          recipientIds: [workerId],
+          title: "New Booking Created",
+          body: `A new booking has been created for ${jobName}.`,
+          data: { type: NotificationTypes.NEW_BOOKING, objectType: "Booking" },
+          sender: req.user._id,
+          objectId: Booking._id,
+          saveNotification: true,
+        });
+      }
     }
 
     return sendResponse({
@@ -368,6 +327,45 @@ const updateBooking = async (req, res) => {
           statusCode: 404,
           translationKey: "Booking_not_found",
         });
+      }
+
+      if (updated.status === "active") {
+        // nurse accepted the offer
+        const recipients = [updated.user, updated.employer].filter(
+          (r) => r && String(r) !== String(req.user._id),
+        );
+        if (recipients.length) {
+          void sendUserNotifications({
+            recipientIds: recipients,
+            title: "Booking Confirmed",
+            body: "The worker has accepted the shift and the booking is confirmed.",
+            data: {
+              type: NotificationTypes.BOOKING,
+              objectType: "Booking",
+              jobId: updated.job,
+            },
+            sender: req.user._id,
+            objectId: updated._id,
+            saveNotification: true,
+          });
+        }
+      } else if (updated.status === "cancelledByWorker") {
+        // nurse rejected — only the agency that assigned it needs to know
+        if (updated.employer) {
+          void sendUserNotifications({
+            recipientIds: [updated.employer],
+            title: "Worker Declined",
+            body: "The assigned worker declined this shift. Please assign someone else.",
+            data: {
+              type: NotificationTypes.BOOKING,
+              objectType: "Booking",
+              jobId: updated.job,
+            },
+            sender: req.user._id,
+            objectId: updated._id,
+            saveNotification: true,
+          });
+        }
       }
 
       return sendResponse({
