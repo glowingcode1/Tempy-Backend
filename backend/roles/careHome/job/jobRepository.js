@@ -64,7 +64,7 @@ const getJobsSummary = async ({
       $geoNear: {
         near: {
           type: "Point",
-          coordinates: [Number(longitude), Number(latitude)], // [lng, lat]
+          coordinates: [Number(latitude), Number(longitude)], // [lat, lng]
         },
         key: "location",
         distanceField: "distanceInMeters", // distance added to each job

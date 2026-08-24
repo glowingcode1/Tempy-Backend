@@ -47,7 +47,7 @@ const getBooking = async ({
       $geoNear: {
         near: {
           type: "Point",
-          coordinates: [Number(longitude), Number(latitude)],
+          coordinates: [Number(latitude), Number(longitude)],
         },
         key: "snapshot.location",
         distanceField: "distanceInMeters",
