@@ -58,6 +58,13 @@ const formatJobToTimezone = (job, timezone) => {
       ...job.user,
       profileIcon: getFullImageUrl(job.user?.profileIcon),
     },
+    rating: job.rating
+      ? {
+          ...job.rating,
+          profileIcon: getFullImageUrl(job.rating?.profileIcon),
+        }
+      : job.rating,
+
     createdAt: job.createdAt
       ? convertUtcToTimezone(job.createdAt, timezone)
       : job.createdAt,
