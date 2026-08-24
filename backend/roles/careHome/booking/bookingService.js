@@ -623,11 +623,11 @@ const updateBookingCheckinCheckout = async (id, data) => {
     Booking.status = "inProgress";
   }
   if (data.status === "checkout") {
-    if (!hasShiftEnded(Booking.shift)) {
-      return {
-        error: "cannot_check_out_before_shift_end_time",
-      };
-    }
+    // if (!hasShiftEnded(Booking.shift)) {
+    //   return {
+    //     error: "cannot_check_out_before_shift_end_time",
+    //   };
+    // }
 
     Booking.status = "completed";
     const attendance = Booking.attendance || {};
