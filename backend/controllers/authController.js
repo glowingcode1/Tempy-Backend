@@ -1382,6 +1382,81 @@ const checkUserNameExists = async (req, res) => {
   }
 };
 
+const updateRadius = async (req, res) => {
+  try {
+    const { radius } = req.body;
+
+    // Validate radius exists
+    if (radius === undefined || radius === null) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "radius_required",
+      });
+    }
+
+    // Radius must be a number
+    if (typeof radius !== "number" || !Number.isFinite(radius)) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "invalid_radius",
+      });
+    }
+
+    // Radius cannot be negative
+    if (radius < 0) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "radius_cannot_be_negative",
+      });
+    }
+
+    // Update authenticated user's radius
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: {
+          radius,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+
+    if (!user) {
+      return sendResponse({
+        res,
+        statusCode: 404,
+        translationKey: "user_not_found",
+      });
+    }
+
+    const userObject = user.toJSON();
+
+    const response = formatUserResponse(userObject);
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "radius_updated_successfully",
+      data: response,
+    });
+  } catch (error) {
+    console.error("Error updating user radius:", error);
+
+    return sendResponse({
+      res,
+      statusCode: 500,
+      translationKey: "internal_server_error",
+      error,
+    });
+  }
+};
+
 module.exports = {
   createAdmin,
   register,
@@ -1402,4 +1477,5 @@ module.exports = {
   changePassword,
   checkUserNameExists,
   loginTest,
+  updateRadius,
 };

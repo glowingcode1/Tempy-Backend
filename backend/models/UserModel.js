@@ -64,6 +64,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    radius: {
+      type: Number,
+      default: 10,
+      min: 0,
+    },
 
     email: {
       type: String,

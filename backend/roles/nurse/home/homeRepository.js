@@ -2,6 +2,7 @@ const moment = require("moment-timezone");
 
 const Booking = require("../../careHome/booking/Booking");
 const { User } = require("../../../models/UserModel");
+const { formatUserResponse } = require("@helperUtils/userResponseUtil");
 
 /* =========================================================
    HELPERS
@@ -121,10 +122,6 @@ const getEarnings = async ({ userId, timezone, userType }) => {
   const weekStart = now.clone().startOf("isoWeek");
 
   return {
-    // available: false,
-
-    // currency: "USD",
-
     thisMonth: {
       amount: 0,
       formatted: "$0",
@@ -181,12 +178,6 @@ const getTodaysShifts = async ({ userId, timezone, userType }) => {
 
     const hours = calculateShiftHours(shift);
 
-    /**
-     * Job name:
-     *
-     * Prefer populated Job.
-     * If Job isn't populated, use booking.snapshot.name.
-     */
     const jobName =
       booking.job?.name || booking.job?.title || booking.snapshot?.name || "";
 
@@ -318,9 +309,28 @@ const getWeeklyHours = async ({
 ========================================================= */
 
 const getHomeData = async ({ userId, timezone, userType }) => {
-  const user = await User.findById(userId)
-    .select("name profileIcon timezone weeklyHours")
-    .lean();
+  /**
+   * IMPORTANT:
+   *
+   * Do not select only name/profileIcon/timezone/weeklyHours.
+   *
+   * formatUserResponse() needs fields such as:
+   * - accountState
+   * - verificationStatus
+   * - location
+   * - radius
+   * - phoneNumber
+   * - gender
+   * - language
+   * - twoFA
+   * - taxNumber
+   * - governmentIdentity
+   * - degree
+   * - certification
+   * - validationDocument
+   * etc.
+   */
+  const user = await User.findById(userId).lean();
 
   if (!user) {
     const error = new Error("User_not_found");
@@ -351,13 +361,19 @@ const getHomeData = async ({ userId, timezone, userType }) => {
     }),
   ]);
 
+  /**
+   * Use the same user response formatter used by
+   * login/profile APIs.
+   *
+   * radius will automatically be included because
+   * formatUserResponse() contains:
+   *
+   * radius: userObject.radius ?? 10
+   */
+  const formattedUser = formatUserResponse(user);
+
   return {
-    user: {
-      id: user._id,
-      name: user.name || "",
-      profileIcon: user.profileIcon || "",
-      timezone: userTimezone,
-    },
+    user: formattedUser,
 
     earnings,
 

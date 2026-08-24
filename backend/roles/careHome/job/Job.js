@@ -54,7 +54,7 @@ const JobSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "inactive", "deleted", "completed"],
+      enum: ["active", "inactive", "deleted", "completed", "pending"],
       default: "active",
       index: true,
     },

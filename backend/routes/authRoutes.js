@@ -20,6 +20,7 @@ const {
   changePassword,
   createAdmin,
   checkUserNameExists,
+  updateRadius,
 } = require("../controllers/authController");
 const createRateLimiter = require("../helperUtils/rateLimiter");
 const roleMiddleware = require("../middlewares/roleMiddleware");
@@ -139,5 +140,7 @@ router.put(
   roleMiddleware(["organizer"]),
   companyDetails,
 );
+
+router.put("/radius", auth, updateRadius);
 
 module.exports = router;
