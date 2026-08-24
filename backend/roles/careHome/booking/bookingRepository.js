@@ -155,37 +155,6 @@ const getBooking = async ({
       preserveNullAndEmptyArrays: true,
     },
   });
-  pipeline.push({
-    $lookup: {
-      from: "users",
-      let: { userId: "$jobCreater" },
-      pipeline: [
-        {
-          $match: {
-            $expr: {
-              $eq: ["$_id", "$$userId"],
-            },
-          },
-        },
-        {
-          $project: {
-            name: 1,
-            email: 1,
-            profileIcon: 1,
-            accountState: 1,
-          },
-        },
-      ],
-      as: "jobCreater",
-    },
-  });
-
-  pipeline.push({
-    $unwind: {
-      path: "$jobCreater",
-      preserveNullAndEmptyArrays: true,
-    },
-  });
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(
       [{ schema: Booking.schema }],
@@ -322,30 +291,6 @@ const getBookingByJob = async ({
       },
     });
   }
-  pipeline.push({
-    $lookup: {
-      from: "users",
-      let: { userId: "$user" },
-      pipeline: [
-        {
-          $match: {
-            $expr: {
-              $eq: ["$_id", "$$userId"],
-            },
-          },
-        },
-        {
-          $project: {
-            name: 1,
-            email: 1,
-            profileIcon: 1,
-            accountState: 1,
-          },
-        },
-      ],
-      as: "user",
-    },
-  });
 
   pipeline.push({
     $unwind: {
@@ -353,37 +298,7 @@ const getBookingByJob = async ({
       preserveNullAndEmptyArrays: true,
     },
   });
-  pipeline.push({
-    $lookup: {
-      from: "users",
-      let: { userId: "$jobCreater" },
-      pipeline: [
-        {
-          $match: {
-            $expr: {
-              $eq: ["$_id", "$$userId"],
-            },
-          },
-        },
-        {
-          $project: {
-            name: 1,
-            email: 1,
-            profileIcon: 1,
-            accountState: 1,
-          },
-        },
-      ],
-      as: "jobCreater",
-    },
-  });
 
-  pipeline.push({
-    $unwind: {
-      path: "$jobCreater",
-      preserveNullAndEmptyArrays: true,
-    },
-  });
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(
       [{ schema: Booking.schema }],

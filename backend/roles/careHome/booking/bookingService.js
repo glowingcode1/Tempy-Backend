@@ -602,11 +602,11 @@ const updateBookingCheckinCheckout = async (id, data) => {
     };
   }
   if (data.status === "checkin") {
-    if (!hasShiftStarted(Booking.shift)) {
-      return {
-        error: "cannot_check_in_before_shift_start_time",
-      };
-    }
+    // if (!hasShiftStarted(Booking.shift)) {
+    //   return {
+    //     error: "cannot_check_in_before_shift_start_time",
+    //   };
+    // }
     const attendance = {
       checkIn: new Date(),
       proofPicture: data.proofPicture || "",

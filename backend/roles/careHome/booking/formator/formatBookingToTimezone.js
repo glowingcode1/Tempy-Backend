@@ -34,10 +34,6 @@ const formatBookingToTimezone = (job, timezone) => {
       ...job.user,
       profileIcon: getFullImageUrl(job.user?.profileIcon),
     },
-    jobCreater: {
-      ...job.jobCreater,
-      profileIcon: getFullImageUrl(job.jobCreater?.profileIcon),
-    },
     createdAt: job.createdAt
       ? convertUtcToTimezone(job.createdAt, timezone)
       : job.createdAt,
