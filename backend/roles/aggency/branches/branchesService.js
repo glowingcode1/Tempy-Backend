@@ -57,7 +57,7 @@ const updateBranch = async (id, data) => {
       location: data.location,
       status: data.status,
       bio: data.bio,
-      images: data.images,
+      profileIcon: data.profileIcon,
       "cqc.registrationNumber": data.cqcRegistrationNumber,
       "cqc.certificate": data.cqcCertificate,
       "insurance.certificate": data.insuranceCertificate,

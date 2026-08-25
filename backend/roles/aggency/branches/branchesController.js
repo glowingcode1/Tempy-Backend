@@ -16,7 +16,7 @@ const BRANCH_OWNER_TYPES = [
 ];
 
 const createBranch = async (req, res) => {
-  let { name, status, location } = req.body;
+  let { name, location, bio, profileIcon, cqc, insurance, status } = req.body;
   let user = req.user._id;
   if (req.user.userType === "admin") {
     if (!req.body.userId) {
@@ -31,7 +31,7 @@ const createBranch = async (req, res) => {
 
   if (
     !validateParams(req, res, {
-      rawData: ["name", "location"],
+      rawData: ["name", "location", "bio", "profileIcon", "cqc", "insurance"],
     })
   )
     return;
@@ -40,6 +40,10 @@ const createBranch = async (req, res) => {
     user,
     name,
     location,
+    bio,
+    profileIcon,
+    cqc,
+    insurance,
     status,
   };
 

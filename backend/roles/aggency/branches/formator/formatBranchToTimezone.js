@@ -13,8 +13,8 @@ const formateBranchToTimezone = (branch, timezone) => {
     obj.updatedAt = convertUtcToTimezone(obj.updatedAt, timezone);
   }
 
-  if (obj.images?.length) {
-    obj.images = obj.images.map((img) => getFullImageUrl(img));
+  if (obj.profileIcon?.length) {
+    obj.profileIcon = getFullImageUrl(obj.profileIcon);
   }
   if (obj.cqc?.certificate) {
     obj.cqc.certificate = getFullImageUrl(obj.cqc.certificate);

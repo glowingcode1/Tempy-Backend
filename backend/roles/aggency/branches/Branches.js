@@ -22,9 +22,9 @@ const BranchesSchema = new mongoose.Schema(
       required: true,
     },
 
-    images: {
+    profileIcon: {
       type: String,
-      default: [],
+      default: "",
     },
     cqc: {
       registrationNumber: { type: String, default: "" },
