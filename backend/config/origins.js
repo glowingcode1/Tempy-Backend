@@ -13,6 +13,7 @@ const PROD_ORIGINS = [
   "http://192.168.13.67:4003",
   "http://3.9.62.203",
   "https://tempy.co.uk",
+  
 ];
 
 module.exports = {
