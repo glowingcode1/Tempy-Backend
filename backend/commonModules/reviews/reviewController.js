@@ -21,7 +21,7 @@ const createReview = async (req, res) => {
       rawData: ["reviewType", "objectId", "rating"],
       objectIdFields: ["objectId"],
       enumFields: {
-        reviewType: ["booking", "user"],
+        reviewType: ["booking", "user", "branch"],
       },
     })
   )
@@ -82,7 +82,7 @@ const getReviewsByType = async (req, res) => {
       pathParams: ["reviewType", "entityId"],
       objectIdFields: ["entityId"],
       enumFields: {
-        reviewType: ["session", "user"],
+        reviewType: ["booking", "user", "branch"],
       },
     })
   ) {

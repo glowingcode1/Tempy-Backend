@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Review = require("./Review");
-const { formatReviews} = require("./formatters/formatReview");
+const { formatReviews } = require("./formatters/formatReview");
 const { default: isEmail } = require("validator/lib/isEmail");
 
 const castAggregationFilter = (filter = {}) => {
@@ -228,7 +228,6 @@ const getReviews = async (
       },
     });
   }
-  
 
   pipeline.push({
     $facet: {
@@ -248,8 +247,8 @@ const getReviews = async (
 
   const formattedReviews = await enrichReviewsWithSelectedFlag(reviews);
   const [formatedReviewsWithContext] = await Promise.all([
-      formatReviews(formattedReviews)
-    ]);
+    formatReviews(formattedReviews),
+  ]);
 
   return {
     reviews: formatedReviewsWithContext,
@@ -295,7 +294,40 @@ const findReviewById = async (id) => {
 const findReviewByUser = async (userId) => {
   return Review.find({
     objectUser: new mongoose.Types.ObjectId(userId),
-  }).populate("subject", "name profileIcon").lean();
+  })
+    .populate("subject", "name profileIcon")
+    .lean();
+};
+const findReviewByBranch = async (branchIds = []) => {
+  if (!branchIds.length) return [];
+  const ids = branchIds.map((id) => new mongoose.Types.ObjectId(id));
+
+  const rows = await Review.aggregate([
+    { $match: { object: { $in: ids }, objectType: "Branches" } },
+    {
+      $group: {
+        _id: "$object",
+        averageRating: { $avg: "$rating" },
+        totalReviews: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const statsMap = new Map(
+    rows.map((r) => [
+      String(r._id),
+      {
+        averageRating: Number(r.averageRating.toFixed(1)),
+        totalReviews: r.totalReviews,
+      },
+    ]),
+  );
+
+  return branchIds.map((id) => ({
+    id: String(id),
+    averageRating: statsMap.get(String(id))?.averageRating || 0,
+    totalReviews: statsMap.get(String(id))?.totalReviews || 0,
+  }));
 };
 
 const updateReviewById = async (id, data = {}) => {
@@ -369,7 +401,6 @@ const getEditedReviewStats = async (filter = {}) => {
   };
 };
 
-
 const findReviewByStaff = async (staffIds = []) => {
   if (!staffIds.length) return [];
 
@@ -414,4 +445,5 @@ module.exports = {
   getEditedReviewStats,
   findReviewByUser,
   findReviewByStaff,
+  findReviewByBranch,
 };
