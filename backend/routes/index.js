@@ -7,19 +7,25 @@ router.use("/upload/aws", require("./uploadAWSRoutes"));
 router.use("/settings", require("../roles/admin/settings/adminSettingsRoutes"));
 router.use("/communications", require("./communicationRoutes"));
 router.use("/notifications", require("./notificationsRoutes"));
+
+router.use(
+  "/conversations",
+  require("../commonModules/chatModule/routes/messageRoutes"),
+);
 router.use("/support", require("./supportRoutes"));
 router.use("/contact-us", require("./contactUsRoutes"));
 router.use("/languages", require("./languageRoutes"));
 router.use("/util", require("./dbRoutes"));
 router.use("/reviews", require("../commonModules/reviews/reviewRoutes"));
-router.use("/engagement", require("../commonModules/appEngagement/engagementEventsRoutes"));
+router.use(
+  "/engagement",
+  require("../commonModules/appEngagement/engagementEventsRoutes"),
+);
 
 router.use("/dashboard", require("../roles/admin/dashboard/dashboardsRoutes"));
 
 //locations
 router.use("/locations", require("../shared/locations/routes"));
-        
-
 
 //users
 router.use("/users", require("../roles/admin/usersManagement/usersRoutes"));
@@ -28,11 +34,11 @@ router.use("/users", require("../roles/admin/usersManagement/usersRoutes"));
 // router.use("/engagement", require("../commonModules/appEngagement/engagementEventsRoutes"));
 
 //notification preferences
-router.use("/notification-preferences", require("./notificationPreferencesRoutes"));
 router.use(
-  "/favorites",
-  require("../commonModules/favorite/favoriteRoutes"),
+  "/notification-preferences",
+  require("./notificationPreferencesRoutes"),
 );
+router.use("/favorites", require("../commonModules/favorite/favoriteRoutes"));
 // router.use("/send-reminder", require("./sendRemindersRoutes"));
 // router.use(
 //   "/placeholder-profile",
@@ -44,6 +50,5 @@ router.use(
 // );
 
 // router.use("/stripe", require("../commonModules/stripeModule/routes/stripeAccountRoutes"));
-
 
 module.exports = router;

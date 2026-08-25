@@ -977,7 +977,7 @@ const deleteStaff = async (id) => {
 };
 
 const findStaffNearJob = async (user, jobDetails, km = 50) => {
-  const [lng, lat] = jobDetails?.location?.coordinates || [];
+  const [lat, lng] = jobDetails?.location?.coordinates || [];
   if (lng == null || lat == null) return [];
   const nearby = await Staff.aggregate([
     // this employer's active staff

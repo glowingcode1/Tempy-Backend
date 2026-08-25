@@ -64,6 +64,7 @@ const formatUserResponse = (
       blueTick: userObject.accountState?.blueTick?.isActive || false,
     },
     location,
+    radius: userObject.radius ?? 10,
     ...(subAdmin ? { subAdmin } : {}),
     averageRating: userObject.averageRating || 0,
     totalReviews: userObject.totalReviews || 0,

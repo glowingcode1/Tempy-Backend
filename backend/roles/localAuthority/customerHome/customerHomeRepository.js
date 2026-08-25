@@ -4,6 +4,7 @@ const Booking = require("../../careHome/booking/Booking");
 const { User } = require("../../../models/UserModel");
 
 const Review = require("../../../commonModules/reviews/Review");
+const { formatUserResponse } = require("@helperUtils/userResponseUtil");
 
 /* =========================================================
    HELPERS
@@ -215,9 +216,7 @@ const getTodaysShifts = async ({ userId, timezone }) => {
 ========================================================= */
 
 const getHomeData = async ({ userId, timezone }) => {
-  const user = await User.findById(userId)
-    .select("name profileIcon timezone")
-    .lean();
+  const user = await User.findById(userId).lean();
 
   if (!user) {
     const error = new Error("User_not_found");
@@ -232,13 +231,10 @@ const getHomeData = async ({ userId, timezone }) => {
     timezone: userTimezone,
   });
 
+  const formattedUser = formatUserResponse(user);
+
   return {
-    user: {
-      id: user._id,
-      name: user.name || "",
-      profileIcon: user.profileIcon || "",
-      timezone: userTimezone,
-    },
+    user: formattedUser,
 
     todaysShifts: {
       date: moment.tz(userTimezone).format("YYYY-MM-DD"),

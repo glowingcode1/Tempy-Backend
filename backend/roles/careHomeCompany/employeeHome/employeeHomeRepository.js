@@ -2,6 +2,7 @@ const moment = require("moment-timezone");
 
 const Booking = require("../../careHome/booking/Booking");
 const { User } = require("../../../models/UserModel");
+const { formatUserResponse } = require("@helperUtils/userResponseUtil");
 
 /* =========================================================
    CONSTANTS
@@ -381,7 +382,7 @@ const getPerformanceGraph = async ({ userId, timezone, userType }) => {
 
       staffHours: totalStaffHours,
     },
-    
+
     data,
 
     // series,
@@ -393,9 +394,7 @@ const getPerformanceGraph = async ({ userId, timezone, userType }) => {
 ========================================================= */
 
 const getHomeData = async ({ userId, timezone, userType }) => {
-  const user = await User.findById(userId)
-    .select("name profileIcon timezone weeklyHours")
-    .lean();
+  const user = await User.findById(userId).lean();
 
   if (!user) {
     const error = new Error("User_not_found");
@@ -434,16 +433,10 @@ const getHomeData = async ({ userId, timezone, userType }) => {
     }),
   ]);
 
+  const formattedUser = formatUserResponse(user);
+
   return {
-    user: {
-      id: user._id,
-
-      name: user.name || "",
-
-      profileIcon: user.profileIcon || "",
-
-      timezone: userTimezone,
-    },
+    user: formattedUser,
 
     earnings,
 

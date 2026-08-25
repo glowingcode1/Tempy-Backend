@@ -100,36 +100,196 @@ const calculatePayment = (
 
 const createBooking = async (data) => {
   const bid = await findBidById_(data.bid);
-  if (!bid) return { error: "Bid_not_found" };
-  if (bid.status !== "accepted") return { error: "Bid_not_available" };
-  const bidder = await findUserById(bid.user);
-  if (!bidder) return { error: "User_not_found" };
 
-  const bidderIsNurse = bidder.accountState?.userType === "nurse";
+  if (!bid) {
+    return { error: "Bid_not_found" };
+  }
+
+  if (bid.status !== "accepted") {
+    return { error: "Bid_not_available" };
+  }
+
+  const bidder = await findUserById(bid.user);
+
+  if (!bidder) {
+    return { error: "User_not_found" };
+  }
+
+  const bidderUserType = bidder.accountState?.userType || bidder.userType;
+
+  const bidderIsNurse = bidderUserType === "nurse";
+
+  /*
+  |--------------------------------------------------------------------------
+  | FLOW 1: DIRECT NURSE BID
+  |--------------------------------------------------------------------------
+  |
+  | Care Home accepts a bid submitted directly by a nurse.
+  |
+  | Bidder:
+  |   bid.user = nurse
+  |
+  | Booking:
+  |   worker   = nurse
+  |   employer = null
+  |   status   = active
+  |
+  | The nurse does NOT need to accept the booking again.
+  |
+  |--------------------------------------------------------------------------
+  */
 
   if (bidderIsNurse) {
-    return { error: "Booking_already_handled_on_bid_acceptance" };
+    // The nurse who submitted the bid becomes the worker.
+    const workerId = bid.user;
+
+    // Prevent duplicate/conflicting bookings.
+    const conflictingBooking = await BookingRepo.findConflictingBooking(
+      workerId,
+      bid.shift,
+    );
+
+    if (conflictingBooking) {
+      return {
+        error: "Worker_already_assigned_during_this_time",
+      };
+    }
+
+    const payment = calculatePayment(
+      bid.shift.startTime,
+      bid.shift.endTime,
+      bid.bid,
+      bid.shift.breakMin,
+      platformFee,
+    );
+
+    const bookingData = {
+      bid: bid._id,
+
+      // Care home / customer who owns the job
+      user: bid.jobCreator,
+
+      // Direct nurse
+      worker: workerId,
+
+      // No agency involved
+      employer: null,
+
+      branch: bid.snapshot?.branch || null,
+
+      // Job snapshot
+      snapshot: bid.snapshot,
+
+      /*
+       * Nurse bid was accepted directly by the care home.
+       * Therefore booking is immediately active.
+       */
+      status: "active",
+
+      shift: {
+        _id: bid.shift._id,
+        date: bid.shift.date,
+        startTime: bid.shift.startTime,
+        endTime: bid.shift.endTime,
+        isBreak: bid.shift.isBreak,
+        breakMin: bid.shift.breakMin,
+      },
+
+      job: bid.job,
+
+      payment: {
+        amount: bid.bid,
+        perHour: payment.perHourRate,
+        totalHours: payment.totalHours,
+        platformFee: payment.platformAmount,
+        totalAmount: +(bid.bid - payment.platformAmount).toFixed(2),
+
+        // Keep these ready for future payment processing.
+        amountPayedToWorker: 0,
+        amountPayedToEmployer: 0,
+        status: "pending",
+      },
+    };
+
+    const booking = await BookingRepo.createBooking(bookingData);
+
+    if (!booking) {
+      return {
+        error: "Booking_creation_failed",
+      };
+    }
+
+    /*
+     * Mark the shift as booked.
+     */
+    void updateShiftStatus(
+      booking.job.toString(),
+      booking.shift._id.toString(),
+      "booked",
+    );
+
+    /*
+     * The bid is already accepted.
+     */
+    void updateBidStatuses(bid._id, "accepted");
+
+    return booking;
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | FLOW 2: AGENCY BID
+  |--------------------------------------------------------------------------
+  |
+  | Care Home accepts an agency's bid.
+  |
+  | The agency must subsequently assign one of its staff members.
+  |
+  |--------------------------------------------------------------------------
+  */
 
   if (!data.worker) {
-    return { error: "worker_required_to_assign_staff" };
+    return {
+      error: "worker_required_to_assign_staff",
+    };
   }
 
+  /*
+   * Make sure the selected worker belongs to the agency.
+   */
   const staffRecord = await findStaffByUserAndStaff(bid.user, data.worker);
+
   if (!staffRecord || staffRecord.status !== "active") {
-    return { error: "worker_not_active_staff_of_this_supplier" };
+    return {
+      error: "worker_not_active_staff_of_this_supplier",
+    };
   }
 
-  if (data.createdByUserId && !bid.user.equals(data.createdByUserId)) {
-    return { error: "Unauthorized_to_assign_staff_for_this_bid" };
+  /*
+   * Only the agency which owns the accepted bid can assign
+   * one of its workers.
+   */
+  if (
+    data.createdByUserId &&
+    String(bid.user) !== String(data.createdByUserId)
+  ) {
+    return {
+      error: "Unauthorized_to_assign_staff_for_this_bid",
+    };
   }
 
+  /*
+   * Prevent overlapping bookings for the selected worker.
+   */
   const conflictingBooking = await BookingRepo.findConflictingBooking(
     data.worker,
     bid.shift,
   );
+
   if (conflictingBooking) {
-    return { error: "Worker_already_assigned_during_this_time" };
+    return {
+      error: "Worker_already_assigned_during_this_time",
+    };
   }
 
   const payment = calculatePayment(
@@ -142,16 +302,28 @@ const createBooking = async (data) => {
 
   const bookingData = {
     ...data,
+
     bid: bid._id,
+
+    // Care home
     user: bid.jobCreator,
-    branch: bid.snapshot.branch,
-    snapshot: bid.snapshot,
+
+    // Assigned staff
+    worker: data.worker,
+
+    // Agency
     employer: bid.user,
-    status: resolveInitialBookingStatus({
-      createdByUserType: data.createdByUserType,
-      createdByUserId: data.createdByUserId,
-      workerId: data.worker,
-    }),
+
+    branch: bid.snapshot?.branch || null,
+
+    snapshot: bid.snapshot,
+
+    /*
+     * Agency assigned a worker.
+     * Worker still needs to accept.
+     */
+    status: "pending",
+
     shift: {
       _id: bid.shift._id,
       date: bid.shift.date,
@@ -160,25 +332,40 @@ const createBooking = async (data) => {
       isBreak: bid.shift.isBreak,
       breakMin: bid.shift.breakMin,
     },
+
     job: bid.job,
+
     payment: {
       amount: bid.bid,
       perHour: payment.perHourRate,
       totalHours: payment.totalHours,
       platformFee: payment.platformAmount,
       totalAmount: +(bid.bid - payment.platformAmount).toFixed(2),
+
+      amountPayedToWorker: 0,
+      amountPayedToEmployer: 0,
+      status: "pending",
     },
   };
 
   const booking = await BookingRepo.createBooking(bookingData);
+
   if (!booking) {
-    return { error: "Booking_creation_failed" };
+    return {
+      error: "Booking_creation_failed",
+    };
   }
 
-  const shiftID = booking.shift._id.toString();
-  const jobId = booking.job.toString();
+  /*
+   * The shift is considered booked because a worker
+   * has been assigned.
+   */
+  void updateShiftStatus(
+    booking.job.toString(),
+    booking.shift._id.toString(),
+    "booked",
+  );
 
-  void updateShiftStatus(jobId, shiftID, "booked");
   void updateBidStatuses(bid._id, "accepted");
 
   return booking;
@@ -415,11 +602,11 @@ const updateBookingCheckinCheckout = async (id, data) => {
     };
   }
   if (data.status === "checkin") {
-    if (!hasShiftStarted(Booking.shift)) {
-      return {
-        error: "cannot_check_in_before_shift_start_time",
-      };
-    }
+    // if (!hasShiftStarted(Booking.shift)) {
+    //   return {
+    //     error: "cannot_check_in_before_shift_start_time",
+    //   };
+    // }
     const attendance = {
       checkIn: new Date(),
       proofPicture: data.proofPicture || "",
@@ -436,11 +623,11 @@ const updateBookingCheckinCheckout = async (id, data) => {
     Booking.status = "inProgress";
   }
   if (data.status === "checkout") {
-    if (!hasShiftEnded(Booking.shift)) {
-      return {
-        error: "cannot_check_out_before_shift_end_time",
-      };
-    }
+    // if (!hasShiftEnded(Booking.shift)) {
+    //   return {
+    //     error: "cannot_check_out_before_shift_end_time",
+    //   };
+    // }
 
     Booking.status = "completed";
     const attendance = Booking.attendance || {};

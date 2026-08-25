@@ -4,8 +4,8 @@ const { getFullImageUrl } = require("@helperUtils/imageHelper");
 const getDistanceKm = (from, to) => {
   if (!Array.isArray(from) || !Array.isArray(to)) return null;
 
-  const [lng1, lat1] = from;
-  const [lng2, lat2] = to;
+  const [lat1, lng1] = from;
+  const [lat2, lng2] = to;
 
   // [0,0] is the schema default, not a real place
   if (!lat1 && !lng1) return null;

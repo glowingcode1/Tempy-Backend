@@ -23,24 +23,35 @@ const createBooking = async (req, res) => {
     !validateParams(req, res, {
       rawData: ["bid"],
     })
-  )
+  ) {
     return;
+  }
 
+  /*
+   * If the logged-in user is a nurse, the nurse
+   * automatically becomes the worker.
+   *
+   * This is mainly useful for agency-created bookings
+   * where the nurse is assigning/responding.
+   */
   if (req.user?.userType === "nurse") {
     worker = req.user._id;
   }
 
   const data = {
     bid,
+
     worker: worker || null,
+
     createdByUserType: req.user?.userType || null,
+
     createdByUserId: req.user?._id || null,
   };
 
   try {
-    const Booking = await BookingService.createBooking(data);
+    const booking = await BookingService.createBooking(data);
 
-    if (!Booking) {
+    if (!booking) {
       return sendResponse({
         res,
         statusCode: 400,
@@ -48,55 +59,95 @@ const createBooking = async (req, res) => {
       });
     }
 
-    if (Booking && Booking.error) {
+    if (booking.error) {
       return sendResponse({
         res,
         statusCode: 400,
-        translationKey: Booking.error,
+        translationKey: booking.error,
       });
     }
 
-    const workerId = Booking.worker?._id || Booking.worker || null;
-    const jobName = Booking.job?.name || Booking.jobName || "your job";
+    const workerId = booking.worker?._id || booking.worker || null;
 
-    if (workerId) {
-      if (Booking.status === "pending") {
-        // Agency assigned a specific worker — needs their accept/reject
-        void sendUserNotifications({
-          recipientIds: [workerId],
-          title: "New Job Offer",
-          body: `You've been assigned to ${jobName}. Please accept or decline this offer.`,
-          data: {
-            type: NotificationTypes.JOB_ASSIGNED,
-            objectType: "Booking",
-            jobId: Booking.job?._id || Booking.job,
-          },
-          sender: req.user._id,
-          objectId: Booking._id,
-          saveNotification: true,
-        });
-      } else if (
-        Booking.status === "active" &&
-        String(workerId) !== String(req.user._id)
-      ) {
-        // Fallback for any other creation path
-        void sendUserNotifications({
-          recipientIds: [workerId],
-          title: "New Booking Created",
-          body: `A new booking has been created for ${jobName}.`,
-          data: { type: NotificationTypes.NEW_BOOKING, objectType: "Booking" },
-          sender: req.user._id,
-          objectId: Booking._id,
-          saveNotification: true,
-        });
-      }
+    const jobName = booking.job?.name || booking.jobName || "your job";
+
+    /*
+     * =========================================================
+     * DIRECT NURSE BOOKING
+     * =========================================================
+     *
+     * Nurse bid was accepted by care home.
+     *
+     * Booking is already active.
+     *
+     * Notify the nurse that the bid was accepted.
+     */
+    if (
+      workerId &&
+      booking.status === "active" &&
+      String(workerId) !== String(req.user._id)
+    ) {
+      void sendUserNotifications({
+        recipientIds: [workerId],
+
+        title: "Booking Confirmed",
+
+        body: `Your bid for ${jobName} has been accepted. Your booking is confirmed.`,
+
+        data: {
+          type: NotificationTypes.BOOKING,
+          objectType: "Booking",
+          jobId: booking.job?._id || booking.job,
+        },
+
+        sender: req.user._id,
+
+        objectId: booking._id,
+
+        saveNotification: true,
+      });
+    }
+
+    /*
+     * =========================================================
+     * AGENCY ASSIGNED WORKER
+     * =========================================================
+     *
+     * Agency created booking for a worker.
+     *
+     * Booking remains pending until worker accepts.
+     */
+    if (
+      workerId &&
+      booking.status === "pending" &&
+      String(workerId) !== String(req.user._id)
+    ) {
+      void sendUserNotifications({
+        recipientIds: [workerId],
+
+        title: "New Job Offer",
+
+        body: `You've been assigned to ${jobName}. Please accept or decline this offer.`,
+
+        data: {
+          type: NotificationTypes.JOB_ASSIGNED,
+          objectType: "Booking",
+          jobId: booking.job?._id || booking.job,
+        },
+
+        sender: req.user._id,
+
+        objectId: booking._id,
+
+        saveNotification: true,
+      });
     }
 
     return sendResponse({
       res,
       statusCode: 201,
       translationKey: "Booking_created_successfully",
-      data: Booking,
+      data: booking,
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);

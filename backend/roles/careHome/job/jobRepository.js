@@ -64,7 +64,7 @@ const getJobsSummary = async ({
       $geoNear: {
         near: {
           type: "Point",
-          coordinates: [Number(longitude), Number(latitude)], // [lng, lat]
+          coordinates: [Number(latitude), Number(longitude)], // [lng, lat]
         },
         key: "location",
         distanceField: "distanceInMeters", // distance added to each job
@@ -263,7 +263,7 @@ const getJobs = async ({
       $geoNear: {
         near: {
           type: "Point",
-          coordinates: [Number(longitude), Number(latitude)], // [lng, lat]
+          coordinates: [Number(latitude), Number(longitude)], // [lng, lat]
         },
         key: "location",
         distanceField: "distanceInMeters", // distance added to each job
@@ -382,7 +382,6 @@ const getJobs = async ({
   pipeline.push({
     $project: {
       reviewStats: 0,
-      "user.profileIcon": 0, // remove duplicate profileIcon from user
     },
   });
   pipeline.push({
