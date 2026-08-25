@@ -16,7 +16,7 @@ const BRANCH_OWNER_TYPES = [
 ];
 
 const createBranch = async (req, res) => {
-  let { name, status = "active", location } = req.body;
+  let { name, status, location } = req.body;
   let user = req.user._id;
   if (req.user.userType === "admin") {
     if (!req.body.userId) {

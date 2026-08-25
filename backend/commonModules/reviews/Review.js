@@ -3,12 +3,12 @@ const reviewSchema = new mongoose.Schema(
   {
     reviewType: {
       type: String,
-      enum: ["user", "booking"],
+      enum: ["user", "booking", "branch"],
       required: true,
     },
     objectType: {
       type: String,
-      enum: ["User", "Booking"],
+      enum: ["User", "Booking", "Branches"],
       required: true,
     },
     object: {

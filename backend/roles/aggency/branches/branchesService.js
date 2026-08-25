@@ -1,13 +1,22 @@
 const Branches = require("./Branches");
 const BranchRepo = require("./branchesRepository");
 const formatBranchToTimezone = require("./formator/formatBranchToTimezone");
+const reviewRepository = require("../../../commonModules/reviews/reviewRepository");
 
 const createBranch = async (data) => {
   const branch = await BranchRepo.createBranch(data);
   return branch;
 };
 
-const getBranch = async ({ timezone, page, limit, keyword, status, user, summary }) => {
+const getBranch = async ({
+  timezone,
+  page,
+  limit,
+  keyword,
+  status,
+  user,
+  summary,
+}) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
   if (summary) {
     const { branch, meta } = await BranchRepo.getBranchSummary({
@@ -42,12 +51,17 @@ const updateBranch = async (id, data) => {
     return { error: "Branch_not_found" };
   }
 
-  // Remove undefined values
   const updateData = Object.fromEntries(
     Object.entries({
       name: data.name,
       location: data.location,
-      status: data.status
+      status: data.status,
+      bio: data.bio,
+      images: data.images,
+      "cqc.registrationNumber": data.cqcRegistrationNumber,
+      "cqc.certificate": data.cqcCertificate,
+      "insurance.certificate": data.insuranceCertificate,
+      "insurance.expiryDate": data.insuranceExpiryDate,
     }).filter(([, value]) => value !== undefined),
   );
 
@@ -88,7 +102,17 @@ const getBranchDetails = async (id, timezone) => {
     return null;
   }
 
-  return formatBranchToTimezone(branch, timezone);
+  const ratingStats = await reviewRepository.getRatingStats({
+    object: id,
+    objectType: "Branches",
+  });
+
+  const formatted = formatBranchToTimezone(branch, timezone);
+  formatted.rating = {
+    average: ratingStats.averageRating,
+    total: ratingStats.totalReviews,
+  };
+  return formatted;
 };
 
 const deleteBranch = async (id) => {

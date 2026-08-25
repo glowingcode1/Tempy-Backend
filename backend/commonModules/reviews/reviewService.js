@@ -4,10 +4,12 @@ const { Bookings } = require("@BookingsModel");
 const { generateMeta } = require("@helperUtils/responseUtil");
 const mongoose = require("mongoose");
 const Booking = require("../../roles/careHome/booking/Booking");
+const Branches = require("../../roles/aggency/branches/Branches");
 
 const REVIEW_TYPE_TO_OBJECT_MODEL = {
   booking: "Booking",
   user: "User",
+  branch: "Branches",
 };
 
 const buildAppError = (message, statusCode = 400) => {
@@ -26,6 +28,9 @@ const toIdString = (value) => {
 const getTargetModelByReviewType = (reviewType) => {
   if (reviewType === "booking") {
     return Booking;
+  }
+  if (reviewType === "branch") {
+    return Branches;
   }
   return User;
 };
@@ -64,12 +69,19 @@ const createReview = async ({ reviewData, timezone }) => {
     if (targetObject.status !== "completed") {
       return buildAppError("cannot_review_incomplete_booking", 400);
     }
-       bookingId = objectId;
+    bookingId = objectId;
     if (currentUser.accountState.userType != "nurse") {
       objectUser = targetObject.employer;
     } else {
       objectUser = targetObject.worker;
     }
+  } else if (reviewType === "branch") {
+    if (targetObject.status === "deleted") {
+      return buildAppError("cannot_review_deleted_branch", 400);
+    }
+    // objectUser stays null — a branch isn't a User, so it can't fill that ref.
+    // Ratings for branches are queried by object+objectType instead (see below).
+    objectUser = null;
   } else if (reviewType === "user") {
     objectUser = targetObject._id;
   }
