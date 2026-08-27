@@ -125,6 +125,8 @@ const getUserStats = async () => {
     agency,
     nurse,
     user,
+    activeAgency,
+    activeHomeCareCompany,
     usersByType,
   ] = await Promise.all([
     User.countDocuments(baseMatch),
@@ -169,6 +171,18 @@ const getUserStats = async () => {
     User.countDocuments({
       ...baseMatch,
       "accountState.userType": "user",
+    }),
+
+    User.countDocuments({
+      ...baseMatch,
+      "accountState.userType": "agency",
+      "accountState.status": "active",
+    }),
+
+    User.countDocuments({
+      ...baseMatch,
+      "accountState.userType": "homeCareCompany",
+      "accountState.status": "active",
     }),
 
     User.aggregate([
@@ -223,6 +237,8 @@ const getUserStats = async () => {
     agency,
     nurse,
     user,
+    activeAgency,
+    activeHomeCareCompany,
     usersByType: usersByTypeFormatted,
   };
 };
@@ -642,6 +658,126 @@ const getRegionalFillRates = async () => {
 };
 
 // --------------------------------------------------
+// REGIONAL HEAT MAP
+// --------------------------------------------------
+const getRegionalHeatMap = async () => {
+  const result = await Booking.aggregate([
+    {
+      $match: {
+        "snapshot.location.coordinates": {
+          $exists: true,
+          $ne: null,
+        },
+      },
+    },
+
+    {
+      $group: {
+        _id: {
+          city: "$snapshot.location.city",
+          state: "$snapshot.location.state",
+          country: "$snapshot.location.country",
+          coordinates: "$snapshot.location.coordinates",
+        },
+
+        total: {
+          $sum: 1,
+        },
+
+        pending: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "pending"] }, 1, 0],
+          },
+        },
+
+        active: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "active"] }, 1, 0],
+          },
+        },
+
+        inProgress: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "inProgress"] }, 1, 0],
+          },
+        },
+
+        completed: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "completed"] }, 1, 0],
+          },
+        },
+
+        cancelled: {
+          $sum: {
+            $cond: [
+              {
+                $in: [
+                  "$status",
+                  [
+                    "cancelledByWorker",
+                    "cancelledByEmployer",
+                    "cancelledByUser",
+                  ],
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+    },
+
+    {
+      $project: {
+        _id: 0,
+
+        city: "$_id.city",
+        state: "$_id.state",
+        country: "$_id.country",
+
+        latitude: {
+          $arrayElemAt: ["$_id.coordinates", 0],
+        },
+
+        longitude: {
+          $arrayElemAt: ["$_id.coordinates", 1],
+        },
+
+        total: 1,
+        pending: 1,
+        active: 1,
+        inProgress: 1,
+        completed: 1,
+        cancelled: 1,
+
+        intensity: {
+          $min: [
+            1,
+            {
+              $divide: ["$total", 100],
+            },
+          ],
+        },
+      },
+    },
+
+    {
+      $sort: {
+        total: -1,
+      },
+    },
+
+    {
+      $limit: 100,
+    },
+  ]);
+
+  return result;
+};
+
+// --------------------------------------------------
 // PLATFORM HEALTH
 // --------------------------------------------------
 
@@ -909,6 +1045,7 @@ const getDashboardStats = async () => {
     monthlyActivity,
     growth,
     regionalFillRates,
+    regionalHeatMap,
     timeline,
     topPerformers,
     recentActivity,
@@ -921,6 +1058,7 @@ const getDashboardStats = async () => {
     getMonthlyActivity(),
     getUserGrowth(),
     getRegionalFillRates(),
+    getRegionalHeatMap(),
     getEventTimeline(),
     getTopPerformers(),
     getRecentActivity(),
@@ -950,6 +1088,8 @@ const getDashboardStats = async () => {
       agency: users.agency,
       nurse: users.nurse,
       user: users.user,
+      activeAgency: users.activeAgency,
+      activeHomeCareCompany: users.activeHomeCareCompany,
     },
 
     usersByType: {
@@ -1011,6 +1151,8 @@ const getDashboardStats = async () => {
 
     regionalFillRates,
 
+    regionalHeatMap,
+
     platformHealth,
 
     timeline,
@@ -1031,6 +1173,7 @@ module.exports = {
   getMonthlyActivity,
   getUserGrowth,
   getRegionalFillRates,
+  getRegionalHeatMap,
   getPlatformHealth,
   getEventTimeline,
   getTopPerformers,
