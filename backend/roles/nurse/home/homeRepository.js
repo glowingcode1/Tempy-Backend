@@ -229,6 +229,7 @@ const getTodaysShifts = async ({ userId, timezone, userType }) => {
 
       payment: {
         perHour: booking.payment?.perHour || 0,
+        totalAmount: booking.payment?.totalAmount || 0,
         currency: booking.payment?.currency || "USD",
       },
     };
@@ -309,27 +310,6 @@ const getWeeklyHours = async ({
 ========================================================= */
 
 const getHomeData = async ({ userId, timezone, userType }) => {
-  /**
-   * IMPORTANT:
-   *
-   * Do not select only name/profileIcon/timezone/weeklyHours.
-   *
-   * formatUserResponse() needs fields such as:
-   * - accountState
-   * - verificationStatus
-   * - location
-   * - radius
-   * - phoneNumber
-   * - gender
-   * - language
-   * - twoFA
-   * - taxNumber
-   * - governmentIdentity
-   * - degree
-   * - certification
-   * - validationDocument
-   * etc.
-   */
   const user = await User.findById(userId).lean();
 
   if (!user) {

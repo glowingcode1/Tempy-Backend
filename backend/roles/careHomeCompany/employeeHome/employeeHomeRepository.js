@@ -152,24 +152,6 @@ const getEarnings = async ({ userId, timezone, userType }) => {
    PERFORMANCE GRAPH
 ========================================================= */
 
-/**
- * Get the last 12 calendar months.
- *
- * Example if current month is August 2026:
- *
- * Sep 2025
- * Oct 2025
- * Nov 2025
- * Dec 2025
- * Jan 2026
- * Feb 2026
- * Mar 2026
- * Apr 2026
- * May 2026
- * Jun 2026
- * Jul 2026
- * Aug 2026
- */
 const getLast12Months = (timezone = "UTC") => {
   const now = moment.tz(timezone);
 
@@ -198,21 +180,7 @@ const getLast12Months = (timezone = "UTC") => {
   return months;
 };
 
-/**
- * Get shifts + staff hours for the last 12 months.
- *
- * Graph:
- *
- *     Shifts
- *     Staff Hours
- *
- * Each booking represents one shift.
- *
- * staffHours is calculated from:
- * shift.startTime
- * shift.endTime
- * shift.breakMin
- */
+
 const getPerformanceGraph = async ({ userId, timezone, userType }) => {
   const months = getLast12Months(timezone);
 
@@ -406,19 +374,6 @@ const getHomeData = async ({ userId, timezone, userType }) => {
 
   const userTimezone = user.timezone || timezone || "UTC";
 
-  /*
-   * We only fetch the data that is currently displayed
-   * on the home screen.
-   *
-   * Removed:
-   * - todaysShifts
-   * - weeklyHours
-   * - monthGrowth
-   * - weekGrowth
-   *
-   * Added:
-   * - performanceGraph
-   */
   const [earnings, performanceGraph] = await Promise.all([
     getEarnings({
       userId,

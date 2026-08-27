@@ -203,6 +203,7 @@ const getTodaysShifts = async ({ userId, timezone }) => {
 
       payment: {
         perHour: booking.payment?.perHour || 0,
+        totalAmount: booking.payment?.totalAmount || 0,
         currency: booking.payment?.currency || "USD",
       },
 
