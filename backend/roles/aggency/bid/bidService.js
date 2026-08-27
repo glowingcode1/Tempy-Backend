@@ -1,9 +1,9 @@
 const BidRepo = require("./bidRepository");
 const formatBidToTimezone = require("./formator/formatBidToTimezone");
 
-const createBid = async (data) => {
+const createBid = async (data, timezone) => {
   const Bid = await BidRepo.createBid(data);
-  return Bid;
+  return Bid?.error ? Bid : formatBidToTimezone(Bid.toObject(), timezone);
 };
 
 const getBid = async ({

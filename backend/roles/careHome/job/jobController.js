@@ -137,7 +137,7 @@ const createJob = async (req, res) => {
     documents: [...(documents || []), ...uploadedDocuments],
   };
   try {
-    const Job = await JobService.createJob(data);
+    const Job = await JobService.createJob(data, timezone);
     if (!Job) {
       return sendResponse({
         res,

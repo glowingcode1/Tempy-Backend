@@ -6,6 +6,17 @@ const moment = require("moment-timezone");
 const formatBidToTimezone = (job, timezone) => {
   if (!job) return job;
 
+  const formatUser = (user) => {
+    if (!user || !Object.prototype.hasOwnProperty.call(user, "profileIcon")) {
+      return user;
+    }
+
+    return {
+      ...user,
+      profileIcon: getFullImageUrl(user.profileIcon),
+    };
+  };
+
   const formatShift = (shift) => {
     if (!shift) return shift;
 
@@ -28,14 +39,8 @@ const formatBidToTimezone = (job, timezone) => {
     shift: Array.isArray(job.shift)
       ? job.shift.map(formatShift)
       : formatShift(job.shift),
-    user: {
-      ...job.user,
-      profileIcon: getFullImageUrl(job.user.profileIcon),
-    },
-    jobCreator: {
-      ...job.jobCreator,
-      profileIcon: getFullImageUrl(job.jobCreator?.profileIcon),
-    },
+    user: formatUser(job.user),
+    jobCreator: formatUser(job.jobCreator),
     createdAt: job.createdAt
       ? convertUtcToTimezone(job.createdAt, timezone)
       : job.createdAt,

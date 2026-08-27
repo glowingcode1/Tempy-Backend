@@ -44,9 +44,9 @@ const addDistanceFromOrigin = (job, origin) => {
   return { ...job, distanceInKM };
 };
 
-const createJob = async (data) => {
+const createJob = async (data, timezone) => {
   const Job = await JobRepo.createJob(data);
-  return Job;
+  return formatJobToTimezone(Job.toObject(), timezone);
 };
 
 const updateJobBidStatus = async (id, status, user) => {
