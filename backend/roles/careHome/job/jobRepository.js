@@ -64,7 +64,7 @@ const getJobsSummary = async ({
       $geoNear: {
         near: {
           type: "Point",
-          coordinates: [Number(latitude), Number(longitude)], // [lng, lat]
+          coordinates: [Number(latitude), Number(longitude)],
         },
         key: "location",
         distanceField: "distanceInMeters", // distance added to each job
@@ -75,7 +75,7 @@ const getJobsSummary = async ({
     });
     pipeline.push({
       $addFields: {
-        distanceInKm: { $round: [{ $divide: ["$distanceInMeters", 1000] }, 2] },
+        distanceInKM: { $round: [{ $divide: ["$distanceInMeters", 1000] }, 2] },
       },
     });
   } else {
@@ -118,7 +118,8 @@ const getJobsSummary = async ({
   pipeline.push({ $sort: { createdAt: -1 } });
   if (projection) {
     pipeline.push({
-      $project: projection,
+      // Keep the calculated distance in compact/summary responses as well.
+      $project: hasGeo ? { ...projection, distanceInKM: 1 } : projection,
     });
   }
   pipeline.push({
@@ -233,21 +234,19 @@ const getJobs = async ({
   const baseMatch = {
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
     ...(status ? { status } : { status: { $ne: "deleted" } }),
-  };
-  if (dateFilter && ranges[dateFilter]) {
-    pipeline.push({
-      $match: {
-        shift: {
-          $elemMatch: {
-            date: {
-              $gte: ranges[dateFilter].startDate,
-              $lte: ranges[dateFilter].endDate,
+    ...(dateFilter && ranges[dateFilter]
+      ? {
+          shift: {
+            $elemMatch: {
+              date: {
+                $gte: ranges[dateFilter].startDate,
+                $lte: ranges[dateFilter].endDate,
+              },
             },
           },
-        },
-      },
-    });
-  }
+        }
+      : {}),
+  };
 
   const hasGeo =
     latitude != null &&
@@ -263,7 +262,7 @@ const getJobs = async ({
       $geoNear: {
         near: {
           type: "Point",
-          coordinates: [Number(latitude), Number(longitude)], // [lng, lat]
+          coordinates: [Number(latitude), Number(longitude)],
         },
         key: "location",
         distanceField: "distanceInMeters", // distance added to each job
@@ -274,7 +273,7 @@ const getJobs = async ({
     });
     pipeline.push({
       $addFields: {
-        distanceInKm: { $round: [{ $divide: ["$distanceInMeters", 1000] }, 2] },
+        distanceInKM: { $round: [{ $divide: ["$distanceInMeters", 1000] }, 2] },
       },
     });
   } else {

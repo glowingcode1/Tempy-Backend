@@ -19,7 +19,7 @@ const LocationSchema = new mongoose.Schema(
           if (!arr || arr.length === 0) return true;
           return arr.length === 2;
         },
-        message: "Location.coordinates must be [lat, lng]",
+        message: "Location.coordinates must be [latitude, longitude]",
       },
     },
     fullAddress: {

@@ -7,6 +7,8 @@ const formatBidToTimezone = (job, timezone) => {
   if (!job) return job;
 
   const formatShift = (shift) => {
+    if (!shift) return shift;
+
     // date-only portion of the shift date, used to anchor the HH:mm times
     const datePart = moment.utc(shift.date).format("YYYY-MM-DD");
 
@@ -23,7 +25,9 @@ const formatBidToTimezone = (job, timezone) => {
 
   return {
     ...job,
-    shift: Array.isArray(job.shift) ? job.shift.map(formatShift) : job.shift,
+    shift: Array.isArray(job.shift)
+      ? job.shift.map(formatShift)
+      : formatShift(job.shift),
     user: {
       ...job.user,
       profileIcon: getFullImageUrl(job.user.profileIcon),

@@ -13,6 +13,37 @@ const {
 } = require("../../../roles/aggency/bid/bidRepository");
 const { findUserById } = require("../../admin/usersManagement/usersRepository");
 
+// Application locations are represented as [latitude, longitude].
+const addDistanceFromOrigin = (job, origin) => {
+  if (!origin || !Array.isArray(job?.location?.coordinates)) return job;
+
+  const [originLat, originLng] = origin.map(Number);
+  const [jobLat, jobLng] = job.location.coordinates.map(Number);
+  const validCoordinates =
+    [originLat, jobLat].every(
+      (value) => Number.isFinite(value) && value >= -90 && value <= 90,
+    ) &&
+    [originLng, jobLng].every(
+      (value) => Number.isFinite(value) && value >= -180 && value <= 180,
+    );
+
+  if (!validCoordinates) return job;
+
+  const toRadians = (degrees) => (degrees * Math.PI) / 180;
+  const latDifference = toRadians(jobLat - originLat);
+  const lngDifference = toRadians(jobLng - originLng);
+  const haversine =
+    Math.sin(latDifference / 2) ** 2 +
+    Math.cos(toRadians(originLat)) *
+      Math.cos(toRadians(jobLat)) *
+      Math.sin(lngDifference / 2) ** 2;
+  const distanceInKM = Number(
+    (6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))).toFixed(2),
+  );
+
+  return { ...job, distanceInKM };
+};
+
 const createJob = async (data) => {
   const Job = await JobRepo.createJob(data);
   return Job;
@@ -124,6 +155,7 @@ const getJobs = async ({
   worker,
   employer,
   dateFilter,
+  distanceOrigin,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -143,7 +175,12 @@ const getJobs = async ({
       km,
       projection,
     });
-    return { Jobs, meta };
+    return {
+      Jobs: distanceOrigin
+        ? Jobs.map((job) => addDistanceFromOrigin(job, distanceOrigin))
+        : Jobs,
+      meta,
+    };
   }
   const { Jobs, meta } = await JobRepo.getJobs({
     timezone,
@@ -162,9 +199,9 @@ const getJobs = async ({
     employer,
     dateFilter,
   });
-  const formatedJobs = Jobs.map((job) => {
-    return formatJobToTimezone(job, timezone);
-  });
+  const formatedJobs = Jobs.map((job) =>
+    addDistanceFromOrigin(formatJobToTimezone(job, timezone), distanceOrigin),
+  );
 
   return { Jobs: formatedJobs, meta };
 };
@@ -184,7 +221,11 @@ const updateJob = async (id, data) => {
     "status",
     "shift",
     "location",
-    "type",
+    "notes",
+    "instructions",
+    "contactDetails",
+    "emergencyContact",
+    "documents",
   ];
 
   const updateData = {};

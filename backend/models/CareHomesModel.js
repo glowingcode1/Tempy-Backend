@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { LocationSchema } = require("../shared/locations/locationSchmea");
-const { User } = require("./UserModel"); // ✅ named import
+const { User } = require("./UserModel");
 
 const careHomeSchema = new mongoose.Schema({
     companyName: {
@@ -27,4 +27,4 @@ const careHomeSchema = new mongoose.Schema({
 
 const CareHome = User.discriminator("careHome", careHomeSchema);
 
-module.exports = CareHome; // ✅ export it
+module.exports = CareHome;
