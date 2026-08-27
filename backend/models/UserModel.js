@@ -337,7 +337,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    discriminatorKey: "accountState.userType",
+    discriminatorKey: "modelType",
   },
 );
 

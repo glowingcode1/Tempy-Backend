@@ -14,7 +14,6 @@ const userDescriminatorSchema = new mongoose.Schema({
   ],
   taxNumber: {
     type: String,
-    required: true,
   },
 });
 
