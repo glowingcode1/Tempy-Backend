@@ -6,7 +6,20 @@ const moment = require("moment-timezone");
 const formatBidToTimezone = (job, timezone) => {
   if (!job) return job;
 
+  const formatUser = (user) => {
+    if (!user || !Object.prototype.hasOwnProperty.call(user, "profileIcon")) {
+      return user;
+    }
+
+    return {
+      ...user,
+      profileIcon: getFullImageUrl(user.profileIcon),
+    };
+  };
+
   const formatShift = (shift) => {
+    if (!shift) return shift;
+
     // date-only portion of the shift date, used to anchor the HH:mm times
     const datePart = moment.utc(shift.date).format("YYYY-MM-DD");
 
@@ -23,15 +36,11 @@ const formatBidToTimezone = (job, timezone) => {
 
   return {
     ...job,
-    shift: Array.isArray(job.shift) ? job.shift.map(formatShift) : job.shift,
-    user: {
-      ...job.user,
-      profileIcon: getFullImageUrl(job.user.profileIcon),
-    },
-    jobCreator: {
-      ...job.jobCreator,
-      profileIcon: getFullImageUrl(job.jobCreator?.profileIcon),
-    },
+    shift: Array.isArray(job.shift)
+      ? job.shift.map(formatShift)
+      : formatShift(job.shift),
+    user: formatUser(job.user),
+    jobCreator: formatUser(job.jobCreator),
     createdAt: job.createdAt
       ? convertUtcToTimezone(job.createdAt, timezone)
       : job.createdAt,

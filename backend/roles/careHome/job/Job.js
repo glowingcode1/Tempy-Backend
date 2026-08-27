@@ -2,6 +2,24 @@ const { USER_TYPES, GENDER_TYPES } = require("@UsersModel");
 const { LocationSchema } = require("../../../shared/locations/locationSchmea");
 const mongoose = require("mongoose");
 
+const ContactDetailsSchema = new mongoose.Schema(
+  {
+    name: { type: String, trim: true, default: "" },
+    phone: { type: String, trim: true, default: "" },
+    email: { type: String, trim: true, default: "" },
+  },
+  { _id: false },
+);
+
+const EmergencyContactSchema = new mongoose.Schema(
+  {
+    name: { type: String, trim: true, default: "" },
+    phone: { type: String, trim: true, default: "" },
+    relationship: { type: String, trim: true, default: "" },
+  },
+  { _id: false },
+);
+
 const JobSchema = new mongoose.Schema(
   {
     location: {
@@ -22,7 +40,6 @@ const JobSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
-
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -42,6 +59,28 @@ const JobSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+    },
+    notes: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    instructions: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    contactDetails: {
+      type: ContactDetailsSchema,
+      default: () => ({}),
+    },
+    emergencyContact: {
+      type: EmergencyContactSchema,
+      default: () => ({}),
+    },
+    documents: {
+      type: [String],
+      default: [],
     },
     type: {
       type: mongoose.Schema.Types.ObjectId,
@@ -66,44 +105,22 @@ const JobSchema = new mongoose.Schema(
     },
     shift: [
       {
-        allowedPersons: {
-          type: Number,
-          default: 1,
-        },
-        date: {
-          type: Date,
-        },
-        startTime: {
-          type: String,
-          default: "",
-        },
-        endTime: {
-          type: String,
-          default: "",
-        },
+        allowedPersons: { type: Number, default: 1 },
+        date: { type: Date },
+        startTime: { type: String, default: "" },
+        endTime: { type: String, default: "" },
         status: {
           type: String,
           enum: ["pending", "booked", "completed"],
           default: "pending",
         },
-        isBreak: {
-          type: Boolean,
-          default: false,
-        },
-        breakMin: {
-          type: Number,
-          default: 0,
-        },
-        isBiddingAllowed: {
-          type: Boolean,
-          default: true,
-        },
+        isBreak: { type: Boolean, default: false },
+        breakMin: { type: Number, default: 0 },
+        isBiddingAllowed: { type: Boolean, default: true },
       },
     ],
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
 JobSchema.index({ location: "2dsphere" });
 const Job = mongoose.model("Job", JobSchema);

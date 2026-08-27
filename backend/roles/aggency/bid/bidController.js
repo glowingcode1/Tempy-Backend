@@ -58,7 +58,7 @@ const createBid = async (req, res) => {
     note,
   };
   try {
-    const Bid = await BidService.createBid(data);
+    const Bid = await BidService.createBid(data, timezone);
     if (!Bid) {
       return sendResponse({
         res,

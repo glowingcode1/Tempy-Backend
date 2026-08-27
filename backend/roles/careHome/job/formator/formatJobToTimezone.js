@@ -7,6 +7,17 @@ const { isArray } = require("lodash");
 const formatJobToTimezone = (job, timezone) => {
   if (!job) return job;
 
+  const formatUser = (user) => {
+    if (!user || !Object.prototype.hasOwnProperty.call(user, "profileIcon")) {
+      return user;
+    }
+
+    return {
+      ...user,
+      profileIcon: getFullImageUrl(user.profileIcon),
+    };
+  };
+
   // total hours between "HH:mm" start and end (handles overnight)
   const getShiftHours = (startTime, endTime) => {
     if (!startTime || !endTime) return 0;
@@ -51,13 +62,13 @@ const formatJobToTimezone = (job, timezone) => {
     perHour,
     totalHours,
     image: getFullImageUrl(job.image),
+    documents: Array.isArray(job.documents)
+      ? job.documents.map((doc) => getFullImageUrl(doc))
+      : job.documents,
     shift: Array.isArray(job.shift)
       ? job.shift.map(formatShift)
       : formatShift(job.shift),
-    user: {
-      ...job.user,
-      profileIcon: getFullImageUrl(job.user?.profileIcon),
-    },
+    user: formatUser(job.user),
     rating: job.rating
       ? {
           ...job.rating,
