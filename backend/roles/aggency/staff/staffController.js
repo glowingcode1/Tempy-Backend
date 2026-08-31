@@ -56,6 +56,7 @@ const createStaff = async (req, res) => {
     dob,
     gender,
     branch,
+    location,
   } = req.body;
   let user = req.user._id;
   if (req.user.userType === "admin") {
@@ -105,6 +106,7 @@ const createStaff = async (req, res) => {
     dob: dob || undefined,
     gender: gender || undefined,
     branch,
+    location,
   };
   try {
     const Staff = await StaffService.createStaff(data, req, res);
