@@ -183,7 +183,6 @@ const userSchema = new mongoose.Schema(
         default: false,
       },
     },
-
     otpInfo: {
       emailOtp: {
         otp: {

@@ -8,7 +8,7 @@ const {
   getBidByJob,
   findBidById_,
   updateBidStatuses,
-  findByIdAndUpdate: findBidByIdAndUpdate,
+  findBidByIdAndUpdate,
   findBidById,
 } = require("../../../roles/aggency/bid/bidRepository");
 const { findUserById } = require("../../admin/usersManagement/usersRepository");
