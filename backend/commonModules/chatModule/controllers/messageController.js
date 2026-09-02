@@ -17,6 +17,7 @@ const {
   getChatNamespace,
   getConnectedUserIds,
   emitMessageToUsers,
+  emitMessageDeletedToUsers,
   emitChatUpdatedToUser,
 } = require("../sockets/chatEventEmitter");
 const { getUsersOnlineMap } = require("../sockets/chatPresenceRedis");
@@ -306,11 +307,21 @@ const fetchMessages = async (req, res) => {
         (id) => id.toString() === userId.toString(),
       ); // Compare string versions of ObjectIds
 
-      return {
+      const formatted = {
         ...msg,
         timesince: moment(localDate).fromNow(),
         isRead, // Whether the message has been read by the current user
       };
+
+      // Deleted messages stay in the list so clients can render a placeholder
+      // from the isDeleted flag, but their content must not leave the server.
+      if (msg.isDeleted) {
+        formatted.messageContent = "";
+        formatted.mediaUrl = null;
+        delete formatted.location;
+      }
+
+      return formatted;
     });
 
     formattedMessages.forEach((msg) => {
@@ -340,6 +351,7 @@ const sendMessage = async (req, res) => {
   let messageType,
     messageContent,
     mediaUrl,
+    location,
     participantIds,
     conversationType,
     groupName,
@@ -351,6 +363,7 @@ const sendMessage = async (req, res) => {
       messageType,
       messageContent = "",
       mediaUrl = null,
+      location = null,
       participantIds = [],
       conversationType = "group",
       groupName,
@@ -361,12 +374,57 @@ const sendMessage = async (req, res) => {
       messageType,
       messageContent = "",
       mediaUrl = null,
+      location = null,
       participantId = "",
       conversationType = "direct",
     } = req.body);
   }
 
   try {
+    // Location messages must carry coordinates as [latitude, longitude] —
+    // this project's convention, matching shared/locations/locationSchmea.js.
+    let locationPayload;
+    if (messageType === "location") {
+      const coordinates = location?.coordinates;
+
+      if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+        return sendResponse({
+          res,
+          statusCode: 400,
+          translationKey: "invalid_location_format",
+        });
+      }
+
+      const latitude = Number(coordinates[0]);
+      const longitude = Number(coordinates[1]);
+
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180
+      ) {
+        return sendResponse({
+          res,
+          statusCode: 400,
+          translationKey: "invalid_location_values",
+        });
+      }
+
+      locationPayload = {
+        type: "Point",
+        coordinates: [latitude, longitude],
+        title: location.title || "",
+        fullAddress: location.fullAddress || "",
+        city: location.city || "",
+        state: location.state || "",
+        country: location.country || "",
+        postalCode: location.postalCode || "",
+      };
+    }
+
     let conversation;
 
     // For 1-to-1 direct chat: find or create conversation between two users
@@ -469,6 +527,7 @@ const sendMessage = async (req, res) => {
       messageType,
       messageContent,
       mediaUrl,
+      location: locationPayload,
       readBy: [senderId],
     });
 
@@ -576,6 +635,12 @@ const sendMessage = async (req, res) => {
         });
         const user = await User.findById(senderId).select("name -_id").lean();
 
+        // A location message carries no messageContent to preview.
+        const notificationBody =
+          messageType === "location"
+            ? "You shared a location"
+            : `You received a new message: ${messageContent}`;
+
         // Send notifications to all group participants (excluding sender)
         if (conversation.type === "group") {
           //remove current user from recipientIds
@@ -586,7 +651,7 @@ const sendMessage = async (req, res) => {
           await sendUserNotifications({
             recipientIds: recipientIds, // Send notification to each participant
             title: "New Message",
-            body: `You received a new message: ${messageContent}`,
+            body: notificationBody,
             data: { type: NotificationTypes.NEW_MESSAGE, objectType: "group" },
             sender: subjectId,
             objectId: objectId,
@@ -598,7 +663,7 @@ const sendMessage = async (req, res) => {
           await sendUserNotifications({
             recipientIds: [objectId], // Direct recipient
             title: "New Message",
-            body: `You received a new message: ${messageContent}`,
+            body: notificationBody,
             data: { type: NotificationTypes.NEW_MESSAGE, objectType: "user" },
             sender: subjectId,
             objectId: objectId,
@@ -829,6 +894,27 @@ const deleteMessage = async (req, res) => {
       // If the deleted message was the last message, set lastMessage to null
       conversation.lastMessage = null;
       await conversation.save();
+    }
+
+    // Notify every participant, the deleter included, so their other devices
+    // stay in sync. Emitting must never fail the request — the message is
+    // already deleted at this point.
+    try {
+      const participantIds = (conversation?.participants || []).map((p) =>
+        String(p.user?._id || p.user),
+      );
+
+      emitMessageDeletedToUsers({
+        ioOrNamespace: req.io || global.io,
+        recipientIds: participantIds,
+        payload: {
+          messageId: message._id.toString(),
+          conversationId: message.conversationId.toString(),
+          isDeleted: true,
+        },
+      });
+    } catch (emitError) {
+      console.error("Failed to emit deleteMessage:", emitError);
     }
 
     return sendResponse({
