@@ -20,8 +20,12 @@ const {
   emitChatUpdatedToUser,
 } = require("../sockets/chatEventEmitter");
 const { getUsersOnlineMap } = require("../sockets/chatPresenceRedis");
-const { sendUserNotifications } = require("../../../controllers/communicationController");
-const { logEngagementService } = require("../../appEngagement/engagementEventsService");
+const {
+  sendUserNotifications,
+} = require("../../../controllers/communicationController");
+const {
+  logEngagementService,
+} = require("../../appEngagement/engagementEventsService");
 const { User } = require("@UsersModel");
 
 const fetchChats = async (req, res) => {
@@ -50,23 +54,23 @@ const fetchChats = async (req, res) => {
 
     const keywordFilter = keyword?.trim()
       ? {
-        $or: [
-          { groupName: { $regex: keyword, $options: "i" } },
-          {
-            $and: [
-              { type: "direct" },
-              {
-                userDetails: {
-                  $elemMatch: {
-                    _id: { $ne: userId },
-                    name: { $regex: keyword, $options: "i" },
+          $or: [
+            { groupName: { $regex: keyword, $options: "i" } },
+            {
+              $and: [
+                { type: "direct" },
+                {
+                  userDetails: {
+                    $elemMatch: {
+                      _id: { $ne: userId },
+                      name: { $regex: keyword, $options: "i" },
+                    },
                   },
                 },
-              },
-            ],
-          },
-        ],
-      }
+              ],
+            },
+          ],
+        }
       : null;
 
     const sharedPipeline = [
@@ -80,7 +84,10 @@ const fetchChats = async (req, res) => {
                 input: "$participants",
                 as: "participant",
                 cond: {
-                  $eq: ["$$participant.user", new mongoose.Types.ObjectId(userId)],
+                  $eq: [
+                    "$$participant.user",
+                    new mongoose.Types.ObjectId(userId),
+                  ],
                 },
               },
             },
@@ -151,8 +158,10 @@ const fetchChats = async (req, res) => {
 
     const directPeerUserIds = conversations
       .filter((conv) => conv.type === "direct")
-      .map((conv) =>
-        conv.userDetails.find((u) => u._id.toString() !== userId.toString())?._id
+      .map(
+        (conv) =>
+          conv.userDetails.find((u) => u._id.toString() !== userId.toString())
+            ?._id,
       )
       .filter(Boolean)
       .map((id) => id.toString());
@@ -161,11 +170,15 @@ const fetchChats = async (req, res) => {
 
     const formattedChats = conversations.map((conv) => {
       const unreadCounts = new Map(Object.entries(conv.unreadCounts || {}));
-      let objectId, chatName, chatIcon, otherUser = null, currentUser = null;
+      let objectId,
+        chatName,
+        chatIcon,
+        otherUser = null,
+        currentUser = null;
 
       if (conv.type === "direct") {
         otherUser = conv.userDetails.find(
-          (u) => u._id.toString() !== userId.toString()
+          (u) => u._id.toString() !== userId.toString(),
         );
 
         objectId = otherUser?._id || null;
@@ -225,7 +238,6 @@ const fetchChats = async (req, res) => {
   }
 };
 
-
 // Fetch messages (pagination)
 const fetchMessages = async (req, res) => {
   const { _id: userId, timezone } = req.user;
@@ -263,7 +275,7 @@ const fetchMessages = async (req, res) => {
 
     if (
       !conversation.participants.some(
-        (p) => p.user._id.toString() === userId.toString()
+        (p) => p.user._id.toString() === userId.toString(),
       )
     ) {
       return sendResponse({
@@ -283,15 +295,15 @@ const fetchMessages = async (req, res) => {
     // Reset unread count for the user in the background
     Conversation.updateOne(
       { _id: conversationId },
-      { $set: { [`unreadCounts.${userId}`]: 0 } }
-    ).catch(() => { });
+      { $set: { [`unreadCounts.${userId}`]: 0 } },
+    ).catch(() => {});
 
     const totalMessages = await Message.countDocuments({ conversationId });
 
     const formattedMessages = messages.map((msg) => {
       const localDate = convertUtcToTimezone(msg.createdAt, timezone);
       const isRead = msg.readBy.some(
-        (id) => id.toString() === userId.toString()
+        (id) => id.toString() === userId.toString(),
       ); // Compare string versions of ObjectIds
 
       return {
@@ -339,7 +351,7 @@ const sendMessage = async (req, res) => {
       messageType,
       messageContent = "",
       mediaUrl = null,
-      participantIds =[],
+      participantIds = [],
       conversationType = "group",
       groupName,
     } = req.body);
@@ -494,7 +506,7 @@ const sendMessage = async (req, res) => {
 
         if (conversation.type === "direct") {
           const otherUser = conversation.participants.find(
-            (p) => p.user.toString() !== senderId.toString()
+            (p) => p.user.toString() !== senderId.toString(),
           );
           objectId = otherUser?.user?._id.toString(); // Other user in direct conversation
           subjectId = senderId.toString();
@@ -516,7 +528,7 @@ const sendMessage = async (req, res) => {
         // Determine online recipients from Redis-synced room presence.
         const connectedRecipientIds = await getConnectedUserIds(
           chatNamespace,
-          recipientIds
+          recipientIds,
         );
 
         // Reset unread counts for all connected recipients in one update
@@ -530,7 +542,7 @@ const sendMessage = async (req, res) => {
         conversation.unreadCounts.set(senderId.toString(), 0);
 
         // Save conversation once after all updates (in background)
-        conversation.save().catch(() => { });
+        conversation.save().catch(() => {});
 
         emitMessageToUsers({
           ioOrNamespace: chatNamespace,
@@ -566,7 +578,6 @@ const sendMessage = async (req, res) => {
 
         // Send notifications to all group participants (excluding sender)
         if (conversation.type === "group") {
-
           //remove current user from recipientIds
           const index = recipientIds.indexOf(senderId.toString());
           if (index > -1) {
@@ -677,7 +688,7 @@ const addParticipantToGroup = async (req, res) => {
     // Filter out participant IDs already in the group
     const existingIds = conversation.participants.map((p) => p.user.toString());
     const newParticipantIds = participants.filter(
-      (id) => !existingIds.includes(id)
+      (id) => !existingIds.includes(id),
     );
     if (!newParticipantIds.length) {
       return sendResponse({
@@ -744,7 +755,7 @@ const deleteChat = async (req, res) => {
     // Check if the user is a participant in the conversation
     if (
       !conversation.participants.some(
-        (p) => p.user.toString() === userId.toString()
+        (p) => p.user.toString() === userId.toString(),
       )
     ) {
       return sendResponse({
@@ -810,7 +821,11 @@ const deleteMessage = async (req, res) => {
 
     // Optionally, you can also delete or update the lastMessage field in the conversation
     const conversation = await Conversation.findById(message.conversationId);
-    if (conversation.lastMessage.toString() === message._id.toString()) {
+    if (
+      conversation &&
+      conversation.lastMessage &&
+      conversation.lastMessage.toString() === message._id.toString()
+    ) {
       // If the deleted message was the last message, set lastMessage to null
       conversation.lastMessage = null;
       await conversation.save();
@@ -866,7 +881,7 @@ const chatActionHandler = async (req, res) => {
 
     // Find participant (IMPORTANT: per-user state)
     const participant = conversation.participants.find(
-      (p) => p.user.toString() === userId.toString()
+      (p) => p.user.toString() === userId.toString(),
     );
 
     if (!participant) {
@@ -904,5 +919,5 @@ module.exports = {
   deleteChat,
   deleteMessage,
   addParticipantToGroup,
-  chatActionHandler
+  chatActionHandler,
 };
