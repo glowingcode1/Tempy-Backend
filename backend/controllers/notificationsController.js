@@ -6,6 +6,9 @@ const {
 const moment = require("moment-timezone");
 const { NotificationExp } = require("../models/Notifications");
 const { getFullImageUrl } = require("@helperUtils/imageHelper");
+const {
+  emitNotificationReadToUser,
+} = require("../config/sockets/notificationSocketEmitter");
 
 const getNotifications = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
@@ -14,7 +17,7 @@ const getNotifications = async (req, res) => {
   const timezone = req.user.timezone || "UTC";
 
   try {
-    const query = { receiverId: userId };
+    const query = { receiverId: userId, isDeleted: { $ne: true } };
     if (keyword) query.type = { $regex: keyword, $options: "i" };
 
     const [notifications, total] = await Promise.all([
@@ -92,6 +95,19 @@ const readNotification = async (req, res) => {
         translationKey: "notification_not_found", // Use translation key
       });
     }
+
+    // Keep the receiver's other devices in sync so the unread badge clears
+    // instantly. Emitting must never fail the request.
+    try {
+      emitNotificationReadToUser({
+        ioOrNamespace: req.io || global.io,
+        recipientId: notification.receiverId,
+        notificationId: notification._id,
+      });
+    } catch (emitError) {
+      console.error("Failed to emit readNotification:", emitError);
+    }
+
     return sendResponse({
       res,
       statusCode: 200,

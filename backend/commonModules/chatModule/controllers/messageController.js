@@ -23,6 +23,7 @@ const {
 const { getUsersOnlineMap } = require("../sockets/chatPresenceRedis");
 const {
   sendUserNotifications,
+  deleteNotifications,
 } = require("../../../controllers/communicationController");
 const {
   logEngagementService,
@@ -655,6 +656,11 @@ const sendMessage = async (req, res) => {
             data: { type: NotificationTypes.NEW_MESSAGE, objectType: "group" },
             sender: subjectId,
             objectId: objectId,
+            // messageId lets us hide this notification if the message is deleted
+            meta: {
+              messageId: message._id.toString(),
+              conversationId: conversation._id.toString(),
+            },
           });
         }
 
@@ -667,6 +673,11 @@ const sendMessage = async (req, res) => {
             data: { type: NotificationTypes.NEW_MESSAGE, objectType: "user" },
             sender: subjectId,
             objectId: objectId,
+            // messageId lets us hide this notification if the message is deleted
+            meta: {
+              messageId: message._id.toString(),
+              conversationId: conversation._id.toString(),
+            },
           });
         }
       } catch (error) {
@@ -916,6 +927,13 @@ const deleteMessage = async (req, res) => {
     } catch (emitError) {
       console.error("Failed to emit deleteMessage:", emitError);
     }
+
+    // Drop the "New Message" notifications this message produced and tell each
+    // receiver, so the notification list hides them in real time.
+    void deleteNotifications({
+      match: { "meta.messageId": message._id.toString() },
+      ioOrNamespace: req.io || global.io,
+    });
 
     return sendResponse({
       res,
