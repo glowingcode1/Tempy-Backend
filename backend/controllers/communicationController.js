@@ -6,6 +6,9 @@ const { messaging } = require("../config/firebaseAdmin"); // Firebase admin SDK 
 const { getFullImageUrl } = require("@helperUtils/imageHelper");
 
 const { NotificationExp } = require("../models/Notifications");
+const {
+  emitNotificationDeletedToUser,
+} = require("../config/sockets/notificationSocketEmitter");
 
 /**
  * Send an email using AWS SES
@@ -214,6 +217,53 @@ const sendUserNotifications = async ({
   });
 };
 
+/**
+ * Soft-deletes every notification matching `match` and tells each receiver in
+ * real time so the notification disappears from their list without a refresh.
+ *
+ * Use it whenever the object a notification points at is gone (a deleted chat
+ * message, a cancelled job, ...). Emitting must never break the caller, so
+ * failures are logged and swallowed.
+ *
+ * @param {Object} match - Mongo query selecting the notifications to remove.
+ * @param {Object} [ioOrNamespace] - Socket.io server/namespace, defaults to global.io.
+ * @returns {Promise<string[]>} Ids of the notifications that were deleted.
+ */
+const deleteNotifications = async ({ match, ioOrNamespace = null }) => {
+  try {
+    if (!match || !Object.keys(match).length) return [];
+
+    const notifications = await NotificationExp.find({
+      ...match,
+      isDeleted: { $ne: true },
+    })
+      .select("_id receiverId")
+      .lean();
+
+    if (!notifications.length) return [];
+
+    const notificationIds = notifications.map((n) => n._id);
+
+    await NotificationExp.updateMany(
+      { _id: { $in: notificationIds } },
+      { $set: { isDeleted: true, updatedAt: new Date() } },
+    );
+
+    notifications.forEach((notification) => {
+      emitNotificationDeletedToUser({
+        ioOrNamespace,
+        recipientId: notification.receiverId,
+        notificationId: notification._id,
+      });
+    });
+
+    return notificationIds.map((id) => id.toString());
+  } catch (error) {
+    console.error("Error deleting notifications:", error);
+    return [];
+  }
+};
+
 const sendNotification = async (recipients, payload) => {
   const androidTokens = [];
   const iosTokens = [];
@@ -335,5 +385,6 @@ const sendNotification = async (recipients, payload) => {
 module.exports = {
   sendNotificationControllerForTesting,
   sendUserNotifications,
+  deleteNotifications,
   sendEmailMailgun,
 };
