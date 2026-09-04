@@ -6,7 +6,7 @@ const {
   getReadableErrorMessage,
   convertTimezoneToUtc,
 } = require("../../../helperUtils/responseUtil");
-const moment = require("moment");
+const moment = require("moment-timezone");
 const JobService = require("./jobService");
 const { customerTypes, supplierTypes, User } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
@@ -83,7 +83,12 @@ const createJob = async (req, res) => {
       });
     }
   }
-  const convertedJobs = shift.map((job) => {
+  // Validate every shift up front. A `return` inside .map() does not stop the
+  // loop, so validating during the mapping would send one response per bad
+  // shift and then fall through to send another.
+  const nowUtc = moment.utc();
+
+  for (const job of shift) {
     if (job.perHour <= 0) {
       return sendResponse({
         res,
@@ -91,6 +96,31 @@ const createJob = async (req, res) => {
         translationKey: "perHour_must_be_greater_than_zero",
       });
     }
+
+    // Interpret the submitted date/time in the creator's timezone.
+    const startUtc = moment
+      .tz(`${job.date} ${job.startTime}`, "YYYY-MM-DD HH:mm", timezone)
+      .utc();
+
+    if (!startUtc.isValid()) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "invalid_shift_date_or_time",
+      });
+    }
+
+    // A shift may not start in the past.
+    if (startUtc.isSameOrBefore(nowUtc)) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "shift_cannot_be_in_the_past",
+      });
+    }
+  }
+
+  const convertedJobs = shift.map((job) => {
     const startUtc = moment
       .tz(`${job.date} ${job.startTime}`, "YYYY-MM-DD HH:mm", timezone)
       .utc();

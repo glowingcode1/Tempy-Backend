@@ -3,6 +3,11 @@ const moment = require("moment-timezone");
 const Booking = require("../../careHome/booking/Booking");
 const { User } = require("../../../models/UserModel");
 const { formatUserResponse } = require("@helperUtils/userResponseUtil");
+const {
+  getShiftStartUtc,
+  getShiftEndUtc,
+  formatShiftToTimezone,
+} = require("@helperUtils/responseUtil");
 
 /* =========================================================
    CONSTANTS
@@ -90,6 +95,7 @@ const formatHours = (hours) => {
 
   return `${Number(hours.toFixed(2))} hr`;
 };
+
 
 /**
  * Return the booking match for the logged-in user.
@@ -200,8 +206,8 @@ const getPerformanceGraph = async ({ userId, timezone, userType }) => {
     ...userMatch,
 
     "shift.date": {
-      $gte: rangeStart,
-      $lt: rangeEnd,
+      $gte: moment.utc(rangeStart).subtract(1, "day").toDate(),
+      $lt: moment.utc(rangeEnd).add(1, "day").toDate(),
     },
 
     status: {
@@ -245,7 +251,16 @@ const getPerformanceGraph = async ({ userId, timezone, userType }) => {
       return;
     }
 
-    const shiftDate = moment.utc(shift.date).tz(timezone);
+    const shiftStart = getShiftStartUtc(shift);
+    if (
+      !shiftStart ||
+      !shiftStart.isSameOrAfter(rangeStart) ||
+      !shiftStart.isBefore(rangeEnd)
+    ) {
+      return;
+    }
+
+    const shiftDate = shiftStart.tz(timezone);
 
     const monthKey = shiftDate.format("YYYY-MM");
 

@@ -2,6 +2,7 @@ const Job = require("../../careHome/job/Job");
 const Bid = require("../bid/Bid");
 const Staff = require("../staff/Staff");
 const Booking = require("../../careHome/booking/Booking");
+const { formatShiftToTimezone } = require("@helperUtils/responseUtil");
 
 // ============================================================
 // HELPERS
@@ -500,7 +501,7 @@ const getRecentActivity = async ({ userId }) => {
 // OPEN JOB OPPORTUNITIES
 // ============================================================
 
-const getOpenJobs = async ({ userId }) => {
+const getOpenJobs = async ({ userId, timezone }) => {
   const jobs = await Job.find({
     user: userId,
     status: "active",
@@ -535,17 +536,21 @@ const getOpenJobs = async ({ userId }) => {
       createdAt: job.createdAt,
 
       shift: nextShift
-        ? {
-            id: nextShift._id,
-            date: nextShift.date,
-            startTime: nextShift.startTime,
-            endTime: nextShift.endTime,
-            allowedPersons: nextShift.allowedPersons,
-            status: nextShift.status,
-            isBreak: nextShift.isBreak,
-            breakMin: nextShift.breakMin,
-            isBiddingAllowed: nextShift.isBiddingAllowed,
-          }
+        ? (() => {
+            const localShift = formatShiftToTimezone(nextShift, timezone);
+
+            return {
+              id: nextShift._id,
+              date: localShift.date,
+              startTime: localShift.startTime,
+              endTime: localShift.endTime,
+              allowedPersons: nextShift.allowedPersons,
+              status: nextShift.status,
+              isBreak: nextShift.isBreak,
+              breakMin: nextShift.breakMin,
+              isBiddingAllowed: nextShift.isBiddingAllowed,
+            };
+          })()
         : null,
 
       icon: "solar:case-round-bold",
@@ -675,7 +680,7 @@ const getWinRateByRegion = async ({ userId }) => {
 // SHIFTS & EARNINGS
 // ============================================================
 
-const getShiftsAndEarnings = async ({ userId }) => {
+const getShiftsAndEarnings = async ({ userId, timezone }) => {
   const bookings = await Booking.find({
     employer: userId,
     // status: {
@@ -690,42 +695,48 @@ const getShiftsAndEarnings = async ({ userId }) => {
     .select("_id job worker status shift createdAt")
     .lean();
 
-  return bookings.map((booking) => ({
-    id: booking._id,
+  return bookings.map((booking) => {
+    const localShift = booking.shift
+      ? formatShiftToTimezone(booking.shift, timezone)
+      : null;
 
-    job: booking.job,
+    return {
+      id: booking._id,
 
-    worker: booking.worker,
+      job: booking.job,
 
-    status: booking.status,
+      worker: booking.worker,
 
-    shift: booking.shift
-      ? {
-          id: booking.shift._id,
+      status: booking.status,
 
-          date: booking.shift.date,
+      shift: localShift
+        ? {
+            id: booking.shift._id,
 
-          startTime: booking.shift.startTime,
+            date: localShift.date,
 
-          endTime: booking.shift.endTime,
+            startTime: localShift.startTime,
 
-          isBreak: booking.shift.isBreak,
+            endTime: localShift.endTime,
 
-          breakMin: booking.shift.breakMin,
-        }
-      : null,
+            isBreak: booking.shift.isBreak,
 
-    createdAt: booking.createdAt,
+            breakMin: booking.shift.breakMin,
+          }
+        : null,
 
-    // Earnings intentionally omitted for now.
-  }));
+      createdAt: booking.createdAt,
+
+      // Earnings intentionally omitted for now.
+    };
+  });
 };
 
 // ============================================================
 // DASHBOARD
 // ============================================================
 
-const getSupplierDashboardStats = async ({ userId }) => {
+const getSupplierDashboardStats = async ({ userId, timezone }) => {
   const [
     jobs,
     bookings,
@@ -763,6 +774,7 @@ const getSupplierDashboardStats = async ({ userId }) => {
 
     getOpenJobs({
       userId,
+      timezone,
     }),
 
     getWinRateByRegion({
@@ -771,6 +783,7 @@ const getSupplierDashboardStats = async ({ userId }) => {
 
     getShiftsAndEarnings({
       userId,
+      timezone,
     }),
   ]);
 

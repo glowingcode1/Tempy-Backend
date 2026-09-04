@@ -5,6 +5,11 @@ const { User } = require("../../../models/UserModel");
 
 const Review = require("../../../commonModules/reviews/Review");
 const { formatUserResponse } = require("@helperUtils/userResponseUtil");
+const {
+  getShiftStartUtc,
+  getShiftEndUtc,
+  formatShiftToTimezone,
+} = require("@helperUtils/responseUtil");
 
 /* =========================================================
    HELPERS
@@ -63,6 +68,8 @@ const formatHours = (hours) => {
 
   return `${Number(hours.toFixed(2))} hr`;
 };
+
+
 
 const getTodayRange = (timezone = "UTC") => {
   const now = moment.tz(timezone);
@@ -126,8 +133,8 @@ const getTodaysShifts = async ({ userId, timezone }) => {
     user: userId,
 
     "shift.date": {
-      $gte: start,
-      $lt: end,
+      $gte: moment.utc(start).subtract(1, "day").toDate(),
+      $lt: moment.utc(end).add(1, "day").toDate(),
     },
 
     status: {
@@ -149,8 +156,14 @@ const getTodaysShifts = async ({ userId, timezone }) => {
 
   const ratingsMap = await getWorkerRatings(workerIds);
 
-  return bookings.map((booking) => {
+  return bookings.filter((booking) => {
+    const shiftStart = getShiftStartUtc(booking.shift);
+    return shiftStart?.isSameOrAfter(start) && shiftStart.isBefore(end);
+  }).map((booking) => {
     const shift = booking.shift || {};
+    const shiftStart = getShiftStartUtc(shift);
+    const shiftEnd = getShiftEndUtc(shift);
+    const localShift = formatShiftToTimezone(shift, timezone);
     const hours = calculateShiftHours(shift);
 
     const jobRoleName =
@@ -186,9 +199,9 @@ const getTodaysShifts = async ({ userId, timezone }) => {
 
       shift: {
         id: shift._id,
-        date: shift.date,
-        startTime: shift.startTime || "",
-        endTime: shift.endTime || "",
+        date: localShift.date,
+        startTime: localShift.startTime,
+        endTime: shiftEnd ? localShift.endTime : "",
         breakMin: shift.breakMin || 0,
         totalHours: hours,
         formattedHours: formatHours(hours),

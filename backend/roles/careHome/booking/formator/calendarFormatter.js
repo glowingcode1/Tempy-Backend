@@ -1,6 +1,10 @@
 // utils/calendarFormatter.js
 
-const { convertUtcToTimezone } = require("@helperUtils/responseUtil");
+const {
+  convertUtcToTimezone,
+  formatShiftToTimezone,
+  getShiftStartUtc,
+} = require("@helperUtils/responseUtil");
 const { getFullImageUrl } = require("@helperUtils/imageHelper");
 
 const weatherByDate = (weather = {}, timezone) => {
@@ -51,12 +55,10 @@ const buildWorkers = (
   roleBookings.forEach((b) => {
     const id = String(b.worker?._id || b.worker?.name || "Unknown");
 
-    const date = convertUtcToTimezone(
-      b.shift?.date,
-      timezone,
-      "YYYY-MM-DD",
-      "YYYY-MM-DDTHH:mm:ss.SSSZ",
-    );
+    const localShift = formatShiftToTimezone(b.shift, timezone) || {};
+
+    // Calendar buckets are keyed by the LOCAL calendar day of the shift start.
+    const date = getShiftStartUtc(b.shift)?.tz(timezone).format("YYYY-MM-DD");
 
     map[id] ??= {
       workerId: b.worker?._id || null,
@@ -83,18 +85,8 @@ const buildWorkers = (
 
     map[id].schedule[date].shifts.push({
       bookingId: b._id,
-      startTime: convertUtcToTimezone(
-        `${date}T${b.shift?.startTime}:00.000Z`,
-        timezone,
-        "HH:mm",
-        "YYYY-MM-DDTHH:mm:ss.SSSZ",
-      ),
-      endTime: convertUtcToTimezone(
-        `${date}T${b.shift?.endTime}:00.000Z`,
-        timezone,
-        "HH:mm",
-        "YYYY-MM-DDTHH:mm:ss.SSSZ",
-      ),
+      startTime: localShift.startTime,
+      endTime: localShift.endTime,
       status: b.status,
       breakMin: b.shift?.breakMin,
       isMyBooking,
@@ -266,25 +258,14 @@ const formatShiftPlan = (bookings = [], timezone) => {
   const shiftsByDate = {};
 
   bookings.forEach((b) => {
-    const date = convertUtcToTimezone(
-      b.shift.date,
-      timezone,
-      "YYYY-MM-DD",
-      "YYYY-MM-DDTHH:mm:ss.SSSZ",
-    );
+    const localShift = formatShiftToTimezone(b.shift, timezone) || {};
 
-    const startTime = convertUtcToTimezone(
-      `${date}T${b.shift.startTime}:00.000Z`,
-      timezone,
-      "hh:mm A",
-      "YYYY-MM-DDTHH:mm:ss.SSSZ",
-    );
-    const endTime = convertUtcToTimezone(
-      `${date}T${b.shift.endTime}:00.000Z`,
-      timezone,
-      "hh:mm A",
-      "YYYY-MM-DDTHH:mm:ss.SSSZ",
-    );
+    // markedDates / shiftsByDate are keyed by the LOCAL calendar day.
+    const date = getShiftStartUtc(b.shift)?.tz(timezone).format("YYYY-MM-DD");
+
+    // "HH:mm", matching every other module - not "hh:mm A".
+    const startTime = localShift.startTime;
+    const endTime = localShift.endTime;
 
     shiftsByDate[date] ??= [];
 

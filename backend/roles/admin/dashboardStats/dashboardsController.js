@@ -2,7 +2,7 @@
 const { sendResponse } = require("@helperUtils/responseUtil");
 const dashboardService = require("./dashboardService");
 const getDashboard = async (req, res) => {
-  let { timezone } = req.user.timezone || "UTC";
+  const timezone = req.user.timezone || "UTC";
   const user = req.user._id;
 
   try {
