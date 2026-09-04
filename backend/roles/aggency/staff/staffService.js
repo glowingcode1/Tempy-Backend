@@ -243,14 +243,17 @@ const getStaffDetails = async (id, user, timezone, customer, supplier) => {
     degree: staff.degree,
     certification: staff.certification,
   };
-  const formatted = formatStaffProfile({
-    basicInfo,
-    documentation,
-    staffDetails,
-    address,
-    reviews,
-    bookings,
-  });
+  const formatted = formatStaffProfile(
+    {
+      basicInfo,
+      documentation,
+      staffDetails,
+      address,
+      reviews,
+      bookings,
+    },
+    timezone,
+  );
 
   return { formatted, error };
 };

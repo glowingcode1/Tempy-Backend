@@ -1,7 +1,6 @@
 const { getFullImageUrl } = require("@helperUtils/imageHelper.js");
 const responseUtil = require("../../../../helperUtils/responseUtil.js");
-const { convertUtcToTimezone } = responseUtil;
-const moment = require("moment-timezone");
+const { convertUtcToTimezone, formatShiftToTimezone } = responseUtil;
 
 const formatBidToTimezone = (job, timezone) => {
   if (!job) return job;
@@ -17,20 +16,15 @@ const formatBidToTimezone = (job, timezone) => {
     };
   };
 
-  const formatShift = (shift) => {
-    if (!shift) return shift;
+  const formatShift = (shift) => formatShiftToTimezone(shift, timezone);
 
-    // date-only portion of the shift date, used to anchor the HH:mm times
-    const datePart = moment.utc(shift.date).format("YYYY-MM-DD");
-
-    const startUtc = `${datePart}T${shift.startTime}:00.000Z`;
-    const endUtc = `${datePart}T${shift.endTime}:00.000Z`;
-
+  const formatSnapshot = (snapshot) => {
+    if (!snapshot) return snapshot;
     return {
-      ...shift,
-      date: convertUtcToTimezone(shift.date, timezone),
-      startTime: convertUtcToTimezone(startUtc, timezone, "HH:mm"),
-      endTime: convertUtcToTimezone(endUtc, timezone, "HH:mm"),
+      ...snapshot,
+      shift: Array.isArray(snapshot.shift)
+        ? snapshot.shift.map(formatShift)
+        : formatShift(snapshot.shift),
     };
   };
 
@@ -39,6 +33,7 @@ const formatBidToTimezone = (job, timezone) => {
     shift: Array.isArray(job.shift)
       ? job.shift.map(formatShift)
       : formatShift(job.shift),
+    snapshot: formatSnapshot(job.snapshot),
     user: formatUser(job.user),
     jobCreator: formatUser(job.jobCreator),
     createdAt: job.createdAt

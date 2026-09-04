@@ -1,10 +1,15 @@
 const { getFullImageUrl } = require("@helperUtils/imageHelper");
+const {
+  convertUtcToTimezone,
+  formatShiftToTimezone,
+  getShiftStartUtc,
+} = require("@helperUtils/responseUtil");
 const moment = require("moment-timezone");
 
 // statuses that count as "attended" for late check-in
 const ATTENDED_STATUSES = ["inProgress", "completed"]; // adjust to your enum
 
-function formatStaffProfile(data) {
+function formatStaffProfile(data, timezone) {
   const {
     basicInfo = {},
     documentation = {},
@@ -75,11 +80,8 @@ function formatStaffProfile(data) {
       shift.date &&
       shift.startTime
     ) {
-      const shiftStart = moment(
-        `${moment(shift.date).format("YYYY-MM-DD")} ${shift.startTime}`,
-        "YYYY-MM-DD HH:mm",
-      );
-      const checkIn = moment(attendance.checkIn);
+      const shiftStart = getShiftStartUtc(shift);
+      const checkIn = moment.utc(attendance.checkIn);
 
       if (
         checkIn.isBetween(startOfMonth, endOfMonth, null, "[]") &&
@@ -98,7 +100,23 @@ function formatStaffProfile(data) {
 
   for (const booking of bookings) {
     if (groupedBookings[booking.status]) {
-      groupedBookings[booking.status].push(booking);
+      groupedBookings[booking.status].push({
+        ...booking,
+        shift: Array.isArray(booking.shift)
+          ? booking.shift.map((s) => formatShiftToTimezone(s, timezone))
+          : formatShiftToTimezone(booking.shift, timezone),
+        attendance: booking.attendance
+          ? {
+              ...booking.attendance,
+              checkIn: booking.attendance.checkIn
+                ? convertUtcToTimezone(booking.attendance.checkIn, timezone)
+                : booking.attendance.checkIn,
+              checkOut: booking.attendance.checkOut
+                ? convertUtcToTimezone(booking.attendance.checkOut, timezone)
+                : booking.attendance.checkOut,
+            }
+          : booking.attendance,
+      });
     }
   }
 
