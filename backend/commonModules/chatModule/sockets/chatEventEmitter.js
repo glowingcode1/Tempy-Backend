@@ -19,7 +19,7 @@ async function getConnectedUserIds(chatNamespace, userIds = []) {
       if (sockets.size > 0) {
         connectedIds.push(String(userId));
       }
-    })
+    }),
   );
 
   return connectedIds;
@@ -34,6 +34,19 @@ function emitMessageToUsers({ ioOrNamespace, recipientIds = [], message }) {
   });
 }
 
+function emitMessageDeletedToUsers({
+  ioOrNamespace,
+  recipientIds = [],
+  payload,
+}) {
+  const chatNamespace = getChatNamespace(ioOrNamespace);
+  if (!chatNamespace) return;
+
+  recipientIds.forEach((recipientId) => {
+    chatNamespace.to(getUserRoom(recipientId)).emit("deleteMessage", payload);
+  });
+}
+
 function emitChatUpdatedToUser({ ioOrNamespace, recipientId, payload }) {
   const chatNamespace = getChatNamespace(ioOrNamespace);
   if (!chatNamespace) return;
@@ -45,5 +58,6 @@ module.exports = {
   getChatNamespace,
   getConnectedUserIds,
   emitMessageToUsers,
+  emitMessageDeletedToUsers,
   emitChatUpdatedToUser,
 };

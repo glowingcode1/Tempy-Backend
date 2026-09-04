@@ -1,9 +1,9 @@
 const BidRepo = require("./bidRepository");
 const formatBidToTimezone = require("./formator/formatBidToTimezone");
 
-const createBid = async (data) => {
+const createBid = async (data, timezone) => {
   const Bid = await BidRepo.createBid(data);
-  return Bid;
+  return Bid?.error ? Bid : formatBidToTimezone(Bid.toObject(), timezone);
 };
 
 const getBid = async ({
@@ -36,7 +36,7 @@ const getBid = async ({
   return { bid: formatedBid, meta };
 };
 
-const updateBid = async (id, data) => {
+const updateBid = async (id, data, timezone) => {
   const Bid = await BidRepo.findBidById_(id);
   if (data.shift && data.job) {
     const [{ user, shift }, snapshot] = await Promise.all([
@@ -55,7 +55,9 @@ const updateBid = async (id, data) => {
   for (const key of allowedFields) {
     if (data[key] !== undefined) updateData[key] = data[key];
   }
-  if (Object.keys(updateData).length === 0) return Bid;
+  if (Object.keys(updateData).length === 0) {
+    return formatBidToTimezone(Bid.toObject(), timezone);
+  }
 
   // Accepting a bid is only done via jobService.updateJobBidStatus now.
   if (updateData.status === "accepted") {
@@ -64,7 +66,7 @@ const updateBid = async (id, data) => {
 
   Object.assign(Bid, updateData);
   await Bid.save();
-  return Bid;
+  return formatBidToTimezone(Bid.toObject(), timezone);
 };
 
 const getBidDetails = async (id, timezone) => {

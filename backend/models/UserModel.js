@@ -183,7 +183,6 @@ const userSchema = new mongoose.Schema(
         default: false,
       },
     },
-
     otpInfo: {
       emailOtp: {
         otp: {
@@ -337,7 +336,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    discriminatorKey: "accountState.userType",
+    discriminatorKey: "modelType",
   },
 );
 

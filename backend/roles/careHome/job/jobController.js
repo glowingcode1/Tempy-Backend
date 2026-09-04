@@ -6,7 +6,7 @@ const {
   getReadableErrorMessage,
   convertTimezoneToUtc,
 } = require("../../../helperUtils/responseUtil");
-const moment = require("moment");
+const moment = require("moment-timezone");
 const JobService = require("./jobService");
 const { customerTypes, supplierTypes, User } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
@@ -26,6 +26,11 @@ const createJob = async (req, res) => {
     image,
     worker,
     employer,
+    notes,
+    instructions,
+    contactDetails,
+    emergencyContact,
+    documents,
   } = req.body;
   let user = req.user._id;
   const timezone = req.user.timezone;
@@ -78,7 +83,12 @@ const createJob = async (req, res) => {
       });
     }
   }
-  const convertedJobs = shift.map((job) => {
+  // Validate every shift up front. A `return` inside .map() does not stop the
+  // loop, so validating during the mapping would send one response per bad
+  // shift and then fall through to send another.
+  const nowUtc = moment.utc();
+
+  for (const job of shift) {
     if (job.perHour <= 0) {
       return sendResponse({
         res,
@@ -86,6 +96,31 @@ const createJob = async (req, res) => {
         translationKey: "perHour_must_be_greater_than_zero",
       });
     }
+
+    // Interpret the submitted date/time in the creator's timezone.
+    const startUtc = moment
+      .tz(`${job.date} ${job.startTime}`, "YYYY-MM-DD HH:mm", timezone)
+      .utc();
+
+    if (!startUtc.isValid()) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "invalid_shift_date_or_time",
+      });
+    }
+
+    // A shift may not start in the past.
+    if (startUtc.isSameOrBefore(nowUtc)) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "shift_cannot_be_in_the_past",
+      });
+    }
+  }
+
+  const convertedJobs = shift.map((job) => {
     const startUtc = moment
       .tz(`${job.date} ${job.startTime}`, "YYYY-MM-DD HH:mm", timezone)
       .utc();
@@ -109,6 +144,10 @@ const createJob = async (req, res) => {
     });
   }
 
+  const uploadedDocuments = (req.files || []).map(
+    (file) => file.location || file.path,
+  );
+
   let data = {
     name,
     description,
@@ -121,9 +160,14 @@ const createJob = async (req, res) => {
     image,
     worker,
     employer,
+    notes,
+    instructions,
+    contactDetails,
+    emergencyContact,
+    documents: [...(documents || []), ...uploadedDocuments],
   };
   try {
-    const Job = await JobService.createJob(data);
+    const Job = await JobService.createJob(data, timezone);
     if (!Job) {
       return sendResponse({
         res,
@@ -164,7 +208,16 @@ const getJobs = async (req, res) => {
     worker = req.user._id;
   }
 
-  const JOB_FIELDS = ["name", "description", "location"];
+  const JOB_FIELDS = [
+    "name",
+    "description",
+    "location",
+    "notes",
+    "instructions",
+    "contactDetails",
+    "emergencyContact",
+    "documents",
+  ];
   const fields = "name,location";
   let projection = undefined;
   if (summary) {
@@ -180,6 +233,13 @@ const getJobs = async (req, res) => {
   const geoProvided = [latitude, longitude, km].filter(
     (v) => v !== undefined && v !== null && v !== "",
   );
+  const userCoordinates = req.user.location?.coordinates;
+  const distanceOrigin =
+    geoProvided.length === 0 &&
+    Array.isArray(userCoordinates) &&
+    userCoordinates.length === 2
+      ? userCoordinates
+      : undefined;
 
   if (geoProvided.length > 0) {
     if (geoProvided.length < 3) {
@@ -232,14 +292,17 @@ const getJobs = async (req, res) => {
       user,
       userType,
       requester,
-      latitude: latitude ? Number(latitude) : undefined,
-      longitude: longitude ? Number(longitude) : undefined,
-      km: km ? Number(km) : undefined,
+      latitude:
+        latitude !== undefined && latitude !== "" ? Number(latitude) : undefined,
+      longitude:
+        longitude !== undefined && longitude !== "" ? Number(longitude) : undefined,
+      km: km !== undefined && km !== "" ? Number(km) : undefined,
       projection,
       summary: summary === "true" ? true : false,
       worker,
       employer,
       dateFilter,
+      distanceOrigin,
     });
 
     return sendResponse({
@@ -433,7 +496,19 @@ const getJobBids = async (req, res) => {
 
 const updateJob = async (req, res) => {
   const { id } = req.params;
-  let { name, description, type, gender, shift, location } = req.body;
+  let {
+    name,
+    description,
+    type,
+    gender,
+    shift,
+    location,
+    notes,
+    instructions,
+    contactDetails,
+    emergencyContact,
+    documents,
+  } = req.body;
   const timezone = req.user.timezone;
   if (shift && !Array.isArray(shift)) {
     return sendResponse({
@@ -478,6 +553,11 @@ const updateJob = async (req, res) => {
     gender,
     shift: convertedJobs || undefined,
     location,
+    notes,
+    instructions,
+    contactDetails,
+    emergencyContact,
+    documents,
   };
   try {
     const updated = await JobService.updateJob(id, data);

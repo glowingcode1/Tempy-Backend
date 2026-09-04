@@ -1,4 +1,5 @@
 const { GENDER_TYPES } = require("@UsersModel");
+const { LocationSchema } = require("../../../shared/locations/locationSchmea");
 const mongoose = require("mongoose");
 
 const StaffSchema = new mongoose.Schema(
@@ -37,6 +38,10 @@ const StaffSchema = new mongoose.Schema(
         type: String,
         default: "",
       },
+      default: {},
+    },
+    location: {
+      type: LocationSchema,
       default: {},
     },
     dob: {

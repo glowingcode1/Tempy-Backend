@@ -225,6 +225,7 @@ const updateUser = async (req, res, options = {}) => {
 
     const basicEditableFields = [
       "name",
+      "summary",
       "location",
       "dob",
       "gender",

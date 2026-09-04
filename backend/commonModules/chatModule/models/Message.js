@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { LocationSchema } = require("../../../shared/locations/locationSchmea");
 
 const messageSchema = new mongoose.Schema(
   {
@@ -14,7 +15,7 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ["text", "audio", "file"],
+      enum: ["text", "audio", "file", "location"],
       required: true,
       default: "text",
     },
@@ -32,8 +33,9 @@ const messageSchema = new mongoose.Schema(
       },
       validate: {
         validator: function (value) {
-          // For text messages, mediaUrl can be undefined, null, or any string (ignore validation)
-          if (this.messageType === "text") {
+          // mediaUrl is only meaningful for audio/file messages — for text and
+          // location it can be undefined, null, or any string (ignore validation)
+          if (this.messageType !== "audio" && this.messageType !== "file") {
             return true;
           }
           // For audio or file, mediaUrl must be a non-empty string
@@ -58,6 +60,14 @@ const messageSchema = new mongoose.Schema(
         },
       },
     ],
+    // Set only for messageType "location". Coordinates follow this project's
+    // [latitude, longitude] convention (see shared/locations/locationSchmea.js).
+    location: {
+      type: LocationSchema,
+      required: function () {
+        return this.messageType === "location";
+      },
+    },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message", // Reference to another message if this is a reply

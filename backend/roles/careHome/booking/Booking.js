@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-
 /* ---------------------------------------------
    Shift snapshot — copied from the job's shift
    at approval time so later edits to the job
@@ -190,13 +189,12 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
 
-    // ---- agreed shift (snapshot, not a ref) ----
     shift: {
       type: shiftSnapshotSchema,
       required: true,
     },
     snapshot: {
-      type: mongoose.Schema.Types.Mixed, // denormalized snapshot of the job at approval time
+      type: mongoose.Schema.Types.Mixed, 
       default: {},
     },
 
@@ -213,7 +211,7 @@ const bookingSchema = new mongoose.Schema(
         "cancelledByUser",
       ],
       default: "pending",
-      index: true,  
+      index: true,
     },
     cancellation: {
       reason: { type: String, default: "" },
@@ -244,12 +242,10 @@ const bookingSchema = new mongoose.Schema(
    Indexes
 ---------------------------------------------- */
 
-
 // common list queries
 bookingSchema.index({ worker: 1, status: 1, "shift.date": 1 });
 bookingSchema.index({ employer: 1, status: 1, "shift.date": 1 });
 bookingSchema.index({ job: 1 });
-
 
 bookingSchema.index({
   "attendance.checkInLocation": "2dsphere",

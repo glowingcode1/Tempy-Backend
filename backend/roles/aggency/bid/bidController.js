@@ -58,7 +58,7 @@ const createBid = async (req, res) => {
     note,
   };
   try {
-    const Bid = await BidService.createBid(data);
+    const Bid = await BidService.createBid(data, timezone);
     if (!Bid) {
       return sendResponse({
         res,
@@ -75,12 +75,14 @@ const createBid = async (req, res) => {
     }
 
     if (Bid.jobCreator) {
+      const jobName = Bid.snapshot?.name;
+
       void sendUserNotifications({
         recipientIds: [Bid.jobCreator],
 
         title: "New Bid Received",
 
-        body: `New Bid ${bid} on your job ${job?.name || "your job"}.`,
+        body: `New Bid ${bid} on your job ${jobName}.`,
 
         data: {
           type: NotificationTypes.NEW_BID,
@@ -199,7 +201,7 @@ const updateBid = async (req, res) => {
     status,
   };
   try {
-    const updated = await BidService.updateBid(id, data);
+    const updated = await BidService.updateBid(id, data, req.user.timezone);
     if (updated && updated.error) {
       return sendResponse({
         res,

@@ -16,10 +16,34 @@ const BranchesSchema = new mongoose.Schema(
       type: LocationSchema,
       default: {},
     },
+    bio: {
+      type: String,
+      default: "",
+      required: true,
+    },
+
+    profileIcon: {
+      type: String,
+      default: "",
+    },
+    cqc: {
+      registrationNumber: { type: String, default: "" },
+      certificate: { type: String, default: "" }, // doc path/URL
+      verified: { type: Boolean, default: false },
+    },
+    insurance: {
+      certificate: { type: String, default: "" }, // doc path/URL
+      verified: { type: Boolean, default: false },
+      expiryDate: { type: Date },
+    },
+    rating: {
+      average: { type: Number, default: 0 },
+      count: { type: Number, default: 0 },
+    },
     status: {
       type: String,
-      enum: ["active", "inactive", "deleted"],
-      default: "active",
+      enum: ["active", "inactive", "deleted", "pending"],
+      default: "pending",
       index: true,
     },
   },

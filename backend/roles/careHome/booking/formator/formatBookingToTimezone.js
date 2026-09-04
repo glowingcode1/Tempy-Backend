@@ -1,24 +1,23 @@
 const { getFullImageUrl } = require("@helperUtils/imageHelper.js");
 const responseUtil = require("../../../../helperUtils/responseUtil.js");
-const { convertUtcToTimezone } = responseUtil;
-const moment = require("moment-timezone");
+const { convertUtcToTimezone, formatShiftToTimezone } = responseUtil;
 
 const formatBookingToTimezone = (job, timezone) => {
   if (!job) return job;
 
-  const formatShift = (shift) => {
-    // date-only portion of the shift date, used to anchor the HH:mm times
-    const datePart = moment.utc(shift.date).format("YYYY-MM-DD");
+  const formatShift = (shift) => formatShiftToTimezone(shift, timezone);
 
-    const startUtc = `${datePart}T${shift.startTime}:00.000Z`;
-    const endUtc = `${datePart}T${shift.endTime}:00.000Z`;
+  const formatSnapshot = (snapshot) => {
+    if (!snapshot) return snapshot;
     return {
-      ...shift,
-      date: convertUtcToTimezone(shift.date, timezone),
-      startTime: convertUtcToTimezone(startUtc, timezone, "HH:mm"),
-      endTime: convertUtcToTimezone(endUtc, timezone, "HH:mm"),
+      ...snapshot,
+      image: getFullImageUrl(snapshot.image),
+      shift: Array.isArray(snapshot.shift)
+        ? snapshot.shift.map(formatShift)
+        : formatShift(snapshot.shift),
     };
   };
+
   return {
     ...job,
     shift: Array.isArray(job.shift)
@@ -26,10 +25,7 @@ const formatBookingToTimezone = (job, timezone) => {
       : job.shift
         ? formatShift(job.shift)
         : job.shift,
-    snapshot: {
-      ...job.snapshot,
-      image: getFullImageUrl(job.snapshot?.image),
-    },
+    snapshot: formatSnapshot(job.snapshot),
     user: {
       ...job.user,
       profileIcon: getFullImageUrl(job.user?.profileIcon),

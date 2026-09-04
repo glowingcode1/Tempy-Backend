@@ -3,6 +3,11 @@ const moment = require("moment-timezone");
 const Booking = require("../../careHome/booking/Booking");
 const { User } = require("../../../models/UserModel");
 const { formatUserResponse } = require("@helperUtils/userResponseUtil");
+const {
+  getShiftStartUtc,
+  getShiftEndUtc,
+  formatShiftToTimezone,
+} = require("@helperUtils/responseUtil");
 
 /* =========================================================
    HELPERS
@@ -62,6 +67,8 @@ const formatHours = (hours) => {
 
   return `${Number(hours.toFixed(2))} hr`;
 };
+
+
 
 /* =========================================================
    DATE HELPERS
@@ -152,8 +159,8 @@ const getTodaysShifts = async ({ userId, timezone, userType }) => {
     ...userMatch,
 
     "shift.date": {
-      $gte: start,
-      $lt: end,
+      $gte: moment.utc(start).subtract(1, "day").toDate(),
+      $lt: moment.utc(end).add(1, "day").toDate(),
     },
 
     status: {
@@ -173,8 +180,14 @@ const getTodaysShifts = async ({ userId, timezone, userType }) => {
     })
     .lean();
 
-  return bookings.map((booking) => {
+  return bookings.filter((booking) => {
+    const shiftStart = getShiftStartUtc(booking.shift);
+    return shiftStart?.isSameOrAfter(start) && shiftStart.isBefore(end);
+  }).map((booking) => {
     const shift = booking.shift || {};
+    const shiftStart = getShiftStartUtc(shift);
+    const shiftEnd = getShiftEndUtc(shift);
+    const localShift = formatShiftToTimezone(shift, timezone);
 
     const hours = calculateShiftHours(shift);
 
@@ -207,11 +220,11 @@ const getTodaysShifts = async ({ userId, timezone, userType }) => {
       shift: {
         id: shift._id,
 
-        date: shift.date,
+        date: localShift.date,
 
-        startTime: shift.startTime || "",
+        startTime: localShift.startTime,
 
-        endTime: shift.endTime || "",
+        endTime: shiftEnd ? localShift.endTime : "",
 
         breakMin: shift.breakMin || 0,
 
@@ -229,6 +242,7 @@ const getTodaysShifts = async ({ userId, timezone, userType }) => {
 
       payment: {
         perHour: booking.payment?.perHour || 0,
+        totalAmount: booking.payment?.totalAmount || 0,
         currency: booking.payment?.currency || "USD",
       },
     };
@@ -256,8 +270,8 @@ const getWeeklyHours = async ({
     ...userMatch,
 
     "shift.date": {
-      $gte: start,
-      $lt: end,
+      $gte: moment.utc(start).subtract(1, "day").toDate(),
+      $lt: moment.utc(end).add(1, "day").toDate(),
     },
 
     status: {
@@ -270,6 +284,8 @@ const getWeeklyHours = async ({
   let totalHours = 0;
 
   bookings.forEach((booking) => {
+    const shiftStart = getShiftStartUtc(booking.shift);
+    if (!shiftStart?.isSameOrAfter(start) || !shiftStart.isBefore(end)) return;
     totalHours += calculateShiftHours(booking.shift);
   });
 
@@ -309,27 +325,6 @@ const getWeeklyHours = async ({
 ========================================================= */
 
 const getHomeData = async ({ userId, timezone, userType }) => {
-  /**
-   * IMPORTANT:
-   *
-   * Do not select only name/profileIcon/timezone/weeklyHours.
-   *
-   * formatUserResponse() needs fields such as:
-   * - accountState
-   * - verificationStatus
-   * - location
-   * - radius
-   * - phoneNumber
-   * - gender
-   * - language
-   * - twoFA
-   * - taxNumber
-   * - governmentIdentity
-   * - degree
-   * - certification
-   * - validationDocument
-   * etc.
-   */
   const user = await User.findById(userId).lean();
 
   if (!user) {

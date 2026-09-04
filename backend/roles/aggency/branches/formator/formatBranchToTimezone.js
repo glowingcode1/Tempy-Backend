@@ -1,7 +1,6 @@
 const { getFullImageUrl } = require("@helperUtils/imageHelper");
 const { convertUtcToTimezone } = require("@helperUtils/responseUtil");
 
-
 const formateBranchToTimezone = (branch, timezone) => {
   if (!branch) return branch;
 
@@ -12,6 +11,16 @@ const formateBranchToTimezone = (branch, timezone) => {
   }
   if (obj.updatedAt) {
     obj.updatedAt = convertUtcToTimezone(obj.updatedAt, timezone);
+  }
+
+  if (obj.profileIcon?.length) {
+    obj.profileIcon = getFullImageUrl(obj.profileIcon);
+  }
+  if (obj.cqc?.certificate) {
+    obj.cqc.certificate = getFullImageUrl(obj.cqc.certificate);
+  }
+  if (obj.insurance?.certificate) {
+    obj.insurance.certificate = getFullImageUrl(obj.insurance.certificate);
   }
 
   if (obj.user) {

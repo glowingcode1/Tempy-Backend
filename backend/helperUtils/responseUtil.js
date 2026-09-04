@@ -570,7 +570,8 @@ const convertUtcToTimezoneAMPM = (
     return "Invalid Date"; // Return a fallback value
   }
 
-  const momentDate = moment(date, inputFormat, true); // Parse date with strict input format
+  // Parse strictly as UTC - stored datetimes are always UTC.
+  const momentDate = moment.utc(date, inputFormat, true);
 
   if (timezone) {
     // Apply timezone conversion if timezone is provided
@@ -612,6 +613,82 @@ const convertUtcToTimezone = (
     return momentDate.format(outputFormat);
   }
 };
+
+/* =========================================================
+   SHIFT TIME - SINGLE SOURCE OF TRUTH
+
+   A shift is stored as:
+     shift.date      -> the UTC calendar date of the shift START
+     shift.startTime -> "HH:mm" in UTC
+     shift.endTime   -> "HH:mm" in UTC (anchored to the same date)
+
+   So the real instant is date + time, and ONLY that instant may be
+   converted. Converting `shift.date` on its own is always wrong - it is
+   UTC midnight, not the shift start, so it lands on the wrong local day
+   in any non-zero offset.
+
+   Every module must format shifts through these helpers so that one shift
+   reads identically in Bookings, Jobs, Bids, Shifts, Calendars, Home,
+   EmployeeHome, CustomerHome and every dashboard.
+========================================================= */
+
+// Output contract shared by every module.
+const SHIFT_DATE_FORMAT = "YYYY-MM-DDTHH:mm:ss.SSSZ"; // full instant + offset
+const SHIFT_TIME_FORMAT = "HH:mm"; // 24-hour, never "hh:mm A"
+
+/** The shift start as a UTC moment, or null. */
+const getShiftStartUtc = (shift) => {
+  if (!shift?.date || !shift?.startTime) return null;
+
+  const datePart = moment.utc(shift.date).format("YYYY-MM-DD");
+  const start = moment.utc(`${datePart}T${shift.startTime}:00.000Z`);
+
+  return start.isValid() ? start : null;
+};
+
+/** The shift end as a UTC moment, or null. */
+const getShiftEndUtc = (shift) => {
+  if (!shift?.date || !shift?.endTime) return null;
+
+  const datePart = moment.utc(shift.date).format("YYYY-MM-DD");
+  const end = moment.utc(`${datePart}T${shift.endTime}:00.000Z`);
+
+  return end.isValid() ? end : null;
+};
+
+/**
+ * Convert one shift into the user's timezone.
+ * Preserves every other field on the shift.
+ *
+ * @param {object} shift - Stored shift ({ date, startTime, endTime, ... }).
+ * @param {string} [timezone] - IANA timezone. Falsy means leave in UTC.
+ * @returns {object} The shift with date/startTime/endTime in `timezone`.
+ */
+const formatShiftToTimezone = (shift, timezone) => {
+  if (!shift) return shift;
+
+  const start = getShiftStartUtc(shift);
+  const end = getShiftEndUtc(shift);
+
+  return {
+    ...shift,
+    date: start
+      ? convertUtcToTimezone(start.toDate(), timezone, SHIFT_DATE_FORMAT)
+      : shift.date,
+    startTime: start
+      ? convertUtcToTimezone(start.toDate(), timezone, SHIFT_TIME_FORMAT)
+      : shift.startTime,
+    endTime: end
+      ? convertUtcToTimezone(end.toDate(), timezone, SHIFT_TIME_FORMAT)
+      : shift.endTime,
+  };
+};
+
+/** Format a shift, or an array of shifts, into the user's timezone. */
+const formatShiftsToTimezone = (shift, timezone) =>
+  Array.isArray(shift)
+    ? shift.map((s) => formatShiftToTimezone(s, timezone))
+    : formatShiftToTimezone(shift, timezone);
 
 /**
  * Converts a date from a specified timezone to UTC.
@@ -925,6 +1002,12 @@ module.exports = {
   getStartAndEndOfWeek,
   getStartAndEndOfMonth,
   convertUtcToTimezoneAMPM,
+  getShiftStartUtc,
+  getShiftEndUtc,
+  formatShiftToTimezone,
+  formatShiftsToTimezone,
+  SHIFT_DATE_FORMAT,
+  SHIFT_TIME_FORMAT,
   convertTimezoneToUtcDateOnly,
   getCurrentUtcDateOnly,
   convertToUtcDateOnly,
