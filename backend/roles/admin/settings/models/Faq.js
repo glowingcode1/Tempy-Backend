@@ -18,7 +18,7 @@ const FAQSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["hospital", "localAuthority", "agency", "careHome", "homeCareCompany", "individual"],
+      enum: ["hospital", "localAuthority", "agency", "careHome", "homeCareCompany", "individual", "user", "general"],
       default: "general",
       index: true
     },

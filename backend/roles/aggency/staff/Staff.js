@@ -58,15 +58,19 @@ const StaffSchema = new mongoose.Schema(
       required: true,
     },
     speciality: {
-      type: String,
-      enum: [
-        "generalNurse",
-        "mentalHealth",
-        "elderlyCare",
-        "learningDisability",
-        "pediatric",
-        "healthcareAssistant",
-        "supportWorker",
+      type: [
+        {
+          type: String,
+          enum: [
+            "generalNurse",
+            "mentalHealth",
+            "elderlyCare",
+            "learningDisability",
+            "pediatric",
+            "healthcareAssistant",
+            "supportWorker",
+          ],
+        },
       ],
       required: true,
     },

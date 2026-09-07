@@ -2,6 +2,7 @@ const express = require("express");
 const moment = require("moment");
 const {
   createStaff,
+  importStaff,
   getStaff,
   updateStaff,
   deleteStaff,
@@ -14,6 +15,7 @@ const {
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
 const roleMiddleware = require("../../../middlewares/roleMiddleware");
+const uploadCsv = require("../../../middlewares/uploadCsvMw");
 
 const router = express.Router();
 
@@ -35,6 +37,13 @@ router.post(
   roleMiddleware(["admin", "agency", "homeCareCompany"]),
   StaffRateLimiter,
   createStaff,
+);
+router.post(
+  "/import",
+  roleMiddleware(["admin", "agency", "homeCareCompany"]),
+  StaffRateLimiter,
+  uploadCsv,
+  importStaff,
 );
 
 // Get all Staff with pagination
