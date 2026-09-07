@@ -2,6 +2,7 @@ const Job = require("../../careHome/job/Job");
 const Bid = require("../../aggency/bid/Bid");
 const Staff = require("../../aggency/staff/Staff");
 const Booking = require("../../careHome/booking/Booking");
+const Branches = require("../../aggency/branches/Branches");
 
 // --------------------------------------------------
 // MONTH HELPERS
@@ -153,7 +154,7 @@ const getJobStats = async ({ userId }) => {
 
 const getBookingStats = async ({ userId }) => {
   const baseMatch = {
-    employer: userId,
+    $or: [{ employer: userId }, { user: userId }],
   };
 
   const [
@@ -201,6 +202,46 @@ const getBookingStats = async ({ userId }) => {
     inProgressBookings,
     completedBookings,
     cancelledBookings,
+  };
+};
+
+// --------------------------------------------------
+// BRANCHES STATS
+// --------------------------------------------------
+
+const getBranchStats = async ({ userId }) => {
+  const baseMatch = {
+    user: userId,
+    status: {
+      $ne: "deleted",
+    },
+  };
+
+  const [totalBranches, activeBranches, inactiveBranches, pendingBranches] =
+    await Promise.all([
+      Branches.countDocuments(baseMatch),
+
+      Branches.countDocuments({
+        ...baseMatch,
+        status: "active",
+      }),
+
+      Branches.countDocuments({
+        ...baseMatch,
+        status: "inactive",
+      }),
+
+      Branches.countDocuments({
+        ...baseMatch,
+        status: "pending",
+      }),
+    ]);
+
+  return {
+    totalBranches,
+    activeBranches,
+    inactiveBranches,
+    pendingBranches,
   };
 };
 
@@ -320,7 +361,7 @@ const getMonthlyActivity = async ({ userId }) => {
       Model: Bid,
 
       match: {
-        user: userId,
+        jobCreator: userId,
         status: {
           $ne: "deleted",
         },
@@ -352,7 +393,7 @@ const getMonthlyActivity = async ({ userId }) => {
 // --------------------------------------------------
 
 const getRecentActivity = async ({ userId }) => {
-  const [jobs, bookings, bids, staff] = await Promise.all([
+  const [jobs, bookings, bids, staff, branches] = await Promise.all([
     Job.find({
       user: userId,
       status: {
@@ -366,7 +407,7 @@ const getRecentActivity = async ({ userId }) => {
       .select("name status createdAt"),
 
     Booking.find({
-      employer: userId,
+      $or: [{ employer: userId }, { user: userId }],
     })
       .sort({
         createdAt: -1,
@@ -397,6 +438,18 @@ const getRecentActivity = async ({ userId }) => {
       })
       .limit(5)
       .select("name status speciality createdAt"),
+
+    Branches.find({
+      user: userId,
+      status: {
+        $ne: "deleted",
+      },
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .limit(5)
+      .select("name status location rating createdAt"),
   ]);
 
   const activities = [
@@ -435,6 +488,15 @@ const getRecentActivity = async ({ userId }) => {
       status: item.status,
       createdAt: item.createdAt,
     })),
+
+    ...branches.map((item) => ({
+      id: item._id,
+      type: "branch",
+      title: "Branch added",
+      description: item.name,
+      status: item.status,
+      createdAt: item.createdAt,
+    })),
   ];
 
   return activities
@@ -443,42 +505,71 @@ const getRecentActivity = async ({ userId }) => {
 };
 
 // --------------------------------------------------
+// BRANCHES ACTIVITY
+// --------------------------------------------------
+
+const getBranchesActivity = async ({ userId }) => {
+  const branches = await Branches.find({
+    user: userId,
+    status: {
+      $ne: "deleted",
+    },
+  })
+    .sort({
+      createdAt: -1,
+    })
+    .select(
+      "name status location profileIcon cqc insurance rating createdAt updatedAt",
+    )
+    .lean();
+
+  return branches.map((item) => ({
+    id: item._id,
+    type: "branch",
+    title: "Branch activity",
+    description: item.name,
+    status: item.status,
+    location: item.location,
+    profileIcon: item.profileIcon,
+    cqc: item.cqc,
+    insurance: item.insurance,
+    rating: item.rating,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }));
+};
+
+// --------------------------------------------------
 // DASHBOARD
 // --------------------------------------------------
 
 const getCustomerDashboardStats = async ({ userId }) => {
-  const [jobs, bookings, staff, bids, monthlyActivity, recentActivity] =
-    await Promise.all([
-      getJobStats({
-        userId,
-      }),
-
-      getBookingStats({
-        userId,
-      }),
-
-      getStaffStats({
-        userId,
-      }),
-
-      getBidStats({
-        userId,
-      }),
-
-      getMonthlyActivity({
-        userId,
-      }),
-
-      getRecentActivity({
-        userId,
-      }),
-    ]);
+  const [
+    jobs,
+    bookings,
+    staff,
+    bids,
+    branches,
+    monthlyActivity,
+    recentActivity,
+    branchesActivity,
+  ] = await Promise.all([
+    getJobStats({ userId }),
+    getBookingStats({ userId }),
+    getStaffStats({ userId }),
+    getBidStats({ userId }),
+    getBranchStats({ userId }),
+    getMonthlyActivity({ userId }),
+    getRecentActivity({ userId }),
+    getBranchesActivity({ userId }),
+  ]);
 
   return {
     summary: {
       totalBookings: bookings.totalBookings,
-
       activeStaff: staff.activeStaff,
+      totalBranches: branches.totalBranches,
+      activeBranches: branches.activeBranches,
     },
 
     jobs: {
@@ -504,6 +595,13 @@ const getCustomerDashboardStats = async ({ userId }) => {
       inactive: staff.inactiveStaff,
     },
 
+    branches: {
+      total: branches.totalBranches,
+      active: branches.activeBranches,
+      inactive: branches.inactiveBranches,
+      pending: branches.pendingBranches,
+    },
+
     bids: {
       total: bids.totalBids,
       pending: bids.pendingBids,
@@ -515,6 +613,8 @@ const getCustomerDashboardStats = async ({ userId }) => {
     monthlyActivity,
 
     recentActivity,
+
+    branchesActivity,
   };
 };
 
@@ -524,6 +624,8 @@ module.exports = {
   getBookingStats,
   getStaffStats,
   getBidStats,
+  getBranchStats,
   getMonthlyActivity,
   getRecentActivity,
+  getBranchesActivity,
 };
