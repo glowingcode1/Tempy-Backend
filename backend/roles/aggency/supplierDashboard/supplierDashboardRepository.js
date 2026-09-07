@@ -2,6 +2,7 @@ const Job = require("../../careHome/job/Job");
 const Bid = require("../bid/Bid");
 const Staff = require("../staff/Staff");
 const Booking = require("../../careHome/booking/Booking");
+const Branches = require("../../aggency/branches/Branches");
 const { formatShiftToTimezone } = require("@helperUtils/responseUtil");
 
 // ============================================================
@@ -312,6 +313,53 @@ const getBidStats = async ({ userId }) => {
 };
 
 // ============================================================
+// BRANCHES ACTIVITY
+// ============================================================
+
+const getBranchesActivity = async ({ userId }) => {
+  const branches = await Branches.find({
+    user: userId,
+    status: {
+      $ne: "deleted",
+    },
+  })
+    .sort({
+      createdAt: -1,
+    })
+    .select(
+      "_id name status location profileIcon cqc insurance rating createdAt updatedAt",
+    )
+    .lean();
+
+  return branches.map((item) => ({
+    id: item._id,
+
+    type: "branch",
+
+    title: "Branch activity",
+
+    description: item.name,
+
+    status: item.status,
+
+    location: item.location || null,
+
+    profileIcon: item.profileIcon || "",
+
+    cqc: item.cqc || null,
+
+    insurance: item.insurance || null,
+
+    rating: item.rating || null,
+
+    createdAt: item.createdAt,
+
+    updatedAt: item.updatedAt,
+
+    icon: "solar:buildings-2-bold",
+  }));
+};
+// ============================================================
 // MONTHLY ACTIVITY
 // ============================================================
 
@@ -319,7 +367,6 @@ const getMonthlyActivity = async ({ userId }) => {
   const months = 12;
 
   const [bookings, bids] = await Promise.all([
-
     // Bookings belonging to supplier's jobs
     getMonthlyAggregation({
       Model: Booking,
@@ -744,6 +791,7 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
     bids,
     monthlyActivity,
     recentActivity,
+    branchesActivity,
     openJobs,
     winRateByRegion,
     shiftsAndEarnings,
@@ -772,6 +820,10 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
       userId,
     }),
 
+    getBranchesActivity({
+      userId,
+    }),
+
     getOpenJobs({
       userId,
       timezone,
@@ -788,10 +840,6 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
   ]);
 
   return {
-    // ========================================================
-    // SUMMARY
-    // ========================================================
-
     summary: {
       newJobs: jobs.newJobs,
       activeBookings: bookings.activeBookings,
@@ -800,20 +848,12 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
       activeStaff: staff.activeStaff,
     },
 
-    // ========================================================
-    // JOBS
-    // ========================================================
-
     jobs: {
       total: jobs.totalJobs,
       active: jobs.activeJobs,
       inactive: jobs.inactiveJobs,
       completed: jobs.completedJobs,
     },
-
-    // ========================================================
-    // BOOKINGS
-    // ========================================================
 
     bookings: {
       total: bookings.totalBookings,
@@ -824,20 +864,12 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
       cancelled: bookings.cancelledBookings,
     },
 
-    // ========================================================
-    // STAFF
-    // ========================================================
-
     staff: {
       total: staff.totalStaff,
       active: staff.activeStaff,
       pending: staff.pendingStaff,
       inactive: staff.inactiveStaff,
     },
-
-    // ========================================================
-    // BIDS
-    // ========================================================
 
     bids: {
       total: bids.totalBids,
@@ -847,21 +879,11 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
       withdrawn: bids.withdrawnBids,
     },
 
-    // ========================================================
-    // CHART
-    // ========================================================
-
     monthlyActivity,
-
-    // ========================================================
-    // RECENT ACTIVITY
-    // ========================================================
 
     recentActivity,
 
-    // ========================================================
-    // OPEN JOBS
-    // ========================================================
+    branchesActivity,
 
     openJobs,
 
@@ -881,6 +903,8 @@ module.exports = {
 
   getMonthlyActivity,
   getRecentActivity,
+  getBranchesActivity,
+
   getOpenJobs,
   getWinRateByRegion,
   getShiftsAndEarnings,

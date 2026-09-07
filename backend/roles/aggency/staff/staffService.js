@@ -1,5 +1,9 @@
 const { getCurrentDateInTimezone } = require("@helperUtils/responseUtil");
 const StaffRepo = require("./staffRepository");
+const Staff = require("./Staff");
+const Branches = require("../branches/Branches");
+const { User } = require("@UsersModel");
+const mongoose = require("mongoose");
 const { cache, invalidate } = require("@redisCache");
 const { registerUserUtility } = require("../../../controllers/authUtil");
 const formatStaff = require("./formator/formatStaff");
@@ -116,6 +120,99 @@ const createStaff = async (data, req, res) => {
   const staffRecord = await StaffRepo.createStaff(data);
 
   return staffRecord;
+};
+
+const importStaff = async (rows, userId) => {
+  const specialityValues = Staff.schema.path("speciality").caster.enumValues;
+  const imported = [];
+  const failed = [];
+
+  for (const [index, row] of rows.entries()) {
+    const rowNumber = index + 2;
+    try {
+      const staffId = String(row.staffId || row.staff || row.nurseId || "").trim();
+      const email = String(row.email || "").trim().toLowerCase();
+      const branchId = String(row.branchId || row.branch || "").trim();
+      const specialityInput = row.specialities || row.specialties || row.speciality;
+      let specialities;
+      if (Array.isArray(specialityInput)) {
+        specialities = specialityInput;
+      } else {
+        const specialityText = String(specialityInput || "").trim();
+        try {
+          specialities = JSON.parse(specialityText);
+        } catch {
+          specialities = specialityText
+            .split(/[;|]/)
+            .map((value) => value.trim())
+            .filter(Boolean);
+        }
+      }
+      if (!Array.isArray(specialities)) {
+        specialities = [String(specialities || "").trim()].filter(Boolean);
+      }
+
+      if ((!staffId && !email) || !branchId || !specialities.length) {
+        throw new Error("staffId or email, branchId, and speciality are required");
+      }
+
+      if (!specialities.every((value) => specialityValues.includes(value))) {
+        throw new Error(`speciality must contain only: ${specialityValues.join(", ")}`);
+      }
+
+      const nurse = staffId && mongoose.isValidObjectId(staffId)
+        ? await User.findById(staffId).select("name email profileIcon accountState")
+        : await User.findOne({ email }).select("name email profileIcon accountState");
+
+      if (!nurse || nurse.accountState?.userType !== "nurse") {
+        throw new Error("staff must reference an existing nurse");
+      }
+
+      if (!mongoose.isValidObjectId(branchId)) {
+        throw new Error("branchId must be a valid branch id");
+      }
+
+      const branch = await Branches.findOne({
+        _id: branchId,
+        user: userId,
+        status: { $ne: "deleted" },
+      }).select("_id");
+
+      if (!branch) {
+        throw new Error("branch was not found for this agency");
+      }
+
+      const existingStaff = await StaffRepo.findStaffByUserAndStaff(userId, nurse._id);
+      if (existingStaff) {
+        throw new Error("staff is already associated with this agency");
+      }
+
+      const staff = await StaffRepo.createStaff({
+        user: userId,
+        staff: nurse._id,
+        branch: branch._id,
+        name: row.name || nurse.name,
+        email: nurse.email,
+        phoneNumber: row.phoneNumber
+          ? JSON.parse(row.phoneNumber)
+          : row.phoneCode || row.phoneNumberValue
+            ? { code: row.phoneCode || "", number: row.phoneNumberValue || "" }
+            : undefined,
+        dob: row.dob || undefined,
+        gender: row.gender || undefined,
+        speciality: specialities,
+        ratePerHour: Number(row.ratePerHour),
+        platformPercent: Number(row.platformPercent || 0),
+        status: "pending",
+      });
+
+      imported.push({ row: rowNumber, id: staff._id });
+    } catch (error) {
+      failed.push({ row: rowNumber, message: error.message });
+    }
+  }
+
+  return { imported, failed };
 };
 
 const getStaff = async ({
@@ -350,6 +447,7 @@ const getMyStaffRequests = async ({ nurseId, page, limit }) => {
 
 module.exports = {
   createStaff,
+  importStaff,
   getStaff,
   getAvailableStaff,
   updateStaff,
