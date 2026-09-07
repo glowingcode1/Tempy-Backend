@@ -891,7 +891,7 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
 
     shiftsAndEarnings,
   };
-}; I am asking about C mobile environment and I think to check you can see that module in the sets for the Senaci Rata in Pass Set
+};
 
 module.exports = {
   getSupplierDashboardStats,
