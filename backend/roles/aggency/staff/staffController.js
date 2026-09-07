@@ -7,6 +7,8 @@ const {
   convertTimezoneToUtc,
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment");
+const csv = require("csv-parser");
+const { Readable } = require("stream");
 const StaffService = require("./staffService");
 const { customerTypes, supplierTypes } = require("@UsersModel");
 const { sendUserNotifications } = require("@notificationsUtil");
@@ -154,6 +156,69 @@ const createStaff = async (req, res) => {
       statusCode: 201,
       translationKey: "Staff_created_successfully",
       data: Staff,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
+const importStaff = async (req, res) => {
+  if (!req.file) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "staff_csv_file_required",
+    });
+  }
+
+  try {
+    const rows = await new Promise((resolve, reject) => {
+      const parsedRows = [];
+      Readable.from(req.file.buffer)
+        .pipe(
+          csv({
+            mapHeaders: ({ header }) => header.replace(/^\uFEFF/, "").trim(),
+          }),
+        )
+        .on("data", (row) => parsedRows.push(row))
+        .on("end", () => resolve(parsedRows))
+        .on("error", reject);
+    });
+
+    if (!rows.length) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "staff_csv_empty",
+      });
+    }
+
+    const userId =
+      req.user.userType === "admin" ? req.body.userId : req.user._id;
+    if (!userId) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "userId_required",
+      });
+    }
+
+    const result = await StaffService.importStaff(rows, userId);
+    return sendResponse({
+      res,
+      statusCode: result.failed.length ? 207 : 201,
+      translationKey: "Staff_import_completed",
+      data: {
+        total: rows.length,
+        imported: result.imported,
+        failed: result.failed,
+      },
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
@@ -545,6 +610,7 @@ const getMyStaffRequests = async (req, res) => {
 
 module.exports = {
   createStaff,
+  importStaff,
   getStaff,
   updateStaff,
   deleteStaff,
