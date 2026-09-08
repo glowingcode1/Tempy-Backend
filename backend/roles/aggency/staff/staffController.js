@@ -10,6 +10,7 @@ const moment = require("moment");
 const csv = require("csv-parser");
 const { Readable } = require("stream");
 const StaffService = require("./staffService");
+const { buildStaffCsvTemplate } = require("./staffImportUtil");
 const { customerTypes, supplierTypes } = require("@UsersModel");
 const { sendUserNotifications } = require("@notificationsUtil");
 const { NotificationTypes } = require("@NotificationsModel");
@@ -168,6 +169,20 @@ const createStaff = async (req, res) => {
   }
 };
 
+const parseCsvBuffer = (buffer) =>
+  new Promise((resolve, reject) => {
+    const rows = [];
+    Readable.from(buffer)
+      .pipe(
+        csv({
+          mapHeaders: ({ header }) => header.trim(),
+        }),
+      )
+      .on("data", (row) => rows.push(row))
+      .on("end", () => resolve(rows))
+      .on("error", reject);
+  });
+
 const importStaff = async (req, res) => {
   if (!req.file) {
     return sendResponse({
@@ -178,18 +193,7 @@ const importStaff = async (req, res) => {
   }
 
   try {
-    const rows = await new Promise((resolve, reject) => {
-      const parsedRows = [];
-      Readable.from(req.file.buffer)
-        .pipe(
-          csv({
-            mapHeaders: ({ header }) => header.replace(/^\uFEFF/, "").trim(),
-          }),
-        )
-        .on("data", (row) => parsedRows.push(row))
-        .on("end", () => resolve(parsedRows))
-        .on("error", reject);
-    });
+    const rows = await parseCsvBuffer(req.file.buffer);
 
     if (!rows.length) {
       return sendResponse({
@@ -209,17 +213,43 @@ const importStaff = async (req, res) => {
       });
     }
 
-    const result = await StaffService.importStaff(rows, userId);
+    const { summary, results } = await StaffService.importStaff({
+      rows,
+      userId,
+      req,
+    });
+
+    // 207 whenever the file was only partially applied, so the client can tell
+    // a clean import from one that needs the per-row report to be reviewed
+    const isPartial = summary.failed > 0 || summary.skipped > 0;
+
     return sendResponse({
       res,
-      statusCode: result.failed.length ? 207 : 201,
+      statusCode: isPartial ? 207 : 201,
       translationKey: "Staff_import_completed",
-      data: {
-        total: rows.length,
-        imported: result.imported,
-        failed: result.failed,
-      },
+      data: { summary, results },
     });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
+// Sample CSV showing the expected headers and value formats
+const getStaffImportTemplate = async (req, res) => {
+  try {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="staff-import-sample.csv"',
+    );
+
+    return res.status(200).send(buildStaffCsvTemplate());
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
     return sendResponse({
@@ -611,6 +641,7 @@ const getMyStaffRequests = async (req, res) => {
 module.exports = {
   createStaff,
   importStaff,
+  getStaffImportTemplate,
   getStaff,
   updateStaff,
   deleteStaff,

@@ -1,12 +1,22 @@
-const { getCurrentDateInTimezone } = require("@helperUtils/responseUtil");
+const {
+  getCurrentDateInTimezone,
+  getReadableErrorMessage,
+} = require("@helperUtils/responseUtil");
 const StaffRepo = require("./staffRepository");
-const Staff = require("./Staff");
 const Branches = require("../branches/Branches");
 const { User } = require("@UsersModel");
 const mongoose = require("mongoose");
 const { cache, invalidate } = require("@redisCache");
 const { registerUserUtility } = require("../../../controllers/authUtil");
 const formatStaff = require("./formator/formatStaff");
+const crypto = require("crypto");
+const { sendUserNotifications } = require("@notificationsUtil");
+const { NotificationTypes } = require("@NotificationsModel");
+const { sendEmailViaBrevo } = require("../../../helperUtils/emailUtil");
+const {
+  staffInvitationEmailTemplate,
+} = require("../../../helperUtils/emailTemplates");
+const { IMPORT_ACTIONS, parseStaffRow } = require("./staffImportUtil");
 const {
   getAllUsers,
 } = require("../../../roles/admin/usersManagement/usersService");
@@ -122,97 +132,418 @@ const createStaff = async (data, req, res) => {
   return staffRecord;
 };
 
-const importStaff = async (rows, userId) => {
-  const specialityValues = Staff.schema.path("speciality").caster.enumValues;
-  const imported = [];
-  const failed = [];
+// ---------------------------------------------------------------------------
+// CSV import
+// ---------------------------------------------------------------------------
 
-  for (const [index, row] of rows.entries()) {
+// registerUserUtility writes straight to the HTTP response on failure, so each
+// row gets a throwaway req/res pair (same approach as the DB bootstrap) and the
+// captured payload is reported against that row instead.
+const buildRegistrationContext = (req, body) => {
+  const captured = {};
+
+  const fakeReq = {
+    body,
+    query: {},
+    params: {},
+    header: (key) =>
+      typeof req?.header === "function" ? req.header(key) : null,
+  };
+
+  const fakeRes = {
+    req,
+    status(statusCode) {
+      captured.statusCode = statusCode;
+      return this;
+    },
+    json(payload) {
+      captured.payload = payload;
+      return this;
+    },
+  };
+
+  return { fakeReq, fakeRes, captured };
+};
+
+// New accounts get a throwaway password; the invite asks them to set their own
+const generateTemporaryPassword = () =>
+  `Tmp-${crypto.randomBytes(9).toString("base64url")}`;
+
+// Driver errors can embed the whole offending document — including the hashed
+// password — so a row report never repeats one verbatim.
+const SAFE_ROW_ERRORS = [
+  [
+    /unknown GeoJSON type|Can't extract geo keys/i,
+    "location could not be saved, check latitude and longitude",
+  ],
+  [
+    /duplicate key|already exists/i,
+    "a record with these details already exists",
+  ],
+];
+
+const toSafeRowMessage = (message, fallback) => {
+  const text = String(message || "").trim();
+  if (!text) return fallback;
+
+  for (const [pattern, safeMessage] of SAFE_ROW_ERRORS) {
+    if (pattern.test(text)) return safeMessage;
+  }
+
+  // Anything that looks like a dumped document is replaced outright
+  if (
+    text.length > 200 ||
+    text.includes("_id:") ||
+    text.includes("ObjectId(")
+  ) {
+    return fallback;
+  }
+
+  return text;
+};
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// A branch may be referenced by id or by name, and the same branch usually
+// repeats across rows, so resolved lookups are cached for the whole import.
+const resolveBranch = async (branchRef, userId, branchCache) => {
+  const cacheKey = branchRef.toLowerCase();
+  if (branchCache.has(cacheKey)) return branchCache.get(cacheKey);
+
+  const scope = { user: userId, status: { $ne: "deleted" } };
+  const branch = mongoose.isValidObjectId(branchRef)
+    ? await Branches.findOne({ ...scope, _id: branchRef }).select("_id name")
+    : await Branches.findOne({
+        ...scope,
+        name: new RegExp(`^${escapeRegex(branchRef)}$`, "i"),
+      }).select("_id name");
+
+  branchCache.set(cacheKey, branch);
+  return branch;
+};
+
+const notifyStaffRequest = ({ staffRecord, nurseId, req, agencyName }) => {
+  void sendUserNotifications({
+    recipientIds: [nurseId],
+    title: "New Staff Request",
+    body: `You have received a new staff request from ${agencyName}.`,
+    data: {
+      type: NotificationTypes.NEW_BOOKING,
+      objectType: "Staff",
+    },
+    sender: req?.user?._id,
+    objectId: staffRecord._id,
+    saveNotification: true,
+  });
+};
+
+const sendStaffInvitationEmail = ({
+  email,
+  staffName,
+  agencyName,
+  isNewAccount,
+}) => {
+  // Fire and forget: a failed invitation email must not fail the row
+  void sendEmailViaBrevo(
+    [email],
+    "You have a new staff request",
+    staffInvitationEmailTemplate({
+      staffName,
+      agencyName,
+      isNewAccount,
+      email,
+    }),
+  );
+};
+
+// Cases 1 and 2: the email is already registered on the platform.
+const inviteRegisteredUser = async ({
+  existingUser,
+  branch,
+  data,
+  userId,
+  req,
+  agencyName,
+}) => {
+  if (existingUser.accountState?.userType !== "nurse") {
+    return {
+      action: IMPORT_ACTIONS.FAILED,
+      message: `email is registered as a ${existingUser.accountState?.userType || "non nurse"} account and cannot be added as staff`,
+    };
+  }
+
+  const existingStaff = await StaffRepo.findStaffByUserAndStaff(
+    userId,
+    existingUser._id,
+  );
+
+  // Case 2: already part of this agency's staff -> no action taken
+  if (
+    existingStaff &&
+    existingStaff.status !== "left" &&
+    existingStaff.status !== "deleted"
+  ) {
+    return {
+      action: IMPORT_ACTIONS.SKIPPED,
+      staffId: existingStaff._id,
+      message: `already part of your staff (status: ${existingStaff.status})`,
+    };
+  }
+
+  // Left or removed earlier -> a fresh request may be sent, same as createStaff
+  if (existingStaff) {
+    existingStaff.branch = branch._id;
+    existingStaff.speciality = data.speciality;
+    existingStaff.ratePerHour = data.ratePerHour;
+    existingStaff.platformPercent = data.platformPercent;
+    existingStaff.status = "pending";
+
+    await existingStaff.save();
+
+    notifyStaffRequest({
+      staffRecord: existingStaff,
+      nurseId: existingUser._id,
+      req,
+      agencyName,
+    });
+    sendStaffInvitationEmail({
+      email: existingUser.email,
+      staffName: existingUser.name || data.name,
+      agencyName,
+      isNewAccount: false,
+    });
+
+    return {
+      action: IMPORT_ACTIONS.INVITED,
+      staffId: existingStaff._id,
+      message: "staff request sent again",
+    };
+  }
+
+  // Case 1: registered but never staff here -> send a staff request
+  const staffRecord = await StaffRepo.createStaff({
+    user: userId,
+    staff: existingUser._id,
+    branch: branch._id,
+    name: existingUser.name || data.name,
+    email: existingUser.email,
+    profileIcon: existingUser.profileIcon,
+    phoneNumber: data.phoneNumber,
+    dob: data.dob,
+    gender: data.gender,
+    location: data.location,
+    speciality: data.speciality,
+    ratePerHour: data.ratePerHour,
+    platformPercent: data.platformPercent,
+    status: "pending",
+  });
+
+  if (!staffRecord || staffRecord.error) {
+    return {
+      action: IMPORT_ACTIONS.FAILED,
+      message: staffRecord?.error || "Staff_creation_failed",
+    };
+  }
+
+  notifyStaffRequest({
+    staffRecord,
+    nurseId: existingUser._id,
+    req,
+    agencyName,
+  });
+  sendStaffInvitationEmail({
+    email: existingUser.email,
+    staffName: existingUser.name || data.name,
+    agencyName,
+    isNewAccount: false,
+  });
+
+  return {
+    action: IMPORT_ACTIONS.INVITED,
+    staffId: staffRecord._id,
+    message: "staff request sent",
+  };
+};
+
+// Case 3: the email is unknown -> run the new nurse creation flow.
+const createNurseAndInvite = async ({
+  branch,
+  data,
+  userId,
+  req,
+  agencyName,
+}) => {
+  if (!data.taxNumber) {
+    return {
+      action: IMPORT_ACTIONS.FAILED,
+      message: "taxNumber is required to create a new nurse account",
+    };
+  }
+
+  const passwordWasGenerated = !data.password;
+  const { fakeReq, fakeRes, captured } = buildRegistrationContext(req, {
+    email: data.email,
+    name: data.name,
+    password: data.password || generateTemporaryPassword(),
+    userType: "nurse",
+    phoneNumber: data.phoneNumber,
+    dob: data.dob,
+    gender: data.gender,
+    profileIcon: data.profileIcon,
+    timezone: data.timezone || req?.user?.timezone,
+    location: data.location,
+    taxNumber: data.taxNumber,
+    governmentIdentity: data.governmentIdentity,
+    degree: data.degree,
+    certification: data.certification,
+  });
+
+  const registration = await registerUserUtility(fakeReq, fakeRes, true);
+
+  if (!registration?.success) {
+    return {
+      action: IMPORT_ACTIONS.FAILED,
+      message: toSafeRowMessage(
+        registration?.error || captured.payload?.message,
+        "nurse account could not be created",
+      ),
+    };
+  }
+
+  const nurseId = registration.user.basicInfo._id;
+
+  const staffRecord = await StaffRepo.createStaff({
+    user: userId,
+    staff: nurseId,
+    branch: branch._id,
+    name: data.name,
+    email: data.email,
+    profileIcon: data.profileIcon,
+    phoneNumber: data.phoneNumber,
+    dob: data.dob,
+    gender: data.gender,
+    location: data.location,
+    speciality: data.speciality,
+    ratePerHour: data.ratePerHour,
+    platformPercent: data.platformPercent,
+    status: "pending",
+  });
+
+  if (!staffRecord || staffRecord.error) {
+    return {
+      action: IMPORT_ACTIONS.FAILED,
+      message: staffRecord?.error || "Staff_creation_failed",
+    };
+  }
+
+  notifyStaffRequest({ staffRecord, nurseId, req, agencyName });
+  sendStaffInvitationEmail({
+    email: data.email,
+    staffName: data.name,
+    agencyName,
+    isNewAccount: true,
+  });
+
+  return {
+    action: IMPORT_ACTIONS.CREATED,
+    staffId: staffRecord._id,
+    nurseId,
+    message: passwordWasGenerated
+      ? "nurse account created, invitation sent to set a password"
+      : "nurse account created and staff request sent",
+  };
+};
+
+/**
+ * Processes every CSV row on its own so one bad row never blocks the rest.
+ * Each email lands in exactly one of three buckets:
+ *   - registered but not our staff  -> staff request sent   (invited)
+ *   - registered and already staff  -> no action taken      (skipped)
+ *   - not registered                -> nurse created + request sent (created)
+ */
+const importStaff = async ({ rows, userId, req }) => {
+  const branchCache = new Map();
+  const results = [];
+  const summary = {
+    total: rows.length,
+    invited: 0,
+    created: 0,
+    skipped: 0,
+    failed: 0,
+  };
+
+  const agencyName = req?.user?.companyName || req?.user?.name || "an agency";
+
+  for (const [index, rawRow] of rows.entries()) {
+    // +2 so the number matches the spreadsheet row the agency is looking at
     const rowNumber = index + 2;
+    const { errors, data } = parseStaffRow(rawRow);
+    const entry = {
+      row: rowNumber,
+      email: data.email || null,
+      name: data.name || null,
+    };
+
+    if (errors.length) {
+      results.push({
+        ...entry,
+        action: IMPORT_ACTIONS.FAILED,
+        message: errors.join("; "),
+      });
+      summary.failed += 1;
+      continue;
+    }
+
     try {
-      const staffId = String(row.staffId || row.staff || row.nurseId || "").trim();
-      const email = String(row.email || "").trim().toLowerCase();
-      const branchId = String(row.branchId || row.branch || "").trim();
-      const specialityInput = row.specialities || row.specialties || row.speciality;
-      let specialities;
-      if (Array.isArray(specialityInput)) {
-        specialities = specialityInput;
-      } else {
-        const specialityText = String(specialityInput || "").trim();
-        try {
-          specialities = JSON.parse(specialityText);
-        } catch {
-          specialities = specialityText
-            .split(/[;|]/)
-            .map((value) => value.trim())
-            .filter(Boolean);
-        }
-      }
-      if (!Array.isArray(specialities)) {
-        specialities = [String(specialities || "").trim()].filter(Boolean);
-      }
-
-      if ((!staffId && !email) || !branchId || !specialities.length) {
-        throw new Error("staffId or email, branchId, and speciality are required");
-      }
-
-      if (!specialities.every((value) => specialityValues.includes(value))) {
-        throw new Error(`speciality must contain only: ${specialityValues.join(", ")}`);
-      }
-
-      const nurse = staffId && mongoose.isValidObjectId(staffId)
-        ? await User.findById(staffId).select("name email profileIcon accountState")
-        : await User.findOne({ email }).select("name email profileIcon accountState");
-
-      if (!nurse || nurse.accountState?.userType !== "nurse") {
-        throw new Error("staff must reference an existing nurse");
-      }
-
-      if (!mongoose.isValidObjectId(branchId)) {
-        throw new Error("branchId must be a valid branch id");
-      }
-
-      const branch = await Branches.findOne({
-        _id: branchId,
-        user: userId,
-        status: { $ne: "deleted" },
-      }).select("_id");
+      const branch = await resolveBranch(data.branch, userId, branchCache);
 
       if (!branch) {
-        throw new Error("branch was not found for this agency");
+        results.push({
+          ...entry,
+          action: IMPORT_ACTIONS.FAILED,
+          message: `branch ${data.branch} was not found for this agency`,
+        });
+        summary.failed += 1;
+        continue;
       }
 
-      const existingStaff = await StaffRepo.findStaffByUserAndStaff(userId, nurse._id);
-      if (existingStaff) {
-        throw new Error("staff is already associated with this agency");
-      }
+      const existingUser = await User.findOne({ email: data.email }).select(
+        "name email profileIcon accountState",
+      );
 
-      const staff = await StaffRepo.createStaff({
-        user: userId,
-        staff: nurse._id,
-        branch: branch._id,
-        name: row.name || nurse.name,
-        email: nurse.email,
-        phoneNumber: row.phoneNumber
-          ? JSON.parse(row.phoneNumber)
-          : row.phoneCode || row.phoneNumberValue
-            ? { code: row.phoneCode || "", number: row.phoneNumberValue || "" }
-            : undefined,
-        dob: row.dob || undefined,
-        gender: row.gender || undefined,
-        speciality: specialities,
-        ratePerHour: Number(row.ratePerHour),
-        platformPercent: Number(row.platformPercent || 0),
-        status: "pending",
-      });
+      const outcome = existingUser
+        ? await inviteRegisteredUser({
+            existingUser,
+            branch,
+            data,
+            userId,
+            req,
+            agencyName,
+          })
+        : await createNurseAndInvite({
+            branch,
+            data,
+            userId,
+            req,
+            agencyName,
+          });
 
-      imported.push({ row: rowNumber, id: staff._id });
+      results.push({ ...entry, branch: branch.name, ...outcome });
+      summary[outcome.action] += 1;
     } catch (error) {
-      failed.push({ row: rowNumber, message: error.message });
+      results.push({
+        ...entry,
+        action: IMPORT_ACTIONS.FAILED,
+        message: toSafeRowMessage(
+          getReadableErrorMessage(error).message,
+          "row could not be imported",
+        ),
+      });
+      summary.failed += 1;
     }
   }
 
-  return { imported, failed };
+  return { summary, results };
 };
 
 const getStaff = async ({

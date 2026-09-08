@@ -674,6 +674,59 @@ const menuOrderConfirmationEmailTemplate = ({
   `;
 };
 
+const staffInvitationEmailTemplate = ({
+  staffName,
+  agencyName,
+  isNewAccount,
+  email,
+}) => {
+  const currentYear = new Date().getFullYear();
+  const headerBgColor = "#60c0f7";
+  const headerTextColor = "#ffffff";
+  const footerColor = "#888888";
+
+  const accountNote = isNewAccount
+    ? `<p>An account has been created for you with the email <strong>${email}</strong>. Use the "Forgot password" option in the app to set your password and sign in.</p>`
+    : `<p>Sign in with your existing ${APP_NAME} account (<strong>${email}</strong>) to review the request.</p>`;
+
+  return `
+  <!DOCTYPE html>
+  <html>
+    <body style="margin:0; padding:0; font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center" bgcolor="${headerBgColor}" style="padding: 10px 0; color: ${headerTextColor};">
+            <h2 style="margin:0; font-size:24px;">Staff Invitation</h2>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table width="600" align="center" cellpadding="0" cellspacing="0" style="margin:20px auto;">
+              <tr>
+                <td>
+                  <p>Hello ${staffName},</p>
+                  <p style="font-size: 1.2em; margin: 15px 0;">
+                    <strong>${agencyName}</strong> has invited you to join their staff on ${APP_NAME}.
+                  </p>
+                  ${accountNote}
+                  <p>You can accept or decline this request from your staff requests screen.</p>
+                  <p>If you have any questions, please contact our support team.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding: 20px 0; color: ${footerColor}; font-size: 12px;">
+            &copy; ${currentYear} ${APP_NAME}. All rights reserved.
+          </td>
+        </tr>
+      </table>
+    </body>
+  </html>
+  `;
+};
+
 // Export both functions
 module.exports = {
   registrationViaLinkEmailTemplate,
@@ -684,5 +737,6 @@ module.exports = {
   stripeEmailTemplate,
   otpEmailTemplate,
   OTP_PURPOSE_CONFIG,
-  menuOrderConfirmationEmailTemplate
+  menuOrderConfirmationEmailTemplate,
+  staffInvitationEmailTemplate,
 };

@@ -74,12 +74,13 @@ function calculateDistance(
 const isNullLocationCoordinates = (coords = []) => {
   if (!Array.isArray(coords) || coords.length !== 2) return true;
 
-  const [lng, lat] = coords.map(Number);
+  // Project-wide convention: [latitude, longitude]
+  const [lat, lng] = coords.map(Number);
 
   return (
-    Number.isNaN(lng) ||
     Number.isNaN(lat) ||
-    (lng === 0 && lat === 0)
+    Number.isNaN(lng) ||
+    (lat === 0 && lng === 0)
   );
 };
 
