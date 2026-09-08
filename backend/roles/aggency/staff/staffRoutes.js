@@ -3,6 +3,7 @@ const moment = require("moment");
 const {
   createStaff,
   importStaff,
+  getStaffImportTemplate,
   getStaff,
   updateStaff,
   deleteStaff,
@@ -38,6 +39,13 @@ router.post(
   StaffRateLimiter,
   createStaff,
 );
+// Download the sample CSV — must stay above "/:id" so it is not read as an id
+router.get(
+  "/import/template",
+  roleMiddleware(["admin", "agency", "homeCareCompany"]),
+  getStaffImportTemplate,
+);
+// Bulk create/invite staff from a CSV file
 router.post(
   "/import",
   roleMiddleware(["admin", "agency", "homeCareCompany"]),

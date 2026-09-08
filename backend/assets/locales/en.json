@@ -162,6 +162,8 @@
   "Staff_import_completed": "Staff CSV import completed",
   "staff_csv_file_required": "A staff CSV file is required",
   "staff_csv_empty": "The staff CSV file is empty",
+  "only_csv_files_are_allowed": "Only CSV files are allowed",
+  "csv_file_too_large": "The CSV file is too large, the maximum size is 5 MB",
   "support_requests_fetched_successfully": "Support requests fetched successfully",
   "missing_support_request_id": "Missing support request id",
   "support_request_not_found": "Support request not found",

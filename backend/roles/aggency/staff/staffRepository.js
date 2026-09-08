@@ -12,8 +12,10 @@ const moment = require("moment-timezone");
 const Booking = require("../../../roles/careHome/booking/Booking");
 const createStaff = async (data) => {
   try {
+    // Scoped to the employer: the same nurse may be staff at several employers,
+    // which is what the { user, staff } unique index allows.
     const existingStaff = await Staff.findOne({
-      email: data.email,
+      user: data.user,
       staff: data.staff,
     });
     if (existingStaff) {
@@ -1024,7 +1026,7 @@ const findStaffNearJob = async (user, jobDetails, km = 50) => {
                                   {
                                     $sin: {
                                       $degreesToRadians: {
-                                        $arrayElemAt: ["$$coords", 1],
+                                        $arrayElemAt: ["$$coords", 0],
                                       },
                                     },
                                   },
@@ -1036,7 +1038,7 @@ const findStaffNearJob = async (user, jobDetails, km = 50) => {
                                   {
                                     $cos: {
                                       $degreesToRadians: {
-                                        $arrayElemAt: ["$$coords", 1],
+                                        $arrayElemAt: ["$$coords", 0],
                                       },
                                     },
                                   },
@@ -1045,7 +1047,7 @@ const findStaffNearJob = async (user, jobDetails, km = 50) => {
                                       $subtract: [
                                         {
                                           $degreesToRadians: {
-                                            $arrayElemAt: ["$$coords", 0],
+                                            $arrayElemAt: ["$$coords", 1],
                                           },
                                         },
                                         { $degreesToRadians: lng },

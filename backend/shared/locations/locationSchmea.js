@@ -10,6 +10,7 @@ const LocationSchema = new mongoose.Schema(
       type: String,
       enum: ["Point"],
     },
+    // Project-wide convention: [latitude, longitude]
     coordinates: {
       type: [Number],
       required: false,
@@ -45,8 +46,18 @@ const LocationSchema = new mongoose.Schema(
   },
   { _id: false },
 );
+// The schema default materialises `coordinates: []` with no `type`, which a
+// 2dsphere index rejects outright ("unknown GeoJSON type"). Normalise the empty
+// case to [0, 0] — the sentinel the distance helpers already read as "no
+// location" — so a document without coordinates stays storable and indexable.
 LocationSchema.pre("validate", function () {
-  if (this.coordinates?.length === 2 && !this.type) {
+  const [latitude, longitude] = this.coordinates || [];
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    this.coordinates = [0, 0];
+  }
+
+  if (!this.type) {
     this.type = "Point";
   }
 });
