@@ -10,6 +10,7 @@ const LocationSchema = new mongoose.Schema(
       type: String,
       enum: ["Point"],
     },
+    // Project-wide convention: [latitude, longitude]
     coordinates: {
       type: [Number],
       required: false,

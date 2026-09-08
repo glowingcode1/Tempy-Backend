@@ -559,9 +559,10 @@ const hasShiftPassed = ({ date, endTime }) => {
   shiftEnd.setUTCHours(hours, minutes, 0, 0);
   return Date.now() > shiftEnd.getTime();
 };
+// Application locations are represented as [latitude, longitude].
 const isWithinRadius = (location1, location2, radiusInKm = 1) => {
-  const [lng1, lat1] = location1.coordinates;
-  const [lng2, lat2] = location2.coordinates;
+  const [lat1, lng1] = location1.coordinates;
+  const [lat2, lng2] = location2.coordinates;
 
   const toRadians = (degrees) => (degrees * Math.PI) / 180;
   const earthRadius = 6371; // km

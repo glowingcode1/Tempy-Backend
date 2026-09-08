@@ -1,0 +1,4 @@
+name,email,phoneCode,phoneNumber,dob,gender,branch,speciality,ratePerHour,platformPercent,taxNumber,password,fullAddress,city,state (optional),country,postalCode,latitude (optional),longitude (optional)
+Alice Morgan,alice.morgan@example.com,+44,7700900001,1992-04-18,Female,London Central,generalNurse;elderlyCare,24.5,10,NI1234567,,12 Baker Street,London,Greater London,United Kingdom,NW1 6XE,51.5237,-0.1585
+Daniel Okafor,daniel.okafor@example.com,+44,7700900002,1988-11-02,Male,London Central,mentalHealth,28,12,NI7654321,,44 Kings Road,London,Greater London,United Kingdom,SW3 4UD,,
+Priya Sharma,priya.sharma@example.com,+44,7700900003,1995-07-21,Female,Manchester North,healthcareAssistant;supportWorker,19.75,8,NI9988776,,8 Oxford Road,Manchester,Greater Manchester,United Kingdom,M1 3BB,,
