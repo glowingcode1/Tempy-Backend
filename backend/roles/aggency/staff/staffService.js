@@ -169,6 +169,39 @@ const buildRegistrationContext = (req, body) => {
 const generateTemporaryPassword = () =>
   `Tmp-${crypto.randomBytes(9).toString("base64url")}`;
 
+// Driver errors can embed the whole offending document — including the hashed
+// password — so a row report never repeats one verbatim.
+const SAFE_ROW_ERRORS = [
+  [
+    /unknown GeoJSON type|Can't extract geo keys/i,
+    "location could not be saved, check latitude and longitude",
+  ],
+  [
+    /duplicate key|already exists/i,
+    "a record with these details already exists",
+  ],
+];
+
+const toSafeRowMessage = (message, fallback) => {
+  const text = String(message || "").trim();
+  if (!text) return fallback;
+
+  for (const [pattern, safeMessage] of SAFE_ROW_ERRORS) {
+    if (pattern.test(text)) return safeMessage;
+  }
+
+  // Anything that looks like a dumped document is replaced outright
+  if (
+    text.length > 200 ||
+    text.includes("_id:") ||
+    text.includes("ObjectId(")
+  ) {
+    return fallback;
+  }
+
+  return text;
+};
+
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // A branch may be referenced by id or by name, and the same branch usually
@@ -370,10 +403,10 @@ const createNurseAndInvite = async ({
   if (!registration?.success) {
     return {
       action: IMPORT_ACTIONS.FAILED,
-      message:
-        registration?.error ||
-        captured.payload?.message ||
+      message: toSafeRowMessage(
+        registration?.error || captured.payload?.message,
         "nurse account could not be created",
+      ),
     };
   }
 
@@ -501,7 +534,10 @@ const importStaff = async ({ rows, userId, req }) => {
       results.push({
         ...entry,
         action: IMPORT_ACTIONS.FAILED,
-        message: getReadableErrorMessage(error).message,
+        message: toSafeRowMessage(
+          getReadableErrorMessage(error).message,
+          "row could not be imported",
+        ),
       });
       summary.failed += 1;
     }

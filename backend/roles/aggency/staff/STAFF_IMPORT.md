@@ -36,7 +36,8 @@ agency or any other account type, the row fails.
 ## Columns
 
 Headers are matched case-insensitively and ignore spaces/underscores, so
-`Full Name`, `full_name` and `fullName` are all accepted.
+`Full Name`, `full_name` and `fullName` are all accepted. Parenthetical
+annotations are stripped too, so `latitude (optional)` still matches `latitude`.
 
 | Column            | Required            | Notes                                                        |
 | ----------------- | ------------------- | ------------------------------------------------------------ |

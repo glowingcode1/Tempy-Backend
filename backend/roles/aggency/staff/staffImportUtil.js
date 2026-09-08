@@ -46,12 +46,16 @@ const COLUMN_ALIASES = {
   longitude: ["longitude", "lng", "long"],
 };
 
-// "Phone Number", "phone_number" and "phoneNumber" all collapse to "phonenumber"
+// "Phone Number", "phone_number" and "phoneNumber" all collapse to "phonenumber".
+// Headers are often annotated in the spreadsheet ("latitude (optional)"), so the
+// parenthetical is dropped before matching rather than silently missing the column.
 const BOM_PREFIX = new RegExp("^\uFEFF");
+const HEADER_ANNOTATION = /\([^)]*\)/g;
 
 const normalizeKey = (key) =>
   String(key || "")
     .replace(BOM_PREFIX, "")
+    .replace(HEADER_ANNOTATION, "")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
