@@ -134,8 +134,9 @@ backend/extraTranslations.json
 /scripts.js
 scripts.js/renameModule.js
 /backend/database_backups
-backend\roles\aggency\staff\STAFF_IMPORT.md
+/backend\roles\aggency\staff\STAFF_IMPORT.md
 .env.localhost
 .env.mobileapps
 backend/secretAssets/serviceAccountKey.json
 scripts/combine-files.js
+backend/roles/aggency/staff/STAFF_IMPORT.md
