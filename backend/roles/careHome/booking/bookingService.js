@@ -25,6 +25,9 @@ const {
 } = require("../../../roles/aggency/staff/staffRepository");
 const { customerTypes, supplierTypes } = require("@UsersModel");
 const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
+const {
+  getReviewsForObjects,
+} = require("../../../commonModules/reviews/reviewRepository");
 const reviewService = require("../../../commonModules/reviews/reviewService");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
@@ -402,20 +405,26 @@ const getBooking = async ({
     longitude,
     km,
   });
-  const formatedBooking = await Promise.all(
-    booking.map(async (job) => {
-      const formattedBooking = formatBookingToTimezone(job, timezone);
-      const { reviews, hasReview } = await reviewService.getReviewsByType({
-        reviewType: "booking",
-        entityId: job._id,
-        currentUserId,
-        limit: 0,
-        timezone,
-      });
+  // One aggregation for the whole page instead of two per row. Each party
+  // sees only their own review of a booking, plus whether they left one.
+  const reviewsByBooking = await getReviewsForObjects({
+    objectIds: booking.map((b) => b._id),
+    objectType: "Booking",
+    currentUserId,
+    onlyOwn: true,
+    limit: 0,
+  });
 
-      return { ...formattedBooking, reviews, hasReview };
-    }),
-  );
+  const formatedBooking = booking.map((job) => {
+    const formattedBooking = formatBookingToTimezone(job, timezone);
+    const reviewContext = reviewsByBooking.get(String(job._id));
+
+    return {
+      ...formattedBooking,
+      reviews: reviewContext?.reviews || [],
+      hasReview: reviewContext?.hasReview || false,
+    };
+  });
 
   return { Booking: formatedBooking, meta };
 };
@@ -510,6 +519,7 @@ const getBookingDetails = async (id, timezone, currentUserId) => {
     reviewType: "booking",
     entityId: id,
     currentUserId,
+    onlyOwn: true,
     timezone,
   });
 

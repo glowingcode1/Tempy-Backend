@@ -8,6 +8,9 @@ const {
   getShiftEndUtc,
   formatShiftToTimezone,
 } = require("@helperUtils/responseUtil");
+const {
+  withUserReviews,
+} = require("../../../commonModules/reviews/reviewRepository");
 
 /* =========================================================
    CONSTANTS
@@ -403,7 +406,9 @@ const getHomeData = async ({ userId, timezone, userType }) => {
     }),
   ]);
 
-  const formattedUser = formatUserResponse(user);
+  const formattedUser = formatUserResponse(
+    await withUserReviews(user, { currentUserId: userId }),
+  );
 
   return {
     user: formattedUser,

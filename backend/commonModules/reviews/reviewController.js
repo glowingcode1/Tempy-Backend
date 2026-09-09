@@ -27,8 +27,18 @@ const createReview = async (req, res) => {
   )
     return;
 
-  const { reviewType, objectId, rating, comment = "" } = req.body;
+  const { reviewType, objectId, rating, comment = "", bookingId } = req.body;
   const currentUserId = req.user._id;
+
+  // Only branch reviews take a bookingId; for booking reviews the objectId is
+  // already the booking, and user reviews are not tied to one.
+  if (bookingId && !mongoose.isValidObjectId(bookingId)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_booking_id",
+    });
+  }
 
   // Validate rating
   if (typeof rating !== "number" || rating < 1 || rating > 5) {
@@ -45,6 +55,7 @@ const createReview = async (req, res) => {
     rating,
     comment,
     currentUserId,
+    bookingId,
   };
   const timezone = req.user?.timezone || "UTC";
 
