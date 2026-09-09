@@ -196,7 +196,16 @@ const getBooking = async ({
     ...(employer && { employer: new mongoose.Types.ObjectId(employer) }),
   };
 
-  const [total, active, pending, inactive, deleted, withdraw] =
+  const [
+    total,
+    active,
+    pending,
+    inProgress,
+    completed,
+    inactive,
+    deleted,
+    withdraw,
+  ] =
     await Promise.all([
       Booking.countDocuments({
         ...countFilter,
@@ -210,6 +219,14 @@ const getBooking = async ({
       Booking.countDocuments({
         ...countFilter,
         status: "pending",
+      }),
+      Booking.countDocuments({
+        ...countFilter,
+        status: "inProgress",
+      }),
+      Booking.countDocuments({
+        ...countFilter,
+        status: "completed",
       }),
 
       Booking.countDocuments({
@@ -232,6 +249,8 @@ const getBooking = async ({
     total,
     active,
     pending,
+    inProgress,
+    completed,
     inactive,
     withdraw,
     deleted,
@@ -339,7 +358,16 @@ const getBookingByJob = async ({
     ...(shift && { "shift._id": new mongoose.Types.ObjectId(shift) }),
   };
 
-  const [total, active, pending, inactive, deleted, withdraw] =
+  const [
+    total,
+    active,
+    pending,
+    inProgress,
+    completed,
+    inactive,
+    deleted,
+    withdraw,
+  ] =
     await Promise.all([
       Booking.countDocuments({
         ...countFilter,
@@ -353,6 +381,14 @@ const getBookingByJob = async ({
       Booking.countDocuments({
         ...countFilter,
         status: "pending",
+      }),
+      Booking.countDocuments({
+        ...countFilter,
+        status: "inProgress",
+      }),
+      Booking.countDocuments({
+        ...countFilter,
+        status: "completed",
       }),
 
       Booking.countDocuments({
@@ -375,6 +411,8 @@ const getBookingByJob = async ({
     total,
     active,
     pending,
+    inProgress,
+    completed,
     inactive,
     withdraw,
     deleted,

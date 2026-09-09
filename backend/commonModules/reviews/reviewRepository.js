@@ -31,11 +31,27 @@ const reviewPopulate = [
 
 const createReview = async (data = {}) => {
   const created = await Review.create(data);
-  return Review.findById(created._id);
+  const review = await Review.findById(created._id).populate(reviewPopulate);
+  return formatReviews([review])[0];
 };
 
 const findReviewByUniqueScope = async ({ subject, object }) => {
   return Review.findOne({ subject, object });
+};
+
+const hasReview = async ({ subject, object, objectUser, reviewType }) => {
+  if (!subject || (!object && !objectUser)) return false;
+
+  return Boolean(
+    await Review.exists({
+      subject: new mongoose.Types.ObjectId(subject),
+      ...(object ? { object: new mongoose.Types.ObjectId(object) } : {}),
+      ...(objectUser
+        ? { objectUser: new mongoose.Types.ObjectId(objectUser) }
+        : {}),
+      ...(reviewType ? { reviewType } : {}),
+    }),
+  );
 };
 /**
  * Enrich reviews with question details and selectedOptionDetails
@@ -292,11 +308,13 @@ const findReviewById = async (id) => {
   return Review.findById(id).populate(reviewPopulate);
 };
 const findReviewByUser = async (userId) => {
-  return Review.find({
+  const reviews = await Review.find({
     objectUser: new mongoose.Types.ObjectId(userId),
   })
-    .populate("subject", "name profileIcon")
+    .populate("subject", "name email profileIcon accountState")
     .lean();
+
+  return formatReviews(reviews);
 };
 const findReviewByBranch = async (branchIds = []) => {
   if (!branchIds.length) return [];
@@ -331,10 +349,12 @@ const findReviewByBranch = async (branchIds = []) => {
 };
 
 const updateReviewById = async (id, data = {}) => {
-  return Review.findByIdAndUpdate(id, data, {
+  const review = await Review.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
   }).populate(reviewPopulate);
+
+  return review ? formatReviews([review])[0] : review;
 };
 
 const deleteReviewById = async (id) => {
@@ -437,6 +457,7 @@ const findReviewByStaff = async (staffIds = []) => {
 module.exports = {
   createReview,
   findReviewByUniqueScope,
+  hasReview,
   getReviews,
   getRatingStats,
   findReviewById,

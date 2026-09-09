@@ -107,6 +107,7 @@ const getReviewsByType = async ({
   page = 1,
   limit = 10,
   timezone = "UTC",
+  currentUserId,
 }) => {
   const filter = {
     reviewType,
@@ -118,9 +119,17 @@ const getReviewsByType = async ({
     reviewRepository.getReviews(filter, { skip: (page - 1) * limit, limit }),
     reviewRepository.getRatingStats(filter),
   ]);
+  const hasUserReview = currentUserId
+    ? await reviewRepository.hasReview({
+        subject: currentUserId,
+        object: entityId,
+        reviewType,
+      })
+    : false;
 
   return {
     reviews,
+    hasReview: hasUserReview,
     // reviews: formatReview(reviews, timezone),
     meta: {
       ...generateMeta(page, limit, total),
@@ -215,6 +224,7 @@ const getReview = async ({
   page = 1,
   limit = 10,
   timezone = "UTC",
+  currentUserId,
 }) => {
   const filter = {
     objectUser: new mongoose.Types.ObjectId(objectUser),
@@ -223,9 +233,16 @@ const getReview = async ({
     reviewRepository.getReviews(filter, { skip: (page - 1) * limit, limit }),
     reviewRepository.getRatingStats(filter),
   ]);
+  const hasUserReview = currentUserId
+    ? await reviewRepository.hasReview({
+        subject: currentUserId,
+        objectUser,
+      })
+    : false;
 
   return {
     reviews,
+    hasReview: hasUserReview,
     // reviews: formatReview(reviews, timezone),
     meta: {
       ...generateMeta(page, limit, total),

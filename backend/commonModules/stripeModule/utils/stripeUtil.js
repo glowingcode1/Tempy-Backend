@@ -1,5 +1,6 @@
 const UsersStripeAccounts = require("../models/UsersStripeAccounts");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const { DEFAULT_CURRENCY } = require("@helperUtils/constants");
 
 /* -----------------------------
    CUSTOMER
@@ -235,7 +236,7 @@ async function createPaymentIntent({
 
     return await stripe.paymentIntents.create({
       amount: convertedAmount,
-      currency: currency || "USD",
+      currency: currency || DEFAULT_CURRENCY,
       customer: customer.id,
       payment_method,
       confirm: true,

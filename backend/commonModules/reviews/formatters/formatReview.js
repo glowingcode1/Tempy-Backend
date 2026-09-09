@@ -92,6 +92,15 @@ const formatReview = (reviews, timezone = "UTC") => {
       object: reviewObject.object,
       bookingId: reviewObject.bookingId,
       subject: reviewObject.subject,
+      basicInfo: reviewObject.subject
+        ? {
+            _id: reviewObject.subject._id,
+            name: reviewObject.subject.name,
+            email: reviewObject.subject.email,
+            profileIcon: reviewObject.subject.profileIcon,
+            accountState: reviewObject.subject.accountState,
+          }
+        : null,
       objectUser: reviewObject.objectUser,
       rating: reviewObject.rating,
       comment: reviewObject.comment,
@@ -119,11 +128,21 @@ const addFullImageToUser = (user) => {
 
 const formatReviewPhoto = (review) => {
   const obj = review.toObject ? review.toObject() : { ...review };
+  const subject = addFullImageToUser(obj.subject);
 
   return {
     ...obj,
 
-    subject: addFullImageToUser(obj.subject),
+    subject,
+    basicInfo: subject
+      ? {
+          _id: subject._id,
+          name: subject.name,
+          email: subject.email,
+          profileIcon: subject.profileIcon,
+          accountState: subject.accountState,
+        }
+      : null,
 
     objectUser: addFullImageToUser(obj.objectUser),
   };

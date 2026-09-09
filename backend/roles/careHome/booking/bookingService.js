@@ -25,6 +25,7 @@ const {
 } = require("../../../roles/aggency/staff/staffRepository");
 const { customerTypes, supplierTypes } = require("@UsersModel");
 const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
+const reviewService = require("../../../commonModules/reviews/reviewService");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
 const WEATHER_API_URL = process.env.WEATHER_API_URL;
@@ -383,6 +384,7 @@ const getBooking = async ({
   latitude,
   longitude,
   km,
+  currentUserId,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -400,9 +402,20 @@ const getBooking = async ({
     longitude,
     km,
   });
-  const formatedBooking = booking.map((job) => {
-    return formatBookingToTimezone(job, timezone);
-  });
+  const formatedBooking = await Promise.all(
+    booking.map(async (job) => {
+      const formattedBooking = formatBookingToTimezone(job, timezone);
+      const { reviews, hasReview } = await reviewService.getReviewsByType({
+        reviewType: "booking",
+        entityId: job._id,
+        currentUserId,
+        limit: 0,
+        timezone,
+      });
+
+      return { ...formattedBooking, reviews, hasReview };
+    }),
+  );
 
   return { Booking: formatedBooking, meta };
 };
@@ -485,14 +498,22 @@ const updateBooking = async (id, data) => {
   return Booking;
 };
 
-const getBookingDetails = async (id, timezone) => {
+const getBookingDetails = async (id, timezone, currentUserId) => {
   const Booking = await BookingRepo.findBookingById(id);
 
   if (!Booking) {
     return null;
   }
 
-  return formatBookingToTimezone(Booking, timezone);
+  const formattedBooking = formatBookingToTimezone(Booking, timezone);
+  const { reviews, hasReview } = await reviewService.getReviewsByType({
+    reviewType: "booking",
+    entityId: id,
+    currentUserId,
+    timezone,
+  });
+
+  return { ...formattedBooking, reviews, hasReview };
 };
 const deleteBooking = async (id) => {
   if (!id) throw new Error("Booking ID is required");

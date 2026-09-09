@@ -2,6 +2,7 @@ const Branches = require("./Branches");
 const BranchRepo = require("./branchesRepository");
 const formatBranchToTimezone = require("./formator/formatBranchToTimezone");
 const reviewRepository = require("../../../commonModules/reviews/reviewRepository");
+const reviewService = require("../../../commonModules/reviews/reviewService");
 
 const createBranch = async (data) => {
   const branch = await BranchRepo.createBranch(data);
@@ -16,6 +17,7 @@ const getBranch = async ({
   status,
   user,
   summary,
+  currentUserId,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
   if (summary) {
@@ -39,7 +41,20 @@ const getBranch = async ({
     skip,
   });
 
-  const formatedBranch = branch.map((b) => formatBranchToTimezone(b, timezone));
+  const formatedBranch = await Promise.all(
+    branch.map(async (b) => {
+      const formattedBranch = formatBranchToTimezone(b, timezone);
+      const { reviews, hasReview } = await reviewService.getReviewsByType({
+        reviewType: "branch",
+        entityId: b._id,
+        currentUserId,
+        limit: 0,
+        timezone,
+      });
+
+      return { ...formattedBranch, reviews, hasReview };
+    }),
+  );
 
   return { branch: formatedBranch, meta };
 };
@@ -95,7 +110,7 @@ const updateBranch = async (id, data) => {
   return branch;
 };
 
-const getBranchDetails = async (id, timezone) => {
+const getBranchDetails = async (id, timezone, currentUserId) => {
   const branch = await BranchRepo.findBranchById(id);
 
   if (!branch) {
@@ -108,10 +123,18 @@ const getBranchDetails = async (id, timezone) => {
   });
 
   const formatted = formatBranchToTimezone(branch, timezone);
+  const { reviews, hasReview } = await reviewService.getReviewsByType({
+    reviewType: "branch",
+    entityId: id,
+    currentUserId,
+    timezone,
+  });
   formatted.rating = {
     average: ratingStats.averageRating,
     total: ratingStats.totalReviews,
   };
+  formatted.reviews = reviews;
+  formatted.hasReview = hasReview;
   return formatted;
 };
 
