@@ -190,7 +190,7 @@ const getCoacheDetails = async (req, res) => {
   let [onBoarding, user, review] = await Promise.all([
     getUsersOnboardingResponseById(id),
     getUserDetails(id),
-    getReview({ objectUser: id })
+    getReview({ objectUser: id, currentUserId: req.user._id })
   ]);
   user = formatUserResponse(user);
 

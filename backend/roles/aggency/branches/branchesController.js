@@ -108,6 +108,7 @@ const getBranch = async (req, res) => {
       status,
       user,
       summary,
+      currentUserId: req.user._id,
     });
 
     return sendResponse({
@@ -198,7 +199,7 @@ const getBranchDetails = async (req, res) => {
     return;
 
   try {
-    const branch = await BranchService.getBranchDetails(id, timezone);
+    const branch = await BranchService.getBranchDetails(id, timezone, req.user._id);
     if (!branch) {
       return sendResponse({
         res,

@@ -7,7 +7,12 @@ const DATE_FORMATS = {
   DEFAULT_TIMEZONE: "UTC", // Default timezone if none is specified
 };
 
+// Platform currency. Pound sterling — the platform operates in the UK.
+const DEFAULT_CURRENCY = "GBP";
+const DEFAULT_CURRENCY_SYMBOL = "£";
 
 module.exports = {
   DATE_FORMATS,
+  DEFAULT_CURRENCY,
+  DEFAULT_CURRENCY_SYMBOL,
 };

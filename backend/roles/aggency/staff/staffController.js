@@ -27,6 +27,7 @@ const getAllNurses = async (req, res) => {
       limit,
       keyword,
       status,
+      currentUserId: req.user._id,
     });
 
     return sendResponse({

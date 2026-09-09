@@ -10,6 +10,7 @@ const {
   getShiftEndUtc,
   formatShiftToTimezone,
 } = require("@helperUtils/responseUtil");
+const { DEFAULT_CURRENCY } = require("@helperUtils/constants");
 
 /* =========================================================
    HELPERS
@@ -214,10 +215,14 @@ const getTodaysShifts = async ({ userId, timezone }) => {
         checkOut: booking.attendance?.checkOut || null,
       },
 
+      // payment.amount is the approved bid — what the customer owes.
+      // payment.totalAmount is the worker's net (bid minus the platform fee),
+      // so it must not be surfaced on a customer screen.
       payment: {
         perHour: booking.payment?.perHour || 0,
-        totalAmount: booking.payment?.totalAmount || 0,
-        currency: booking.payment?.currency || "USD",
+        bid: booking.payment?.amount || 0,
+        totalAmount: booking.payment?.amount || 0,
+        currency: booking.payment?.currency || DEFAULT_CURRENCY,
       },
 
       createdAt: booking.createdAt,

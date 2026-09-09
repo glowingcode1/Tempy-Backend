@@ -33,6 +33,7 @@ const { findAddressByUser } = require("../../nurse/address/addressRepository");
 const {
   findReviewByUser,
   findReviewByStaff,
+  hasReview,
 } = require("../../../commonModules/reviews/reviewRepository");
 const {
   findBookingByUserId,
@@ -44,7 +45,15 @@ const {
   getWeeklyHours,
 } = require("../../../roles/careHome/booking/bookingRepository");
 const { formatStaffList } = require("./formator/formatStaffList");
-const getAllNurses = async ({ timezone, page, limit, keyword, status }) => {
+const reviewService = require("../../../commonModules/reviews/reviewService");
+const getAllNurses = async ({
+  timezone,
+  page,
+  limit,
+  keyword,
+  status,
+  currentUserId,
+}) => {
   const { users, meta } = await getAllUsers({
     page,
     limit,
@@ -52,7 +61,20 @@ const getAllNurses = async ({ timezone, page, limit, keyword, status }) => {
     status,
     userType: "nurse",
   });
-  return { staff: users, meta };
+  const staff = await Promise.all(
+    users.map(async (user) => {
+      const { reviews, hasReview } = await reviewService.getReview({
+        objectUser: user._id,
+        currentUserId,
+        limit: 0,
+        timezone,
+      });
+
+      return { ...user, reviews, hasReview };
+    }),
+  );
+
+  return { staff, meta };
 };
 const createStaff = async (data, req, res) => {
   if (data.staff) {
@@ -626,7 +648,7 @@ const updateStaff = async (id, data) => {
 };
 
 const getStaffDetails = async (id, user, timezone, customer, supplier) => {
-  const [staff, favorite, address, reviews, bookings, staffMember] =
+  const [staff, favorite, address, reviews, bookings, staffMember, hasUserReview] =
     await Promise.all([
       findUserById(id),
       isFavorite(user, id),
@@ -634,6 +656,7 @@ const getStaffDetails = async (id, user, timezone, customer, supplier) => {
       findReviewByUser(id),
       findBookingByUserId(id, user, customer),
       StaffRepo.findStaffByUserAndStaff(user, id),
+      hasReview({ subject: user, object: id, reviewType: "user" }),
     ]);
   let error = "";
   if (!staff) {
@@ -678,6 +701,7 @@ const getStaffDetails = async (id, user, timezone, customer, supplier) => {
       staffDetails,
       address,
       reviews,
+      hasReview: hasUserReview,
       bookings,
     },
     timezone,
