@@ -34,6 +34,7 @@ const {
   findReviewByUser,
   findReviewByStaff,
   hasReview,
+  getReviewsForObjectUsers,
 } = require("../../../commonModules/reviews/reviewRepository");
 const {
   findBookingByUserId,
@@ -45,7 +46,9 @@ const {
   getWeeklyHours,
 } = require("../../../roles/careHome/booking/bookingRepository");
 const { formatStaffList } = require("./formator/formatStaffList");
-const reviewService = require("../../../commonModules/reviews/reviewService");
+// Newest reviews inlined per row on list endpoints; the full set is paginated
+// through GET /reviews/all/:userId.
+const LIST_REVIEW_LIMIT = 5;
 const getAllNurses = async ({
   timezone,
   page,
@@ -61,18 +64,26 @@ const getAllNurses = async ({
     status,
     userType: "nurse",
   });
-  const staff = await Promise.all(
-    users.map(async (user) => {
-      const { reviews, hasReview } = await reviewService.getReview({
-        objectUser: user._id,
-        currentUserId,
-        limit: 0,
-        timezone,
-      });
+  // One aggregation for the whole page instead of two per row.
+  const reviewsByNurse = await getReviewsForObjectUsers({
+    userIds: users.map((u) => u._id),
+    currentUserId,
+    limit: LIST_REVIEW_LIMIT,
+  });
 
-      return { ...user, reviews, hasReview };
-    }),
-  );
+  const staff = users.map((user) => {
+    const reviewContext = reviewsByNurse.get(String(user._id));
+
+    return {
+      ...user,
+      reviews: reviewContext?.reviews || [],
+      hasReview: reviewContext?.hasReview || false,
+      ratingStats: reviewContext?.ratingStats || {
+        totalReviews: 0,
+        averageRating: 0,
+      },
+    };
+  });
 
   return { staff, meta };
 };
@@ -648,22 +659,31 @@ const updateStaff = async (id, data) => {
 };
 
 const getStaffDetails = async (id, user, timezone, customer, supplier) => {
-  const [staff, favorite, address, reviews, bookings, staffMember, hasUserReview] =
-    await Promise.all([
-      findUserById(id),
-      isFavorite(user, id),
-      findAddressByUser(id, (limit = 3)),
-      findReviewByUser(id),
-      findBookingByUserId(id, user, customer),
-      StaffRepo.findStaffByUserAndStaff(user, id),
-      hasReview({ subject: user, object: id, reviewType: "user" }),
-    ]);
+  const [
+    staff,
+    favorite,
+    address,
+    reviews,
+    bookings,
+    staffMember,
+    hasUserReview,
+  ] = await Promise.all([
+    findUserById(id),
+    isFavorite(user, id),
+    findAddressByUser(id, (limit = 3)),
+    findReviewByUser(id),
+    findBookingByUserId(id, user, customer),
+    StaffRepo.findStaffByUserAndStaff(user, id),
+    // Any review this viewer left about the nurse counts, whether it came
+    // from a completed booking or straight off the profile.
+    hasReview({ subject: user, objectUser: id }),
+  ]);
   let error = "";
   if (!staff) {
     error = "staff_not_found";
     return { error };
   }
-  if (staff.acountState?.userType !== "nurse") {
+  if (staff.accountState?.userType !== "nurse") {
     error = "this_user_is_not_a_staff_member";
     return { error };
   }

@@ -9,6 +9,9 @@ const {
   formatShiftToTimezone,
 } = require("@helperUtils/responseUtil");
 const { DEFAULT_CURRENCY } = require("@helperUtils/constants");
+const {
+  withUserReviews,
+} = require("../../../commonModules/reviews/reviewRepository");
 
 /* =========================================================
    HELPERS
@@ -369,7 +372,9 @@ const getHomeData = async ({ userId, timezone, userType }) => {
    *
    * radius: userObject.radius ?? 10
    */
-  const formattedUser = formatUserResponse(user);
+  const formattedUser = formatUserResponse(
+    await withUserReviews(user, { currentUserId: userId }),
+  );
 
   return {
     user: formattedUser,

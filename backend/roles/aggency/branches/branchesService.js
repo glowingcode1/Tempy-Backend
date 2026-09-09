@@ -2,7 +2,14 @@ const Branches = require("./Branches");
 const BranchRepo = require("./branchesRepository");
 const formatBranchToTimezone = require("./formator/formatBranchToTimezone");
 const reviewRepository = require("../../../commonModules/reviews/reviewRepository");
+const {
+  getReviewsForObjects,
+} = require("../../../commonModules/reviews/reviewRepository");
 const reviewService = require("../../../commonModules/reviews/reviewService");
+
+// Newest reviews inlined per row on list endpoints; the full set is paginated
+// through GET /reviews/branch/:branchId.
+const LIST_REVIEW_LIMIT = 5;
 
 const createBranch = async (data) => {
   const branch = await BranchRepo.createBranch(data);
@@ -41,20 +48,28 @@ const getBranch = async ({
     skip,
   });
 
-  const formatedBranch = await Promise.all(
-    branch.map(async (b) => {
-      const formattedBranch = formatBranchToTimezone(b, timezone);
-      const { reviews, hasReview } = await reviewService.getReviewsByType({
-        reviewType: "branch",
-        entityId: b._id,
-        currentUserId,
-        limit: 0,
-        timezone,
-      });
+  // One aggregation for the whole page instead of two per row.
+  const reviewsByBranch = await getReviewsForObjects({
+    objectIds: branch.map((b) => b._id),
+    objectType: "Branches",
+    currentUserId,
+    limit: LIST_REVIEW_LIMIT,
+  });
 
-      return { ...formattedBranch, reviews, hasReview };
-    }),
-  );
+  const formatedBranch = branch.map((b) => {
+    const formattedBranch = formatBranchToTimezone(b, timezone);
+    const reviewContext = reviewsByBranch.get(String(b._id));
+
+    return {
+      ...formattedBranch,
+      reviews: reviewContext?.reviews || [],
+      hasReview: reviewContext?.hasReview || false,
+      ratingStats: reviewContext?.ratingStats || {
+        totalReviews: 0,
+        averageRating: 0,
+      },
+    };
+  });
 
   return { branch: formatedBranch, meta };
 };
