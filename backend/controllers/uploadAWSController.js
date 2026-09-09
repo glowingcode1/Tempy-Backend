@@ -138,6 +138,7 @@ const uploadFilesToS3 = async (files) => {
         file: params.Key,
         fileUrl: `${process.env.S3_BASE_URL}${params.Key}`,
         fileExtension: path.extname(params.Key),
+        contentType: params.ContentType,
         // fileSize: (compressedBuffer.length / 1024).toFixed(2) + ' KB', // Uncomment if needed
       };
     })
@@ -149,7 +150,7 @@ const uploadFilesToS3 = async (files) => {
 
 // Helper function to generate the S3 upload parameters for each file
 const createUploadParams = (file) => {
-  const fileExtension = path.extname(file.originalname); // Get the file extension (e.g., .png)
+  const fileExtension = path.extname(file.originalname || "").toLowerCase();
   const filename = `${uuidv4()}${fileExtension}`; // Generate unique filename with uuid
 
   if (!file.buffer) {
@@ -161,13 +162,29 @@ const createUploadParams = (file) => {
     });
   }
 
+  const contentType = getUploadContentType(fileExtension, file.mimetype);
+
   return {
     Bucket: process.env.S3_BUCKET_NAME,
     Key: filename,
     Body: file.buffer, // File buffer from multer
-    ContentType: file.mimetype,
+    ContentType: contentType,
     ACL: "public-read-write",
   };
+};
+
+// Mobile recordings are AAC in an MP4/M4A container. Do not trust a stale
+// client MIME value for these extensions, and do not relabel legacy WebM files.
+const getUploadContentType = (fileExtension, mimeType = "") => {
+  if (fileExtension === ".mp4" || fileExtension === ".m4a") {
+    return "audio/mp4";
+  }
+
+  if (fileExtension === ".webm") {
+    return "audio/webm";
+  }
+
+  return mimeType || "application/octet-stream";
 };
 
 // Compress image until the desired size is achieved
