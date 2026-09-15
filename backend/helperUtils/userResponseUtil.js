@@ -66,8 +66,15 @@ const formatUserResponse = (
     location,
     radius: userObject.radius ?? 10,
     ...(subAdmin ? { subAdmin } : {}),
-    averageRating: userObject.averageRating || 0,
-    totalReviews: userObject.totalReviews || 0,
+    // Ratings are derived from the Review collection, not stored on the user.
+    // Callers attach `reviews`/`ratingStats` (see reviewRepository.withUserReviews);
+    // without that the shape stays stable and simply reports nothing yet.
+    averageRating:
+      userObject.ratingStats?.averageRating ?? userObject.averageRating ?? 0,
+    totalReviews:
+      userObject.ratingStats?.totalReviews ?? userObject.totalReviews ?? 0,
+    reviews: userObject.reviews || [],
+    summary: userObject.summary,
     taxNumber: userObject.taxNumber,
     governmentIdentity: userObject.governmentIdentity,
     degree: userObject.degree,

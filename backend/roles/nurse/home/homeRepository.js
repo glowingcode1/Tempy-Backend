@@ -8,6 +8,10 @@ const {
   getShiftEndUtc,
   formatShiftToTimezone,
 } = require("@helperUtils/responseUtil");
+const { DEFAULT_CURRENCY } = require("@helperUtils/constants");
+const {
+  withUserReviews,
+} = require("../../../commonModules/reviews/reviewRepository");
 
 /* =========================================================
    HELPERS
@@ -240,10 +244,13 @@ const getTodaysShifts = async ({ userId, timezone, userType }) => {
         checkOut: booking.attendance?.checkOut || null,
       },
 
+      // totalAmount is the worker's net payout (bid minus the platform
+      // fee), which is the right figure here; bid is the gross.
       payment: {
         perHour: booking.payment?.perHour || 0,
+        bid: booking.payment?.amount || 0,
         totalAmount: booking.payment?.totalAmount || 0,
-        currency: booking.payment?.currency || "USD",
+        currency: booking.payment?.currency || DEFAULT_CURRENCY,
       },
     };
   });
@@ -365,7 +372,9 @@ const getHomeData = async ({ userId, timezone, userType }) => {
    *
    * radius: userObject.radius ?? 10
    */
-  const formattedUser = formatUserResponse(user);
+  const formattedUser = formatUserResponse(
+    await withUserReviews(user, { currentUserId: userId }),
+  );
 
   return {
     user: formattedUser,

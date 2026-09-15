@@ -27,8 +27,18 @@ const createReview = async (req, res) => {
   )
     return;
 
-  const { reviewType, objectId, rating, comment = "" } = req.body;
+  const { reviewType, objectId, rating, comment = "", bookingId } = req.body;
   const currentUserId = req.user._id;
+
+  // Only branch reviews take a bookingId; for booking reviews the objectId is
+  // already the booking, and user reviews are not tied to one.
+  if (bookingId && !mongoose.isValidObjectId(bookingId)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_booking_id",
+    });
+  }
 
   // Validate rating
   if (typeof rating !== "number" || rating < 1 || rating > 5) {
@@ -45,6 +55,7 @@ const createReview = async (req, res) => {
     rating,
     comment,
     currentUserId,
+    bookingId,
   };
   const timezone = req.user?.timezone || "UTC";
 
@@ -92,11 +103,12 @@ const getReviewsByType = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
 
   try {
-    const { reviews, meta } = await reviewService.getReviewsByType({
+    const { reviews, hasReview, meta } = await reviewService.getReviewsByType({
       reviewType: req.params.reviewType,
       entityId: req.params.entityId,
       page,
       limit,
+      currentUserId: req.user._id,
       timezone: req.user?.timezone || "UTC",
     });
 
@@ -105,6 +117,7 @@ const getReviewsByType = async (req, res) => {
       statusCode: 200,
       translationKey: "reviews_fetched",
       data: reviews,
+      hasReview,
       meta,
     });
   } catch (error) {
@@ -232,8 +245,9 @@ const getReview = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
 
   try {
-    const { reviews, meta } = await reviewService.getReview({
+    const { reviews, hasReview, meta } = await reviewService.getReview({
       objectUser: req.params.user,
+      currentUserId: req.user._id,
       page,
       limit,
       timezone: req.user?.timezone || "UTC",
@@ -244,6 +258,7 @@ const getReview = async (req, res) => {
       statusCode: 200,
       translationKey: "reviews_fetched",
       data: reviews,
+      hasReview,
       meta,
     });
   } catch (error) {

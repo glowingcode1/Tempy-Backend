@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { DEFAULT_CURRENCY } = require("@helperUtils/constants");
 
 /* ---------------------------------------------
    Shift snapshot — copied from the job's shift
@@ -53,7 +54,7 @@ const paymentSchema = new mongoose.Schema(
     },
     currency: {
       type: String,
-      default: "USD",
+      default: DEFAULT_CURRENCY,
     },
     totalHours: {
       type: Number, // from shift start/end minus break
@@ -194,7 +195,7 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
     snapshot: {
-      type: mongoose.Schema.Types.Mixed, 
+      type: mongoose.Schema.Types.Mixed,
       default: {},
     },
 

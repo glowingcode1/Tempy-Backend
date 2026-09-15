@@ -63,17 +63,44 @@ const createReview = async ({ reviewData, timezone }) => {
   if (Number(rating) < 1 || Number(rating) > 5) {
     throw buildAppError("rating_must_be_between_1_and_5", 400);
   }
+
+  if (
+    await reviewRepository.hasReview({
+      subject: currentUserId,
+      object: objectId,
+      reviewType,
+    })
+  ) {
+    return buildAppError("review_already", 400);
+  }
+
   let objectUser = null;
   let bookingId = null;
   if (reviewType === "booking") {
     if (targetObject.status !== "completed") {
       return buildAppError("cannot_review_incomplete_booking", 400);
     }
+
+    const currentUserIdString = toIdString(currentUserId);
+    if (
+      currentUserIdString !== toIdString(targetObject.user) &&
+      currentUserIdString !== toIdString(targetObject.worker)
+    ) {
+      return buildAppError("unauthorized_to_perform_this_action", 403);
+    }
+
     bookingId = objectId;
-    if (currentUser.accountState.userType != "nurse") {
-      objectUser = targetObject.employer;
-    } else {
-      objectUser = targetObject.worker;
+    // A booking review is always about the other side of that booking:
+    // the customer rates the nurse who worked it, the nurse rates the
+    // customer who booked them. Booking.employer is the agency that bid and
+    // is null on direct nurse bookings, so it is never the reviewed party.
+    objectUser =
+      currentUser.accountState.userType === "nurse"
+        ? targetObject.user
+        : targetObject.worker;
+
+    if (!objectUser) {
+      return buildAppError("booking_has_no_counterparty_to_review", 400);
     }
   } else if (reviewType === "branch") {
     if (targetObject.status === "deleted") {
@@ -82,6 +109,24 @@ const createReview = async ({ reviewData, timezone }) => {
     // objectUser stays null — a branch isn't a User, so it can't fill that ref.
     // Ratings for branches are queried by object+objectType instead (see below).
     objectUser = null;
+
+    // Optional: tie the review to the completed booking it came out of, so the
+    // branch's reviews can show which job and nurse they refer to.
+    if (reviewData.bookingId) {
+      const booking = await Booking.findById(reviewData.bookingId);
+
+      if (!booking) {
+        return buildAppError("booking_not_found", 404);
+      }
+      if (booking.status !== "completed") {
+        return buildAppError("cannot_review_incomplete_booking", 400);
+      }
+      if (toIdString(booking.branch) !== toIdString(objectId)) {
+        return buildAppError("booking_does_not_belong_to_this_branch", 400);
+      }
+
+      bookingId = booking._id;
+    }
   } else if (reviewType === "user") {
     objectUser = targetObject._id;
   }
@@ -107,20 +152,33 @@ const getReviewsByType = async ({
   page = 1,
   limit = 10,
   timezone = "UTC",
+  currentUserId,
+  onlyOwn = false,
 }) => {
   const filter = {
     reviewType,
     object: new mongoose.Types.ObjectId(entityId),
     objectType: REVIEW_TYPE_TO_OBJECT_MODEL[reviewType],
+    ...(onlyOwn && currentUserId
+      ? { subject: new mongoose.Types.ObjectId(currentUserId) }
+      : {}),
   };
 
   const [{ reviews, total }, ratingStats] = await Promise.all([
     reviewRepository.getReviews(filter, { skip: (page - 1) * limit, limit }),
     reviewRepository.getRatingStats(filter),
   ]);
+  const hasUserReview = currentUserId
+    ? await reviewRepository.hasReview({
+        subject: currentUserId,
+        object: entityId,
+        reviewType,
+      })
+    : false;
 
   return {
     reviews,
+    hasReview: hasUserReview,
     // reviews: formatReview(reviews, timezone),
     meta: {
       ...generateMeta(page, limit, total),
@@ -215,6 +273,7 @@ const getReview = async ({
   page = 1,
   limit = 10,
   timezone = "UTC",
+  currentUserId,
 }) => {
   const filter = {
     objectUser: new mongoose.Types.ObjectId(objectUser),
@@ -223,9 +282,16 @@ const getReview = async ({
     reviewRepository.getReviews(filter, { skip: (page - 1) * limit, limit }),
     reviewRepository.getRatingStats(filter),
   ]);
+  const hasUserReview = currentUserId
+    ? await reviewRepository.hasReview({
+        subject: currentUserId,
+        objectUser,
+      })
+    : false;
 
   return {
     reviews,
+    hasReview: hasUserReview,
     // reviews: formatReview(reviews, timezone),
     meta: {
       ...generateMeta(page, limit, total),

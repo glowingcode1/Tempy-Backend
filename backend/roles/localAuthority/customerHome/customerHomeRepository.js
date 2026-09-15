@@ -10,6 +10,10 @@ const {
   getShiftEndUtc,
   formatShiftToTimezone,
 } = require("@helperUtils/responseUtil");
+const { DEFAULT_CURRENCY } = require("@helperUtils/constants");
+const {
+  withUserReviews,
+} = require("../../../commonModules/reviews/reviewRepository");
 
 /* =========================================================
    HELPERS
@@ -69,8 +73,6 @@ const formatHours = (hours) => {
   return `${Number(hours.toFixed(2))} hr`;
 };
 
-
-
 const getTodayRange = (timezone = "UTC") => {
   const now = moment.tz(timezone);
 
@@ -89,15 +91,18 @@ const getWorkerRatings = async (workerIds = []) => {
     return {};
   }
 
+  // Reviews record the person being reviewed as `objectUser`; there is no
+  // `worker` field on the collection, so matching on one returned nothing and
+  // every shift reported a zero rating.
   const stats = await Review.aggregate([
     {
       $match: {
-        worker: { $in: workerIds },
+        objectUser: { $in: workerIds },
       },
     },
     {
       $group: {
-        _id: "$worker",
+        _id: "$objectUser",
         avgRating: { $avg: "$rating" },
         reviewsCount: { $sum: 1 },
       },
@@ -156,73 +161,79 @@ const getTodaysShifts = async ({ userId, timezone }) => {
 
   const ratingsMap = await getWorkerRatings(workerIds);
 
-  return bookings.filter((booking) => {
-    const shiftStart = getShiftStartUtc(booking.shift);
-    return shiftStart?.isSameOrAfter(start) && shiftStart.isBefore(end);
-  }).map((booking) => {
-    const shift = booking.shift || {};
-    const shiftStart = getShiftStartUtc(shift);
-    const shiftEnd = getShiftEndUtc(shift);
-    const localShift = formatShiftToTimezone(shift, timezone);
-    const hours = calculateShiftHours(shift);
+  return bookings
+    .filter((booking) => {
+      const shiftStart = getShiftStartUtc(booking.shift);
+      return shiftStart?.isSameOrAfter(start) && shiftStart.isBefore(end);
+    })
+    .map((booking) => {
+      const shift = booking.shift || {};
+      const shiftStart = getShiftStartUtc(shift);
+      const shiftEnd = getShiftEndUtc(shift);
+      const localShift = formatShiftToTimezone(shift, timezone);
+      const hours = calculateShiftHours(shift);
 
-    const jobRoleName =
-      booking.job?.name || booking.job?.title || booking.snapshot?.name || "";
+      const jobRoleName =
+        booking.job?.name || booking.job?.title || booking.snapshot?.name || "";
 
-    const workerId = booking.worker?._id?.toString();
-    const ratingInfo = ratingsMap[workerId] || { rating: 0, reviewsCount: 0 };
+      const workerId = booking.worker?._id?.toString();
+      const ratingInfo = ratingsMap[workerId] || { rating: 0, reviewsCount: 0 };
 
-    // Snapshot location captured at approval time.
-    const location = booking.snapshot?.location || null;
+      // Snapshot location captured at approval time.
+      const location = booking.snapshot?.location || null;
 
-    return {
-      id: booking._id,
-      bookingId: booking._id,
+      return {
+        id: booking._id,
+        bookingId: booking._id,
 
-      job: {
-        id: booking.job?._id || booking.job || null,
-        roleName: jobRoleName,
-      },
+        job: {
+          id: booking.job?._id || booking.job || null,
+          roleName: jobRoleName,
+        },
 
-      worker: booking.worker
-        ? {
-            id: booking.worker._id,
-            name: booking.worker.name || "",
-            profileIcon: booking.worker.profileIcon || "",
-            gender: booking.worker.gender || "",
-            rating: ratingInfo.rating,
-            reviewsCount: ratingInfo.reviewsCount,
-          }
-        : null,
+        worker: booking.worker
+          ? {
+              id: booking.worker._id,
+              name: booking.worker.name || "",
+              profileIcon: booking.worker.profileIcon || "",
+              gender: booking.worker.gender || "",
+              rating: ratingInfo.rating,
+              reviewsCount: ratingInfo.reviewsCount,
+            }
+          : null,
 
-      location,
+        location,
 
-      shift: {
-        id: shift._id,
-        date: localShift.date,
-        startTime: localShift.startTime,
-        endTime: shiftEnd ? localShift.endTime : "",
-        breakMin: shift.breakMin || 0,
-        totalHours: hours,
-        formattedHours: formatHours(hours),
-      },
+        shift: {
+          id: shift._id,
+          date: localShift.date,
+          startTime: localShift.startTime,
+          endTime: shiftEnd ? localShift.endTime : "",
+          breakMin: shift.breakMin || 0,
+          totalHours: hours,
+          formattedHours: formatHours(hours),
+        },
 
-      status: booking.status,
+        status: booking.status,
 
-      attendance: {
-        checkIn: booking.attendance?.checkIn || null,
-        checkOut: booking.attendance?.checkOut || null,
-      },
+        attendance: {
+          checkIn: booking.attendance?.checkIn || null,
+          checkOut: booking.attendance?.checkOut || null,
+        },
 
-      payment: {
-        perHour: booking.payment?.perHour || 0,
-        totalAmount: booking.payment?.totalAmount || 0,
-        currency: booking.payment?.currency || "USD",
-      },
+        // payment.amount is the approved bid — what the customer owes.
+        // payment.totalAmount is the worker's net (bid minus the platform fee),
+        // so it must not be surfaced on a customer screen.
+        payment: {
+          perHour: booking.payment?.perHour || 0,
+          bid: booking.payment?.amount || 0,
+          totalAmount: booking.payment?.amount || 0,
+          currency: booking.payment?.currency || DEFAULT_CURRENCY,
+        },
 
-      createdAt: booking.createdAt,
-    };
-  });
+        createdAt: booking.createdAt,
+      };
+    });
 };
 
 /* =========================================================
@@ -245,7 +256,9 @@ const getHomeData = async ({ userId, timezone }) => {
     timezone: userTimezone,
   });
 
-  const formattedUser = formatUserResponse(user);
+  const formattedUser = formatUserResponse(
+    await withUserReviews(user, { currentUserId: userId }),
+  );
 
   return {
     user: formattedUser,

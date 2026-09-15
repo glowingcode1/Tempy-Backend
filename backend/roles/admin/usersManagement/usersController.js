@@ -13,6 +13,9 @@ const {
 const usersService = require("./usersService.js");
 const { registerUserUtility } = require("../../../controllers/authUtil.js");
 const { isUserProfileComplete } = require("@helperUtils/completeDetailsUtil.js");
+const {
+  withUserReviews,
+} = require("../../../commonModules/reviews/reviewRepository.js");
 
 const createUser = async (req, res) => {
   const result = await registerUserUtility(req, res, {
@@ -367,11 +370,15 @@ const getUserDetails = async (req, res) => {
 
     userObject.completeDetails = isUserProfileComplete(userObject);
 
+    const withReviews = await withUserReviews(userObject, {
+      currentUserId: req.user?._id,
+    });
+
     return sendResponse({
       res,
       statusCode: 200,
       translationKey: "user_fetched_successfully",
-      data: userObject,
+      data: withReviews,
     });
   } catch (error) {
     return sendResponse({

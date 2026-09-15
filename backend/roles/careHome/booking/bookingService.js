@@ -25,6 +25,10 @@ const {
 } = require("../../../roles/aggency/staff/staffRepository");
 const { customerTypes, supplierTypes } = require("@UsersModel");
 const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
+const {
+  getReviewsForObjects,
+} = require("../../../commonModules/reviews/reviewRepository");
+const reviewService = require("../../../commonModules/reviews/reviewService");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
 const WEATHER_API_URL = process.env.WEATHER_API_URL;
@@ -383,6 +387,7 @@ const getBooking = async ({
   latitude,
   longitude,
   km,
+  currentUserId,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -400,8 +405,25 @@ const getBooking = async ({
     longitude,
     km,
   });
+  // One aggregation for the whole page instead of two per row. Each party
+  // sees only their own review of a booking, plus whether they left one.
+  const reviewsByBooking = await getReviewsForObjects({
+    objectIds: booking.map((b) => b._id),
+    objectType: "Booking",
+    currentUserId,
+    onlyOwn: true,
+    limit: 0,
+  });
+
   const formatedBooking = booking.map((job) => {
-    return formatBookingToTimezone(job, timezone);
+    const formattedBooking = formatBookingToTimezone(job, timezone);
+    const reviewContext = reviewsByBooking.get(String(job._id));
+
+    return {
+      ...formattedBooking,
+      reviews: reviewContext?.reviews || [],
+      hasReview: reviewContext?.hasReview || false,
+    };
   });
 
   return { Booking: formatedBooking, meta };
@@ -485,14 +507,23 @@ const updateBooking = async (id, data) => {
   return Booking;
 };
 
-const getBookingDetails = async (id, timezone) => {
+const getBookingDetails = async (id, timezone, currentUserId) => {
   const Booking = await BookingRepo.findBookingById(id);
 
   if (!Booking) {
     return null;
   }
 
-  return formatBookingToTimezone(Booking, timezone);
+  const formattedBooking = formatBookingToTimezone(Booking, timezone);
+  const { reviews, hasReview } = await reviewService.getReviewsByType({
+    reviewType: "booking",
+    entityId: id,
+    currentUserId,
+    onlyOwn: true,
+    timezone,
+  });
+
+  return { ...formattedBooking, reviews, hasReview };
 };
 const deleteBooking = async (id) => {
   if (!id) throw new Error("Booking ID is required");
