@@ -3,11 +3,55 @@ const Bid = require("../bid/Bid");
 const Staff = require("../staff/Staff");
 const Booking = require("../../careHome/booking/Booking");
 const Branches = require("../../aggency/branches/Branches");
+const mongoose = require("mongoose");
 const { formatShiftToTimezone } = require("@helperUtils/responseUtil");
 
 // ============================================================
 // HELPERS
 // ============================================================
+
+const toObjectId = (value) => {
+  if (!value) return null;
+
+  if (value instanceof mongoose.Types.ObjectId) return value;
+
+  return mongoose.Types.ObjectId.isValid(value)
+    ? new mongoose.Types.ObjectId(value)
+    : null;
+};
+
+/*
+ * A Job is always created by the CUSTOMER (careHome / hospital / user),
+ * so Job.user is never the supplier. The supplier side of a job is:
+ *
+ *   - jobs the supplier has bid on   -> Bid.user = supplier
+ *   - jobs assigned directly to them -> Job.employer = supplier
+ */
+const getSupplierJobMatch = async ({ userId }) => {
+  const jobIds = await Bid.distinct("job", {
+    user: userId,
+    status: {
+      $ne: "deleted",
+    },
+  });
+
+  return {
+    $or: [
+      {
+        _id: {
+          $in: jobIds,
+        },
+      },
+      {
+        employer: userId,
+      },
+    ],
+
+    status: {
+      $ne: "deleted",
+    },
+  };
+};
 
 const getMonthRange = (months = 12) => {
   const now = new Date();
@@ -115,12 +159,9 @@ const getMonthlyAggregation = async ({
 // ============================================================
 
 const getJobStats = async ({ userId }) => {
-  const baseMatch = {
-    user: userId,
-    status: {
-      $ne: "deleted",
-    },
-  };
+  const baseMatch = await getSupplierJobMatch({
+    userId,
+  });
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -264,15 +305,14 @@ const getStaffStats = async ({ userId }) => {
 
 const getBidStats = async ({ userId }) => {
   /*
-   * jobCreator = supplier/customer who owns the job.
+   * Bid.user is the agency/nurse who SUBMITTED the bid,
+   * Bid.jobCreator is the customer who owns the job.
    *
-   * IMPORTANT:
-   * Bid.user is the user/staff/agency who submitted the bid.
-   * Therefore supplier dashboard must use jobCreator.
+   * The supplier is the bidder, so the supplier dashboard must use user.
    */
 
   const baseMatch = {
-    jobCreator: userId,
+    user: userId,
     status: {
       $ne: "deleted",
     },
@@ -414,17 +454,16 @@ const getMonthlyActivity = async ({ userId }) => {
 // ============================================================
 
 const getRecentActivity = async ({ userId }) => {
+  const supplierJobMatch = await getSupplierJobMatch({
+    userId,
+  });
+
   const [jobs, bookings, bids, staff] = await Promise.all([
     // --------------------------------------------------------
     // Jobs
     // --------------------------------------------------------
 
-    Job.find({
-      user: userId,
-      status: {
-        $ne: "deleted",
-      },
-    })
+    Job.find(supplierJobMatch)
       .sort({
         createdAt: -1,
       })
@@ -449,7 +488,7 @@ const getRecentActivity = async ({ userId }) => {
     // --------------------------------------------------------
 
     Bid.find({
-      jobCreator: userId,
+      user: userId,
       status: {
         $ne: "deleted",
       },
@@ -485,7 +524,7 @@ const getRecentActivity = async ({ userId }) => {
     ...jobs.map((item) => ({
       id: item._id,
       type: "job",
-      title: "Job created",
+      title: "Job",
       description: item.name,
       status: item.status,
       createdAt: item.createdAt,
@@ -513,7 +552,7 @@ const getRecentActivity = async ({ userId }) => {
     ...bids.map((item) => ({
       id: item._id,
       type: "bid",
-      title: "New bid received",
+      title: "Bid submitted",
       description: `Bid amount: ${item.bid}`,
       status: item.status,
       createdAt: item.createdAt,
@@ -549,9 +588,20 @@ const getRecentActivity = async ({ userId }) => {
 // ============================================================
 
 const getOpenJobs = async ({ userId, timezone }) => {
+  /*
+   * Open opportunities for a supplier are unassigned customer jobs
+   * that still have a pending shift - not jobs the supplier owns.
+   */
   const jobs = await Job.find({
-    user: userId,
+    user: {
+      $ne: userId,
+    },
+
     status: "active",
+
+    worker: null,
+
+    employer: null,
 
     "shift.status": "pending",
   })
@@ -612,12 +662,12 @@ const getOpenJobs = async ({ userId, timezone }) => {
 const getWinRateByRegion = async ({ userId }) => {
   const result = await Bid.aggregate([
     // --------------------------------------------------------
-    // Only bids received on this supplier's jobs
+    // Only bids submitted by this supplier
     // --------------------------------------------------------
 
     {
       $match: {
-        jobCreator: userId,
+        user: userId,
         status: {
           $ne: "deleted",
         },
@@ -784,6 +834,12 @@ const getShiftsAndEarnings = async ({ userId, timezone }) => {
 // ============================================================
 
 const getSupplierDashboardStats = async ({ userId, timezone }) => {
+  /*
+   * userId may arrive as a string (?userId=...), and $match inside an
+   * aggregation does not cast it the way countDocuments/find do.
+   */
+  userId = toObjectId(userId);
+
   const [
     jobs,
     bookings,
