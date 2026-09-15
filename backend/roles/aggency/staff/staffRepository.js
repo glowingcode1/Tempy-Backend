@@ -280,46 +280,57 @@ const getStaffCustomer = async ({
     ...(customer && { user: new mongoose.Types.ObjectId(user) }),
   };
 
-  const countWorkers = async (extraMatch = {}) => {
-    const res = await Booking.aggregate([
-      { $match: { ...countFilter, ...extraMatch } },
-      { $group: { _id: "$worker" } },
-      { $count: "count" },
-    ]);
-    return res[0]?.count || 0;
-  };
-
-  const [
-    total,
-    pending,
-    inProgress,
-    completed,
-    cancelledByWorker,
-    cancelledByEmployer,
-    noShow,
-    disputed,
-  ] = await Promise.all([
-    countWorkers(),
-    countWorkers({ status: "pending" }),
-    countWorkers({ status: "inProgress" }),
-    countWorkers({ status: "completed" }),
-    countWorkers({ status: "cancelledByWorker" }),
-    countWorkers({ status: "cancelledByEmployer" }),
-    countWorkers({ status: "noShow" }),
-    countWorkers({ status: "disputed" }),
+  /*
+   * The tabs must count what the list actually filters on - the WORKER'S
+   * account status - not Booking.status. Counting bookings gave tabs such as
+   * "completed" a badge, while clicking one filtered accountState.status
+   * against a value no account can hold, so the list came back empty.
+   *
+   * One pass: collapse to a single row per worker (a worker with several
+   * bookings is still one staff member), then tally those rows by status.
+   */
+  const statusRows = await Booking.aggregate([
+    { $match: countFilter },
+    {
+      $lookup: {
+        from: "users",
+        let: { workerId: "$worker" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$workerId"] } } },
+          { $project: { "accountState.status": 1 } },
+        ],
+        as: "worker",
+      },
+    },
+    { $unwind: { path: "$worker", preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: "$worker._id",
+        status: { $first: "$worker.accountState.status" },
+      },
+    },
+    { $group: { _id: "$status", count: { $sum: 1 } } },
   ]);
+
+  const countOf = (value) =>
+    statusRows.find((row) => row._id === value)?.count || 0;
+
+  /*
+   * Mirrors the list's default match ($ne "deleted"), which in Mongo also
+   * keeps workers with no account status recorded.
+   */
+  const total = statusRows
+    .filter((row) => row._id !== "deleted")
+    .reduce((sum, row) => sum + row.count, 0);
 
   const meta = generateMeta(page, limit, totalFiltered);
 
   meta.StaffCount = {
     total,
-    pending,
-    inProgress,
-    completed,
-    cancelledByWorker,
-    cancelledByEmployer,
-    noShow,
-    disputed,
+    active: countOf("active"),
+    pending: countOf("pending"),
+    inactive: countOf("inactive"),
+    deleted: countOf("deleted"),
   };
 
   return { staff, meta };
@@ -347,16 +358,15 @@ const getStaff = async ({
     });
   }
 
+  /*
+   * No default status filter: the roster shows every record, deleted
+   * included, so the Total tab badge matches the rows it describes and is
+   * the sum of the individual status tabs.
+   */
   if (status) {
     pipeline.push({
       $match: {
         status,
-      },
-    });
-  } else {
-    pipeline.push({
-      $match: {
-        status: { $ne: "deleted" },
       },
     });
   }
@@ -397,8 +407,15 @@ const getStaff = async ({
       let: { userId: "$staff" },
       pipeline: [
         {
+          /*
+           * Deliberately no status filter: `status` is the Staff record's
+           * status and is already matched at the top of this pipeline.
+           * Re-applying it to the joined account emptied the nested staff
+           * object whenever the two enums disagreed - "left" is a Staff
+           * status no account can ever hold, so ?status=left returned rows
+           * with no name, email or avatar.
+           */
           $match: {
-            ...(status && { "accountState.status": status }),
             $expr: {
               $eq: ["$_id", "$$userId"],
             },
@@ -721,9 +738,9 @@ const getStaff = async ({
   };
 
   const [total, active, pending, inactive, deleted, left] = await Promise.all([
+    // Every record - deleted included - so total === sum of the status tabs.
     Staff.countDocuments({
       ...countFilter,
-      status: { $ne: "deleted" },
     }),
 
     Staff.countDocuments({
