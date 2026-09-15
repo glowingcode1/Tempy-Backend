@@ -131,7 +131,7 @@ const getBranch = async (req, res) => {
 
 const updateBranch = async (req, res) => {
   const { id } = req.params;
-  let { name, location, status } = req.body;
+  let { name, location, status, bio, profileIcon, cqc, insurance } = req.body;
 
   if (
     !validateParams(req, res, {
@@ -143,10 +143,21 @@ const updateBranch = async (req, res) => {
   const user = req.user._id;
   const userType = req.user.userType;
 
+  /*
+   * cqc/insurance are accepted in the same nested shape createBranch takes.
+   * The verified flags are deliberately left out - only an admin review
+   * flips those.
+   */
   let data = {
     name,
     location,
     status,
+    bio,
+    profileIcon,
+    cqcRegistrationNumber: cqc?.registrationNumber,
+    cqcCertificate: cqc?.certificate,
+    insuranceCertificate: insurance?.certificate,
+    insuranceExpiryDate: insurance?.expiryDate,
     user,
     userType,
   };
@@ -156,7 +167,7 @@ const updateBranch = async (req, res) => {
     if (updated && updated.error) {
       return sendResponse({
         res,
-        statusCode: 400,
+        statusCode: updated.statusCode || 400,
         translationKey: updated.error,
       });
     }
@@ -199,7 +210,11 @@ const getBranchDetails = async (req, res) => {
     return;
 
   try {
-    const branch = await BranchService.getBranchDetails(id, timezone, req.user._id);
+    const branch = await BranchService.getBranchDetails(
+      id,
+      timezone,
+      req.user._id,
+    );
     if (!branch) {
       return sendResponse({
         res,
@@ -237,7 +252,19 @@ const deleteBranch = async (req, res) => {
     return;
 
   try {
-    const deleted = await BranchService.deleteBranch(id);
+    const deleted = await BranchService.deleteBranch(id, {
+      user: req.user._id,
+      userType: req.user.userType,
+    });
+
+    if (deleted && deleted.error) {
+      return sendResponse({
+        res,
+        statusCode: deleted.statusCode || 400,
+        translationKey: deleted.error,
+      });
+    }
+
     if (!deleted) {
       return sendResponse({
         res,

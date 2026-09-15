@@ -117,7 +117,7 @@ const getBranch = async ({ page, limit, keyword, status, user, skip }) => {
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
   };
 
-  const [total, active, inactive, deleted] = await Promise.all([
+  const [total, active, inactive, pending, deleted] = await Promise.all([
     Branches.countDocuments({
       ...countFilter,
       status: { $ne: "deleted" },
@@ -132,6 +132,10 @@ const getBranch = async ({ page, limit, keyword, status, user, skip }) => {
     }),
     Branches.countDocuments({
       ...countFilter,
+      status: "pending",
+    }),
+    Branches.countDocuments({
+      ...countFilter,
       status: "deleted",
     }),
   ]);
@@ -143,6 +147,7 @@ const getBranch = async ({ page, limit, keyword, status, user, skip }) => {
     active,
     inactive,
     deleted,
+    pending,
   };
 
   return {
@@ -197,7 +202,7 @@ const getBranchSummary = async ({ page, limit, keyword, status, user, skip }) =>
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
   };
 
-  const [total, active, inactive, deleted] = await Promise.all([
+  const [total, active, inactive, pending, deleted] = await Promise.all([
     Branches.countDocuments({
       ...countFilter,
       status: { $ne: "deleted" },
@@ -212,6 +217,10 @@ const getBranchSummary = async ({ page, limit, keyword, status, user, skip }) =>
     }),
     Branches.countDocuments({
       ...countFilter,
+      status: "pending",
+    }),
+    Branches.countDocuments({
+      ...countFilter,
       status: "deleted",
     }),
   ]);
@@ -223,6 +232,7 @@ const getBranchSummary = async ({ page, limit, keyword, status, user, skip }) =>
     active,
     inactive,
     deleted,
+    pending,
   };
 
   return {

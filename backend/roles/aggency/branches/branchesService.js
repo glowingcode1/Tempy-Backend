@@ -74,11 +74,29 @@ const getBranch = async ({
   return { branch: formatedBranch, meta };
 };
 
+// A branch belongs to exactly one account. Only that account - or an admin,
+// who also creates branches on another user's behalf - may change it.
+const canManageBranch = ({ branch, user, userType }) =>
+  userType === "admin" || String(branch.user) === String(user);
+
 const updateBranch = async (id, data) => {
   const branch = await BranchRepo.findBranchById_(id);
 
   if (!branch) {
     return { error: "Branch_not_found" };
+  }
+
+  if (
+    !canManageBranch({
+      branch,
+      user: data.user,
+      userType: data.userType,
+    })
+  ) {
+    return {
+      error: "not_allowed_to_update_branch",
+      statusCode: 403,
+    };
   }
 
   const updateData = Object.fromEntries(
@@ -102,7 +120,7 @@ const updateBranch = async (id, data) => {
     updateData.status !== "deleted"
   ) {
     const duplicate = await BranchRepo.findDuplicateBranch({
-      user: updateData.user || branch.user,
+      user: branch.user,
       name: updateData.name || branch.name,
       excludeId: branch._id,
     });
@@ -118,7 +136,12 @@ const updateBranch = async (id, data) => {
     return branch;
   }
 
-  Object.assign(branch, updateData);
+  /*
+   * set() - not Object.assign() - because updateData carries dotted paths
+   * such as "cqc.certificate". Object.assign writes those as stray own
+   * properties that save() then discards under strict mode.
+   */
+  branch.set(updateData);
 
   await branch.save();
 
@@ -153,8 +176,28 @@ const getBranchDetails = async (id, timezone, currentUserId) => {
   return formatted;
 };
 
-const deleteBranch = async (id) => {
+const deleteBranch = async (id, { user, userType } = {}) => {
   if (!id) throw new Error("Branch ID is required");
+
+  const branch = await BranchRepo.findBranchById_(id, "user");
+
+  if (!branch) {
+    return false;
+  }
+
+  if (
+    !canManageBranch({
+      branch,
+      user,
+      userType,
+    })
+  ) {
+    return {
+      error: "not_allowed_to_delete_branch",
+      statusCode: 403,
+    };
+  }
+
   const deleted = await BranchRepo.deleteBranch(id);
   return !!deleted;
 };
