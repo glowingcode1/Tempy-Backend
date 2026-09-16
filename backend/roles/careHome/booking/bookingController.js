@@ -239,6 +239,7 @@ const getBooking = async (req, res) => {
       longitude,
       km,
       currentUserId: req.user._id,
+      customer,
     });
 
     return sendResponse({
@@ -451,7 +452,12 @@ const getBookingDetails = async (req, res) => {
     return;
 
   try {
-    const job = await BookingService.getBookingDetails(id, timezone, req.user._id);
+    const job = await BookingService.getBookingDetails(
+      id,
+      timezone,
+      req.user._id,
+      customerTypes.includes(req.user.userType),
+    );
     if (!job) {
       return sendResponse({
         res,

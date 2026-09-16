@@ -8,10 +8,13 @@ const {
   getBidByJob,
   findBidById_,
   updateBidStatuses,
-  findBidByIdAndUpdate,
+  // bidRepository exports this as findByIdAndUpdate; importing it under the
+  // old name left it undefined and every bid reject / withdraw threw.
+  findByIdAndUpdate: findBidByIdAndUpdate,
   findBidById,
 } = require("../../../roles/aggency/bid/bidRepository");
 const { findUserById } = require("../../admin/usersManagement/usersRepository");
+const { runInBackground } = require("@helperUtils/runInBackground");
 
 // Application locations are represented as [latitude, longitude].
 const addDistanceFromOrigin = (job, origin) => {
@@ -61,6 +64,31 @@ const updateJobBidStatus = async (id, status, user) => {
   }
 
   if (status === "accepted") {
+    /*
+     * Only a bid that is still open can be won. Without this a customer could
+     * accept one that had been rejected, withdrawn, or released back to the
+     * market by the unstaffed-award sweep - resurrecting a dead award and
+     * re-rejecting the competitors that had just been reopened.
+     */
+    if (JobBid.status !== "pending") {
+      return { error: "Bid_not_available" };
+    }
+
+    /*
+     * Claim the shift before touching any bid. This both closes the shift to
+     * other suppliers - the agency still has to assign staff, and until it
+     * does the shift must not be offered to anyone else - and settles who
+     * wins if two accepts land at once.
+     */
+    const claimed = await JobRepo.claimShiftForAward(
+      JobBid.job.toString(),
+      JobBid.shift._id.toString(),
+    );
+
+    if (!claimed) {
+      return { error: "Bid_not_available" };
+    }
+
     // accept this bid, reject the rest for the same shift
     await updateBidStatuses(JobBid._id, "accepted", "rejected");
 
@@ -70,16 +98,8 @@ const updateJobBidStatus = async (id, status, user) => {
     if (!isNurse) {
       /*
        * Agency bid: stop here - the agency still has to pick a worker via
-       * createBooking. Close the shift now anyway: every competing bid was
-       * just rejected, so leaving it "pending" kept offering a shift that
-       * was already won to every other supplier.
+       * createBooking. The shift was already closed by the claim above.
        */
-      void JobRepo.updateShiftStatus(
-        JobBid.job.toString(),
-        JobBid.shift._id.toString(),
-        "booked",
-      );
-
       const updatedBid = await findBidById_(JobBid._id);
       return { updatedBid, booking: null, isNurse: false };
     }
@@ -91,6 +111,14 @@ const updateJobBidStatus = async (id, status, user) => {
     );
     if (conflict) {
       await findBidByIdAndUpdate(JobBid._id, { status: "rejected" });
+
+      // The nurse cannot work it after all, so give the shift back.
+      await JobRepo.updateShiftStatus(
+        JobBid.job.toString(),
+        JobBid.shift._id.toString(),
+        "pending",
+      );
+
       return { error: "Bid_rejected_due_to_nurse_unavailability" };
     }
 
@@ -103,11 +131,27 @@ const updateJobBidStatus = async (id, status, user) => {
 
     if (booking?.error) {
       await findBidByIdAndUpdate(JobBid._id, { status: "pending" });
+
+      await JobRepo.updateShiftStatus(
+        JobBid.job.toString(),
+        JobBid.shift._id.toString(),
+        "pending",
+      );
+
       return { error: booking.error };
     }
 
     const updatedBid = await findBidById_(JobBid._id);
     return { updatedBid, booking, isNurse: true };
+  }
+
+  /*
+   * Only a live bid can be rejected or withdrawn. Re-rejecting a settled one
+   * would run the release below a second time and hand back a shift that
+   * somebody else may since have won.
+   */
+  if (!["pending", "accepted"].includes(JobBid.status)) {
+    return { error: "Bid_not_available" };
   }
 
   // rejected / withdraw — just update the bid
@@ -122,10 +166,13 @@ const updateJobBidStatus = async (id, status, user) => {
     const booking = await BookingRepo.findBookingByBid(JobBid._id);
 
     if (!booking) {
-      void JobRepo.updateShiftStatus(
-        JobBid.job.toString(),
-        JobBid.shift._id.toString(),
-        "pending",
+      runInBackground(
+        JobRepo.updateShiftStatus(
+          JobBid.job.toString(),
+          JobBid.shift._id.toString(),
+          "pending",
+        ),
+        "release shift after bid " + JobBid._id + " was undone",
       );
     }
   }

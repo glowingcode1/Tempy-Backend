@@ -111,6 +111,14 @@ const getSupplierTabMatches = ({ supplierId, liveJobIds, completedJobIds }) => {
   // Anything already decided for me: it cannot also be an open opportunity.
   const settledIds = [...liveIds, ...completedOnlyIds];
 
+  /*
+   * A job can be handed to a supplier when it is created. An agency is named
+   * as the employer, but a nurse is named as the worker with no employer at
+   * all - matching on employer alone hid those jobs from the very nurse they
+   * were assigned to, since they are not open either.
+   */
+  const assignedToMe = [{ employer: supplierId }, { worker: supplierId }];
+
   return {
     active: {
       $or: [
@@ -124,7 +132,7 @@ const getSupplierTabMatches = ({ supplierId, liveJobIds, completedJobIds }) => {
             { worker: null, employer: null, "shift.status": "pending" },
 
             // Handed to me directly when the job was created.
-            { employer: supplierId },
+            ...assignedToMe,
           ],
         },
       ],
@@ -137,7 +145,7 @@ const getSupplierTabMatches = ({ supplierId, liveJobIds, completedJobIds }) => {
     inactive: {
       _id: { $nin: settledIds },
       status: "inactive",
-      employer: supplierId,
+      $or: assignedToMe,
     },
 
     /*
@@ -145,10 +153,7 @@ const getSupplierTabMatches = ({ supplierId, liveJobIds, completedJobIds }) => {
      * Only used to scope counts that sit outside the three tabs.
      */
     mine: {
-      $or: [
-        { _id: { $in: settledIds } },
-        { employer: supplierId },
-      ],
+      $or: [{ _id: { $in: settledIds } }, ...assignedToMe],
     },
   };
 };
@@ -914,6 +919,53 @@ const getUserAndShift = async (jobId, shiftId) => {
   };
 };
 
+/*
+ * Claim a shift for whoever just won it, atomically.
+ *
+ * Two customers accepting competing bids on the same shift at the same moment
+ * would otherwise both succeed and each reject the other's bid, leaving the
+ * shift's owner down to a race. The shift itself is the lock: exactly one
+ * update can move it out of "pending", and that caller is the winner.
+ *
+ * Returns false when somebody else got there first.
+ */
+const claimShiftForAward = async (jobId, shiftId) => {
+  const claimed = await Job.findOneAndUpdate(
+    {
+      _id: jobId,
+      shift: { $elemMatch: { _id: shiftId, status: "pending" } },
+    },
+    { $set: { "shift.$.status": "booked" } },
+    { new: true },
+  );
+
+  return Boolean(claimed);
+};
+
+/*
+ * A job is finished once every one of its shifts is. Suppliers get their
+ * Completed tab from their bookings, but the customer's still comes from
+ * Job.status - and nothing ever moved a job to "completed", so their
+ * Completed tab could never fill.
+ */
+const completeJobIfAllShiftsDone = async (jobId) => {
+  const job = await Job.findById(jobId).select("status shift").lean();
+
+  if (!job || job.status === "deleted" || job.status === "completed") {
+    return false;
+  }
+
+  const shifts = Array.isArray(job.shift) ? job.shift : [];
+
+  if (!shifts.length || !shifts.every((s) => s?.status === "completed")) {
+    return false;
+  }
+
+  await Job.updateOne({ _id: jobId }, { $set: { status: "completed" } });
+
+  return true;
+};
+
 const updateShiftStatus = async (jobId, shiftId, status) => {
   const allowed = ["pending", "booked", "completed"];
   if (!allowed.includes(status)) {
@@ -951,4 +1003,6 @@ module.exports = {
   getUserAndShift,
   getJobsSummary,
   updateShiftStatus,
+  claimShiftForAward,
+  completeJobIfAllShiftsDone,
 };

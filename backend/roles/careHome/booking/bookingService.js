@@ -17,7 +17,11 @@ const {
   formatCalendar,
   formatShiftPlan,
 } = require("./formator/calendarFormatter");
-const { updateShiftStatus } = require("../job/jobRepository");
+const {
+  updateShiftStatus,
+  completeJobIfAllShiftsDone,
+} = require("../job/jobRepository");
+const { runInBackground } = require("@helperUtils/runInBackground");
 const { formatAttendance } = require("./formator/formatAttendance");
 const {
   getStaffIdsByUser,
@@ -226,16 +230,22 @@ const createBooking = async (data) => {
     /*
      * Mark the shift as booked.
      */
-    void updateShiftStatus(
-      booking.job.toString(),
-      booking.shift._id.toString(),
-      "booked",
+    runInBackground(
+      updateShiftStatus(
+        booking.job.toString(),
+        booking.shift._id.toString(),
+        "booked",
+      ),
+      "book shift for booking " + booking._id,
     );
 
     /*
      * The bid is already accepted.
      */
-    void updateBidStatuses(bid._id, "accepted");
+    runInBackground(
+      updateBidStatuses(bid._id, "accepted"),
+      "settle bids for booking " + booking._id,
+    );
 
     return booking;
   }
@@ -364,13 +374,19 @@ const createBooking = async (data) => {
    * The shift is considered booked because a worker
    * has been assigned.
    */
-  void updateShiftStatus(
-    booking.job.toString(),
-    booking.shift._id.toString(),
-    "booked",
+  runInBackground(
+    updateShiftStatus(
+      booking.job.toString(),
+      booking.shift._id.toString(),
+      "booked",
+    ),
+    "book shift for booking " + booking._id,
   );
 
-  void updateBidStatuses(bid._id, "accepted");
+  runInBackground(
+    updateBidStatuses(bid._id, "accepted"),
+    "settle bids for booking " + booking._id,
+  );
 
   return booking;
 };
@@ -388,6 +404,7 @@ const getBooking = async ({
   longitude,
   km,
   currentUserId,
+  customer,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -404,6 +421,8 @@ const getBooking = async ({
     latitude,
     longitude,
     km,
+    // The customer has no booking until the assigned worker accepts it.
+    hideUnacceptedAssignments: Boolean(customer),
   });
   // One aggregation for the whole page instead of two per row. Each party
   // sees only their own review of a booking, plus whether they left one.
@@ -516,33 +535,48 @@ const updateBooking = async (id, data) => {
   const bidID = Booking.bid.toString();
   if (Object.values(CANCEL_STATUS).includes(data.status)) {
     /*
-     * A worker declining an assignment it never accepted is not a cancelled
-     * booking. The supplier still holds the accepted bid and is expected to
-     * assign somebody else - that is what the "Please assign someone else"
+     * Undoing an assignment nobody had accepted yet is not a cancelled
+     * booking - whether the worker declined it or the supplier withdrew it,
+     * the supplier still holds the winning bid and is expected to assign
+     * somebody else. That is what the "Please assign someone else"
      * notification in bookingController tells it to do. Releasing the shift
      * here would hand the job back to the open market and let a competing
      * supplier take work this one had already won.
      *
-     * Every other cancellation - by the customer, by the supplier, or of an
-     * accepted booking - does release it: the bid is closed, competing bids
-     * go back to pending and the shift is offered again.
+     * A cancellation by the customer, or of a booking the worker had already
+     * accepted, does release it: the bid is closed, competing bids go back to
+     * pending and the shift is offered again.
      */
-    const workerDeclinedAssignment =
-      previousStatus === "pending" && data.status === CANCEL_STATUS.nurse;
+    const assignmentUndone =
+      previousStatus === "pending" &&
+      (data.status === CANCEL_STATUS.nurse ||
+        data.status === CANCEL_STATUS.supplier);
 
-    if (!workerDeclinedAssignment) {
-      void updateBidStatuses(bidID, data.status, "pending");
-      void updateShiftStatus(jobId, shiftID, "pending");
+    if (!assignmentUndone) {
+      runInBackground(
+        updateBidStatuses(bidID, data.status, "pending"),
+        "reopen bids for cancelled booking " + id,
+      );
+
+      runInBackground(
+        updateShiftStatus(jobId, shiftID, "pending"),
+        "release shift for cancelled booking " + id,
+      );
     }
   }
 
   return Booking;
 };
 
-const getBookingDetails = async (id, timezone, currentUserId) => {
+const getBookingDetails = async (id, timezone, currentUserId, customer) => {
   const Booking = await BookingRepo.findBookingById(id);
 
   if (!Booking) {
+    return null;
+  }
+
+  // Same rule as the listing: for the customer it does not exist yet.
+  if (customer && Booking.status === "pending") {
     return null;
   }
 
@@ -585,7 +619,12 @@ const getBookingCalendar = async ({
   }
   const [jobRoles, bookings, weather] = await Promise.all([
     getActiveJobRoles(),
-    BookingRepo.getBookingsByUsersAndDateRange(worker, startDate, endDate),
+    BookingRepo.getBookingsByUsersAndDateRange(
+      worker,
+      startDate,
+      endDate,
+      Boolean(customer),
+    ),
     getWeather({ latitude, longitude, startDate, endDate, timezone }),
   ]);
 
@@ -711,10 +750,15 @@ const updateBookingCheckinCheckout = async (id, data) => {
    * the customer can never see it as finished.
    */
   if (data.status === "checkout") {
-    void updateShiftStatus(
-      Booking.job.toString(),
-      Booking.shift._id.toString(),
-      "completed",
+    const jobId = Booking.job.toString();
+
+    runInBackground(
+      updateShiftStatus(
+        jobId,
+        Booking.shift._id.toString(),
+        "completed",
+      ).then(() => completeJobIfAllShiftsDone(jobId)),
+      "complete shift and job for booking " + id,
     );
   }
 
@@ -747,6 +791,7 @@ const getShiftPlanCalendar = async ({
     userType,
     startDate,
     endDate,
+    hideUnacceptedAssignments: customerTypes.includes(userType),
   });
 
   return formatShiftPlan(bookings, timezone);
