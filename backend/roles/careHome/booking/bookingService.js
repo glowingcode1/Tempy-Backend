@@ -429,6 +429,13 @@ const getBooking = async ({
   return { Booking: formatedBooking, meta };
 };
 
+/*
+ * A booking is only really a booking once the assigned staff member has
+ * accepted it ("active"). Up to that point it is an assignment the supplier
+ * made and the worker may still decline.
+ */
+const CANCELLABLE_STATUSES = ["pending", "active"];
+
 const updateBooking = async (id, data) => {
   const Booking = await BookingRepo.findBookingById_(id);
 
@@ -440,6 +447,9 @@ const updateBooking = async (id, data) => {
     nurse: "cancelledByWorker",
     supplier: "cancelledByEmployer",
   };
+
+  // Needed after the save, by which point Booking.status is the new one.
+  const previousStatus = Booking.status;
 
   if (data.customer) {
     if (!data.currentUser.equals(Booking.user)) {
@@ -465,7 +475,12 @@ const updateBooking = async (id, data) => {
   }
 
   if (data.status === "cancel") {
-    if (Booking.status !== "pending") {
+    /*
+     * "active" is cancellable too: that is an accepted booking, and
+     * cancelling one has to be possible for the job to go back on the
+     * market. A booking the worker has already checked in on is not.
+     */
+    if (!CANCELLABLE_STATUSES.includes(Booking.status)) {
       return { error: "Cannot_cancel_non_pending_booking" };
     }
     data.status = data.customer
@@ -500,8 +515,25 @@ const updateBooking = async (id, data) => {
   const jobId = Booking.job.toString();
   const bidID = Booking.bid.toString();
   if (Object.values(CANCEL_STATUS).includes(data.status)) {
-    void updateBidStatuses(bidID, data.status, "pending");
-    void updateShiftStatus(jobId, shiftID, "pending");
+    /*
+     * A worker declining an assignment it never accepted is not a cancelled
+     * booking. The supplier still holds the accepted bid and is expected to
+     * assign somebody else - that is what the "Please assign someone else"
+     * notification in bookingController tells it to do. Releasing the shift
+     * here would hand the job back to the open market and let a competing
+     * supplier take work this one had already won.
+     *
+     * Every other cancellation - by the customer, by the supplier, or of an
+     * accepted booking - does release it: the bid is closed, competing bids
+     * go back to pending and the shift is offered again.
+     */
+    const workerDeclinedAssignment =
+      previousStatus === "pending" && data.status === CANCEL_STATUS.nurse;
+
+    if (!workerDeclinedAssignment) {
+      void updateBidStatuses(bidID, data.status, "pending");
+      void updateShiftStatus(jobId, shiftID, "pending");
+    }
   }
 
   return Booking;
@@ -672,6 +704,19 @@ const updateBookingCheckinCheckout = async (id, data) => {
   }
 
   await Booking.save();
+
+  /*
+   * Checking out ends the shift for good. Without this the shift stays
+   * "booked" forever, so the job never leaves the supplier's Active tab and
+   * the customer can never see it as finished.
+   */
+  if (data.status === "checkout") {
+    void updateShiftStatus(
+      Booking.job.toString(),
+      Booking.shift._id.toString(),
+      "completed",
+    );
+  }
 
   return Booking;
 };

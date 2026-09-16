@@ -453,6 +453,22 @@ const findByIdAndUpdate = async (id, data) => {
     .lean()
     .populate("user", "name email profileIcon");
 };
+
+/*
+ * Is this bid currently staffed? A declined or cancelled booking does not
+ * count: the supplier is expected to assign somebody else, and a new booking
+ * is created for the same bid when it does.
+ */
+const findBookingByBid = async (bidId) => {
+  return Booking.findOne({
+    bid: bidId,
+    status: {
+      $nin: ["cancelledByWorker", "cancelledByEmployer", "cancelledByUser"],
+    },
+  })
+    .select("_id status")
+    .lean();
+};
 const deleteBooking = async (id) => {
   return await Booking.findByIdAndUpdate(
     id,
@@ -964,6 +980,7 @@ module.exports = {
   findByIdAndUpdate,
   deleteBooking,
   findBookingById_,
+  findBookingByBid,
   findJobById_,
   getBookingByJob,
   findBookingByUserId,

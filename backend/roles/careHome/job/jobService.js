@@ -68,7 +68,18 @@ const updateJobBidStatus = async (id, status, user) => {
     const isNurse = bidder?.accountState?.userType === "nurse";
 
     if (!isNurse) {
-      // Agency bid: stop here — agency still has to pick a worker via createBooking
+      /*
+       * Agency bid: stop here - the agency still has to pick a worker via
+       * createBooking. Close the shift now anyway: every competing bid was
+       * just rejected, so leaving it "pending" kept offering a shift that
+       * was already won to every other supplier.
+       */
+      void JobRepo.updateShiftStatus(
+        JobBid.job.toString(),
+        JobBid.shift._id.toString(),
+        "booked",
+      );
+
       const updatedBid = await findBidById_(JobBid._id);
       return { updatedBid, booking: null, isNurse: false };
     }
@@ -101,6 +112,24 @@ const updateJobBidStatus = async (id, status, user) => {
 
   // rejected / withdraw — just update the bid
   const updated = await findBidByIdAndUpdate(id, { status });
+
+  /*
+   * Undoing an award puts the shift back on the market. If the bid was
+   * already staffed the booking owns the shift, and only cancelling the
+   * booking may release it.
+   */
+  if (JobBid.status === "accepted") {
+    const booking = await BookingRepo.findBookingByBid(JobBid._id);
+
+    if (!booking) {
+      void JobRepo.updateShiftStatus(
+        JobBid.job.toString(),
+        JobBid.shift._id.toString(),
+        "pending",
+      );
+    }
+  }
+
   return { updatedBid: updated };
 };
 

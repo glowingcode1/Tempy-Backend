@@ -4,6 +4,10 @@ const Staff = require("../staff/Staff");
 const Booking = require("../../careHome/booking/Booking");
 const Branches = require("../../aggency/branches/Branches");
 const mongoose = require("mongoose");
+const {
+  getSupplierBookedJobIds,
+  getSupplierTabMatches,
+} = require("../../careHome/job/jobRepository");
 const { formatShiftToTimezone } = require("@helperUtils/responseUtil");
 
 // ============================================================
@@ -20,26 +24,64 @@ const toObjectId = (value) => {
     : null;
 };
 
+// Job.status minus "deleted", which never belongs in a dashboard count.
+const JOB_STATUSES = ["active", "inactive", "completed"];
+
+const CANCELLED_BOOKING_STATUSES = [
+  "cancelledByWorker",
+  "cancelledByEmployer",
+  "cancelledByUser",
+];
+
+const uniqueIds = (...lists) => {
+  const byId = new Map();
+
+  lists.flat().forEach((id) => {
+    if (id) byId.set(String(id), id);
+  });
+
+  return [...byId.values()];
+};
+
 /*
  * A Job is always created by the CUSTOMER (careHome / hospital / user),
- * so Job.user is never the supplier. The supplier side of a job is:
+ * so Job.user is never the supplier. A job only becomes the supplier's
+ * once it has actually been won:
  *
- *   - jobs the supplier has bid on   -> Bid.user = supplier
+ *   - an accepted bid of theirs      -> Bid.user = supplier, status accepted
+ *   - a live booking of theirs       -> Booking.employer = supplier
  *   - jobs assigned directly to them -> Job.employer = supplier
+ *
+ * Pending / rejected / withdrawn bids are NOT jobs. They already have their
+ * own counts in the bids section, and counting them here made a supplier who
+ * had won nothing look like they had a full job list.
+ *
+ * Cancelling drops the job on both sides: it resets the bid to cancelledBy*
+ * (see updateBidStatuses), so the job stops being theirs.
  */
 const getSupplierJobMatch = async ({ userId }) => {
-  const jobIds = await Bid.distinct("job", {
-    user: userId,
-    status: {
-      $ne: "deleted",
-    },
-  });
+  // The match also feeds $match, which does not cast the way find() does.
+  userId = toObjectId(userId) || userId;
+
+  const [acceptedBidJobIds, bookedJobIds] = await Promise.all([
+    Bid.distinct("job", {
+      user: userId,
+      status: "accepted",
+    }),
+
+    Booking.distinct("job", {
+      employer: userId,
+      status: {
+        $nin: CANCELLED_BOOKING_STATUSES,
+      },
+    }),
+  ]);
 
   return {
     $or: [
       {
         _id: {
-          $in: jobIds,
+          $in: uniqueIds(acceptedBidJobIds, bookedJobIds),
         },
       },
       {
@@ -158,47 +200,35 @@ const getMonthlyAggregation = async ({
 // JOB STATS
 // ============================================================
 
+/*
+ * The dashboard must not answer "how many active jobs?" differently from the
+ * jobs listing, so it counts the very same matches the listing and its meta
+ * counts are built from, rather than a second definition of its own.
+ *
+ * The three tabs are disjoint, so their sum is the total.
+ */
 const getJobStats = async ({ userId }) => {
-  const baseMatch = await getSupplierJobMatch({
-    userId,
+  const tabs = getSupplierTabMatches({
+    supplierId: userId,
+    ...(await getSupplierBookedJobIds(userId)),
   });
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  // The listing drops deleted jobs; the inactive tab carries its own status.
+  const notDeleted = { status: { $ne: "deleted" } };
 
-  const [totalJobs, activeJobs, inactiveJobs, completedJobs, newJobs] =
-    await Promise.all([
-      Job.countDocuments(baseMatch),
+  const [activeJobs, inactiveJobs, completedJobs] = await Promise.all([
+    Job.countDocuments({ ...notDeleted, ...tabs.active }),
 
-      Job.countDocuments({
-        ...baseMatch,
-        status: "active",
-      }),
+    Job.countDocuments({ ...notDeleted, ...tabs.inactive }),
 
-      Job.countDocuments({
-        ...baseMatch,
-        status: "inactive",
-      }),
-
-      Job.countDocuments({
-        ...baseMatch,
-        status: "completed",
-      }),
-
-      Job.countDocuments({
-        ...baseMatch,
-        createdAt: {
-          $gte: thirtyDaysAgo,
-        },
-      }),
-    ]);
+    Job.countDocuments({ ...notDeleted, ...tabs.completed }),
+  ]);
 
   return {
-    totalJobs,
+    totalJobs: activeJobs + inactiveJobs + completedJobs,
     activeJobs,
     inactiveJobs,
     completedJobs,
-    newJobs,
   };
 };
 
@@ -453,10 +483,12 @@ const getMonthlyActivity = async ({ userId }) => {
 // RECENT ACTIVITY
 // ============================================================
 
-const getRecentActivity = async ({ userId }) => {
-  const supplierJobMatch = await getSupplierJobMatch({
-    userId,
-  });
+const getRecentActivity = async ({ userId, jobMatch }) => {
+  const supplierJobMatch =
+    jobMatch ||
+    (await getSupplierJobMatch({
+      userId,
+    }));
 
   const [jobs, bookings, bids, staff] = await Promise.all([
     // --------------------------------------------------------
@@ -580,31 +612,44 @@ const getRecentActivity = async ({ userId }) => {
 };
 
 // ============================================================
-// OPEN JOB OPPORTUNITIES
+// NEW / OPEN JOB OPPORTUNITIES
 // ============================================================
 
-// ============================================================
-// OPEN JOB OPPORTUNITIES
-// ============================================================
+/*
+ * A "new" job for a supplier is an open opportunity: somebody else's active
+ * job that nobody has been assigned to yet and that still has a pending
+ * shift - not a job the supplier already owns.
+ *
+ * The count and the list share this one filter, so the number shown above
+ * the list can never disagree with the list itself.
+ */
+const getOpenJobMatch = ({ userId }) => ({
+  user: {
+    $ne: userId,
+  },
+
+  status: "active",
+
+  worker: null,
+
+  employer: null,
+
+  "shift.status": "pending",
+});
+
+const getNewJobsCount = async ({ userId }) =>
+  Job.countDocuments(
+    getOpenJobMatch({
+      userId,
+    }),
+  );
 
 const getOpenJobs = async ({ userId, timezone }) => {
-  /*
-   * Open opportunities for a supplier are unassigned customer jobs
-   * that still have a pending shift - not jobs the supplier owns.
-   */
-  const jobs = await Job.find({
-    user: {
-      $ne: userId,
-    },
-
-    status: "active",
-
-    worker: null,
-
-    employer: null,
-
-    "shift.status": "pending",
-  })
+  const jobs = await Job.find(
+    getOpenJobMatch({
+      userId,
+    }),
+  )
     .sort({
       createdAt: -1,
     })
@@ -840,6 +885,14 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
    */
   userId = toObjectId(userId);
 
+  /*
+   * Which jobs are the supplier's is one question - resolve it once and
+   * share it, so the stats and the recent activity can never disagree.
+   */
+  const jobMatch = await getSupplierJobMatch({
+    userId,
+  });
+
   const [
     jobs,
     bookings,
@@ -849,6 +902,7 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
     recentActivity,
     branchesActivity,
     openJobs,
+    newJobs,
     winRateByRegion,
     shiftsAndEarnings,
   ] = await Promise.all([
@@ -874,6 +928,7 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
 
     getRecentActivity({
       userId,
+      jobMatch,
     }),
 
     getBranchesActivity({
@@ -883,6 +938,10 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
     getOpenJobs({
       userId,
       timezone,
+    }),
+
+    getNewJobsCount({
+      userId,
     }),
 
     getWinRateByRegion({
@@ -897,7 +956,8 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
 
   return {
     summary: {
-      newJobs: jobs.newJobs,
+      // Open opportunities to bid on - the same set the openJobs list shows.
+      newJobs,
       activeBookings: bookings.activeBookings,
 
       totalStaff: staff.totalStaff,
@@ -962,6 +1022,7 @@ module.exports = {
   getBranchesActivity,
 
   getOpenJobs,
+  getNewJobsCount,
   getWinRateByRegion,
   getShiftsAndEarnings,
 };

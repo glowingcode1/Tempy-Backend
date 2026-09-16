@@ -1,4 +1,6 @@
 const Job = require("./Job");
+const Bid = require("../../aggency/bid/Bid");
+const Booking = require("../booking/Booking");
 const mongoose = require("mongoose");
 const {
   buildKeywordQueryFromModels,
@@ -7,6 +9,149 @@ const { generateMeta } = require("@helperUtils/responseUtil");
 const {
   findUserById,
 } = require("../../../roles/admin/usersManagement/usersRepository");
+
+/*
+ * A supplier's Active / Completed tabs cannot be read off Job.status: the
+ * same job is Active for whoever holds the booking and gone for everyone
+ * else. The tab is derived per supplier, from that supplier's own bookings:
+ *
+ *   Active    - a live booking of mine (pending / active / inProgress), or a
+ *               job still open to bid on (unassigned, with a pending shift),
+ *               or one handed to me directly when it was created
+ *   Completed - a booking of mine that finished, with none still live on the
+ *               same job
+ *   Inactive  - a job of mine the customer deactivated
+ *
+ * The three are mutually exclusive by construction, so the tab counts always
+ * add up to the total.
+ *
+ * Cancelling undoes all of it without any extra work here: the booking leaves
+ * both id lists and updateBooking puts the shift back to "pending", so the
+ * job reappears in every supplier's Active tab.
+ */
+const LIVE_BOOKING_STATUSES = ["pending", "active", "inProgress"];
+
+const CANCELLED_BOOKING_STATUSES = [
+  "cancelledByWorker",
+  "cancelledByEmployer",
+  "cancelledByUser",
+];
+
+const getSupplierBookedJobIds = async (supplierId) => {
+  // An agency holds the booking as employer; a nurse booked direct is both.
+  const mine = {
+    $or: [{ employer: supplierId }, { worker: supplierId }],
+  };
+
+  const [bookedJobIds, completedJobIds, awardedBids, staffedShiftIds] =
+    await Promise.all([
+      Booking.distinct("job", {
+        ...mine,
+        status: { $in: LIVE_BOOKING_STATUSES },
+      }),
+
+      Booking.distinct("job", {
+        ...mine,
+        status: "completed",
+      }),
+
+      /*
+       * Won at the bid stage but not staffed yet. Accepting a bid rejects
+       * every competing one and closes the shift, so the job is nobody
+       * else's - it has to sit in this supplier's Active tab until a worker
+       * is assigned, not disappear from everyone's.
+       */
+      Bid.find({ user: supplierId, status: "accepted" })
+        .select("job shift._id")
+        .lean(),
+
+      /*
+       * An accepted bid stays accepted after its booking is made, so match
+       * on the shift to tell "still to staff" from "already staffed".
+       *
+       * Cancelled bookings are excluded on purpose: when an assigned staff
+       * member declines, the shift counts as unstaffed again so the job stays
+       * in this supplier's Active tab while it assigns somebody else.
+       */
+      Booking.distinct("shift._id", {
+        ...mine,
+        status: { $nin: CANCELLED_BOOKING_STATUSES },
+      }),
+    ]);
+
+  const staffed = new Set(staffedShiftIds.map(String));
+
+  const awaitingStaffJobIds = awardedBids
+    .filter((bid) => !staffed.has(String(bid.shift?._id)))
+    .map((bid) => bid.job);
+
+  return {
+    liveJobIds: [...bookedJobIds, ...awaitingStaffJobIds],
+    completedJobIds,
+  };
+};
+
+// The tabs a supplier can ask for. Anything else falls back to all of them.
+const SUPPLIER_TABS = ["active", "completed", "inactive"];
+
+const getSupplierTabMatches = ({ supplierId, liveJobIds, completedJobIds }) => {
+  const live = new Map(liveJobIds.map((id) => [String(id), id]));
+
+  /*
+   * A job whose other shift is still running stays Active, not Completed.
+   * Subtracting here rather than at the call site is what makes the three
+   * tabs disjoint no matter who builds them.
+   */
+  const completedOnlyIds = completedJobIds.filter(
+    (id) => !live.has(String(id)),
+  );
+
+  const liveIds = [...live.values()];
+
+  // Anything already decided for me: it cannot also be an open opportunity.
+  const settledIds = [...liveIds, ...completedOnlyIds];
+
+  return {
+    active: {
+      $or: [
+        { _id: { $in: liveIds } },
+
+        {
+          _id: { $nin: settledIds },
+          status: "active",
+          $or: [
+            // Open to bid on - nobody is booked for it yet.
+            { worker: null, employer: null, "shift.status": "pending" },
+
+            // Handed to me directly when the job was created.
+            { employer: supplierId },
+          ],
+        },
+      ],
+    },
+
+    completed: {
+      _id: { $in: completedOnlyIds },
+    },
+
+    inactive: {
+      _id: { $nin: settledIds },
+      status: "inactive",
+      employer: supplierId,
+    },
+
+    /*
+     * Every job that is this supplier's in any sense, whatever its status.
+     * Only used to scope counts that sit outside the three tabs.
+     */
+    mine: {
+      $or: [
+        { _id: { $in: settledIds } },
+        { employer: supplierId },
+      ],
+    },
+  };
+};
 
 const createJob = async (data) => {
   try {
@@ -138,15 +283,16 @@ const getJobsSummary = async ({
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
   };
 
-  const [total, active, inactive, deleted] = await Promise.all([
+  const [total, active, inactive, completed, deleted] = await Promise.all([
     Job.countDocuments({ ...countFilter, status: { $ne: "deleted" } }),
     Job.countDocuments({ ...countFilter, status: "active" }),
     Job.countDocuments({ ...countFilter, status: "inactive" }),
+    Job.countDocuments({ ...countFilter, status: "completed" }),
     Job.countDocuments({ ...countFilter, status: "deleted" }),
   ]);
 
   const meta = generateMeta(page, limit, totalFiltered);
-  meta.JobsCount = { total, active, inactive, deleted };
+  meta.JobsCount = { total, active, inactive, completed, deleted };
 
   return { Jobs, meta };
 };
@@ -230,10 +376,38 @@ const getJobs = async ({
 
   const pipeline = [];
 
+  const supplierId =
+    worker || employer
+      ? new mongoose.Types.ObjectId(employer || worker)
+      : null;
+
+  const supplierTabs = supplierId
+    ? getSupplierTabMatches({
+        supplierId,
+        ...(await getSupplierBookedJobIds(supplierId)),
+      })
+    : null;
+
+  /*
+   * For a supplier the requested status names a derived tab, not Job.status,
+   * so the tab match below owns it and baseMatch only drops deleted jobs.
+   */
+  const supplierTabMatch = supplierTabs
+    ? SUPPLIER_TABS.includes(status)
+      ? supplierTabs[status]
+      : {
+          $or: SUPPLIER_TABS.map((tab) => supplierTabs[tab]),
+        }
+    : null;
+
   // Base filters shared by both geo and non-geo modes
   const baseMatch = {
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
-    ...(status ? { status } : { status: { $ne: "deleted" } }),
+    ...(supplierTabs
+      ? { status: { $ne: "deleted" } }
+      : status
+        ? { status }
+        : { status: { $ne: "deleted" } }),
     ...(dateFilter && ranges[dateFilter]
       ? {
           shift: {
@@ -279,13 +453,19 @@ const getJobs = async ({
   } else {
     pipeline.push({ $match: baseMatch });
   }
+  if (supplierTabMatch) {
+    pipeline.push({ $match: supplierTabMatch });
+  }
+
   const assignmentConditions = [];
 
   // Open jobs (both are null)
-  assignmentConditions.push({
-    worker: null,
-    employer: null,
-  });
+  if (!supplierTabMatch) {
+    assignmentConditions.push({
+      worker: null,
+      employer: null,
+    });
+  }
 
   // Assigned jobs
   const assignedMatch = {};
@@ -300,11 +480,11 @@ const getJobs = async ({
     };
   }
 
-  if (worker) {
+  if (worker && !supplierTabMatch) {
     assignedMatch.worker = new mongoose.Types.ObjectId(worker);
   }
 
-  if (employer) {
+  if (employer && !supplierTabMatch) {
     assignedMatch.employer = new mongoose.Types.ObjectId(employer);
   }
 
@@ -496,9 +676,54 @@ const getJobs = async ({
   const Jobs = result[0]?.data || [];
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
+  /*
+   * JobsCount describes the same jobs the list does, so it is built from the
+   * same matches. Without this a supplier got platform-wide tallies - every
+   * job of every account - instead of what its own tabs contain.
+   *
+   * The requested status and dateFilter stay out of it: the buckets below
+   * vary those themselves.
+   */
   const countFilter = {
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
   };
+
+  // Everything this requester can see at all, whichever tab it lands in.
+  const visibleMatch = supplierTabs
+    ? { $or: SUPPLIER_TABS.map((tab) => supplierTabs[tab]) }
+    : {};
+
+  /*
+   * The list drops deleted jobs in baseMatch, so the counts have to as well -
+   * otherwise a soft-deleted job a supplier holds a booking on would be
+   * counted in a tab it cannot appear in. The inactive tab carries its own
+   * status and overrides this.
+   */
+  const statusMatches = supplierTabs
+    ? {
+        active: {
+          ...countFilter,
+          status: { $ne: "deleted" },
+          ...supplierTabs.active,
+        },
+        inactive: { ...countFilter, ...supplierTabs.inactive },
+        completed: {
+          ...countFilter,
+          status: { $ne: "deleted" },
+          ...supplierTabs.completed,
+        },
+      }
+    : {
+        active: { ...countFilter, status: "active" },
+        inactive: { ...countFilter, status: "inactive" },
+        completed: { ...countFilter, status: "completed" },
+      };
+
+  // A supplier's deleted count means "jobs of mine the customer deleted",
+  // not every deleted job on the platform.
+  const deletedMatch = supplierTabs
+    ? { ...countFilter, ...supplierTabs.mine, status: "deleted" }
+    : { ...countFilter, status: "deleted" };
 
   const next24Hours = getDateRange("next24Hours");
 
@@ -507,9 +732,10 @@ const getJobs = async ({
   const nextWeek = getDateRange("nextWeek");
 
   const [
-    total,
+    totalCount,
     active,
     inactive,
+    completed,
     deleted,
     next6HoursCount,
     next12HoursCount,
@@ -521,26 +747,21 @@ const getJobs = async ({
   ] = await Promise.all([
     Job.countDocuments({
       ...countFilter,
+      ...visibleMatch,
       status: { $ne: "deleted" },
     }),
 
-    Job.countDocuments({
-      ...countFilter,
-      status: "active",
-    }),
+    Job.countDocuments(statusMatches.active),
+
+    Job.countDocuments(statusMatches.inactive),
+
+    Job.countDocuments(statusMatches.completed),
+
+    Job.countDocuments(deletedMatch),
 
     Job.countDocuments({
       ...countFilter,
-      status: "inactive",
-    }),
-
-    Job.countDocuments({
-      ...countFilter,
-      status: "deleted",
-    }),
-
-    Job.countDocuments({
-      ...countFilter,
+      ...visibleMatch,
       status: { $ne: "deleted" },
       shift: {
         $elemMatch: {
@@ -554,6 +775,7 @@ const getJobs = async ({
 
     Job.countDocuments({
       ...countFilter,
+      ...visibleMatch,
       status: { $ne: "deleted" },
       shift: {
         $elemMatch: {
@@ -567,6 +789,7 @@ const getJobs = async ({
 
     Job.countDocuments({
       ...countFilter,
+      ...visibleMatch,
       status: { $ne: "deleted" },
       shift: {
         $elemMatch: {
@@ -580,6 +803,7 @@ const getJobs = async ({
 
     Job.countDocuments({
       ...countFilter,
+      ...visibleMatch,
       status: { $ne: "deleted" },
       shift: {
         $elemMatch: {
@@ -593,6 +817,7 @@ const getJobs = async ({
 
     Job.countDocuments({
       ...countFilter,
+      ...visibleMatch,
       status: { $ne: "deleted" },
       shift: {
         $elemMatch: {
@@ -606,6 +831,7 @@ const getJobs = async ({
 
     Job.countDocuments({
       ...countFilter,
+      ...visibleMatch,
       status: { $ne: "deleted" },
       shift: {
         $elemMatch: {
@@ -619,6 +845,7 @@ const getJobs = async ({
 
     Job.countDocuments({
       ...countFilter,
+      ...visibleMatch,
       status: { $ne: "deleted" },
       shift: {
         $elemMatch: {
@@ -633,10 +860,20 @@ const getJobs = async ({
 
   const meta = generateMeta(page, limit, totalFiltered);
 
+  /*
+   * The supplier tabs are disjoint, so their sum is the total. Counting the
+   * union separately would be a second answer to the same question, and the
+   * two could drift.
+   */
+  const total = supplierTabs ? active + inactive + completed : totalCount;
+
   meta.JobsCount = {
+    // total covers every status except deleted, so it is always the sum of
+    // the three buckets below it - completed included.
     total,
     active,
     inactive,
+    completed,
     deleted,
     next6Hours: next6HoursCount,
     next12Hours: next12HoursCount,
@@ -699,6 +936,14 @@ const updateShiftStatus = async (jobId, shiftId, status) => {
 module.exports = {
   createJob,
   getJobs,
+
+  /*
+   * The supplier dashboard counts the same matches this module builds, so
+   * that dashboard totals, meta counts and the tabs cannot disagree.
+   */
+  getSupplierBookedJobIds,
+  getSupplierTabMatches,
+  SUPPLIER_TABS,
   findJobById,
   findByIdAndUpdate,
   deleteJob,
