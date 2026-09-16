@@ -84,7 +84,8 @@ const JobSchema = new mongoose.Schema(
     },
     type: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "JobType",
+      // Registered as JobRole - there is no JobType model.
+      ref: "JobRole",
       required: true,
     },
     isSpecial: {

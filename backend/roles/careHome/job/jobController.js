@@ -11,6 +11,9 @@ const JobService = require("./jobService");
 const { customerTypes, supplierTypes, User } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
 const { sendUserNotifications } = require("@notificationsUtil");
+const {
+  findUsableBranch,
+} = require("../../aggency/branches/branchesRepository");
 const { NotificationTypes } = require("@NotificationsModel");
 // const { isUserProfileComplete } = require("@helperUtils/userResponseUtil");
 
@@ -147,6 +150,23 @@ const createJob = async (req, res) => {
   const uploadedDocuments = (req.files || []).map(
     (file) => file.location || file.path,
   );
+
+  /*
+   * The branch id comes straight from the request body, so it has to be
+   * proved: the caller's own, and verified. An unverified branch cannot be
+   * used, and until now any branch id at all was accepted.
+   */
+  if (branch) {
+    const usableBranch = await findUsableBranch(branch, user);
+
+    if (!usableBranch) {
+      return sendResponse({
+        res,
+        statusCode: 403,
+        translationKey: "branch_not_available_or_not_verified",
+      });
+    }
+  }
 
   let data = {
     name,

@@ -46,6 +46,9 @@ const auth = async (req, res, next) => {
       "language",
       "location",
       "userType",
+      // Cached before these existed -> refetch rather than gate on undefined.
+      "accountStatus",
+      "personaVerified",
       "accountState"
     ];
 
@@ -53,7 +56,8 @@ const auth = async (req, res, next) => {
       !user || requiredFields.some((field) => !hasField(user, field));
 
     if (!user || isMissingRequiredFields) {
-      const selectFields = "name profileIcon email timezone language location accountState";
+      const selectFields =
+        "name profileIcon email timezone language location accountState verificationStatus";
       user = await User.findById(userId).select(selectFields);
 
       if (!user) {
@@ -78,6 +82,21 @@ const auth = async (req, res, next) => {
       // Immediately convert user to a plain object for modification
       user = user.toObject();
       user.userType = user.accountState.userType;
+
+      /*
+       * Flattened alongside userType because accountState is dropped below.
+       * Anything that changes either of these must call userCache.del(userId)
+       * or the gates below read a stale value for up to an hour.
+       *
+       * accountStatus  - the admin's decision; controls signing in.
+       * personaVerified - the provider's decision; controls taking part in
+       *                   the marketplace. They are deliberately separate:
+       *                   an activated account still cannot post or bid until
+       *                   Persona has approved it.
+       */
+      user.accountStatus = user.accountState.status;
+      user.personaVerified = user.verificationStatus?.persona === true;
+
       delete user.accountState;
 
       // Update the cache with the modified user object

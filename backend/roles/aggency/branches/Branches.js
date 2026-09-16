@@ -36,6 +36,14 @@ const BranchesSchema = new mongoose.Schema(
       verified: { type: Boolean, default: false },
       expiryDate: { type: Date },
     },
+    /*
+     * Approved by Persona, as opposed to cqc/insurance above which an admin
+     * checks by hand. Separate from status: the branch stays inactive until
+     * somebody activates it.
+     */
+    persona: {
+      verified: { type: Boolean, default: false },
+    },
     rating: {
       average: { type: Number, default: 0 },
       count: { type: Number, default: 0 },

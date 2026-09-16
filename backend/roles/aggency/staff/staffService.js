@@ -237,13 +237,18 @@ const toSafeRowMessage = (message, fallback) => {
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// A branch may be referenced by id or by name, and the same branch usually
-// repeats across rows, so resolved lookups are cached for the whole import.
+/*
+ * A branch may be referenced by id or by name, and the same branch usually
+ * repeats across rows, so resolved lookups are cached for the whole import.
+ *
+ * Only an active branch resolves. A branch stays inactive until its
+ * verification is approved, and staff cannot be added to it before then.
+ */
 const resolveBranch = async (branchRef, userId, branchCache) => {
   const cacheKey = branchRef.toLowerCase();
   if (branchCache.has(cacheKey)) return branchCache.get(cacheKey);
 
-  const scope = { user: userId, status: { $ne: "deleted" } };
+  const scope = { user: userId, status: "active" };
   const branch = mongoose.isValidObjectId(branchRef)
     ? await Branches.findOne({ ...scope, _id: branchRef }).select("_id name")
     : await Branches.findOne({
@@ -534,7 +539,7 @@ const importStaff = async ({ rows, userId, req }) => {
         results.push({
           ...entry,
           action: IMPORT_ACTIONS.FAILED,
-          message: `branch ${data.branch} was not found for this agency`,
+          message: `branch ${data.branch} was not found for this agency, or has not passed verification yet`,
         });
         summary.failed += 1;
         continue;

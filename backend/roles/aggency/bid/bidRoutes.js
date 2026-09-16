@@ -10,6 +10,7 @@ const {
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
 const roleMiddleware = require("../../../middlewares/roleMiddleware");
+const requireVerifiedAccount = require("../../../middlewares/requireVerifiedAccount");
 
 const router = express.Router();
 
@@ -30,6 +31,7 @@ router.post(
     "hospital",
     "user",
   ]),
+  requireVerifiedAccount,
   BidRateLimiter,
   createBid,
 );

@@ -3,6 +3,7 @@ const { acquireLock, releaseLock } = require("@redisCache");
 
 const { flushEngagementBuffer } = require("./engagement/flushEngagementBuffer");
 const updateBookingStatuses = require("./booking/updateBooking");
+const { startAwardReleaseCron } = require("./awardRelease");
 
 const startCrons = () => {
   // cron.schedule("*/5 * * * * *", async () => { //5 seconds for testing
@@ -42,6 +43,9 @@ const startCrons = () => {
         await releaseLock(lockKey, lock);
       }
     });
+
+  startAwardReleaseCron();
 };
 
-module.exports = { startCrons };
+module.exports = { startCrons, startAwardReleaseCron };
+

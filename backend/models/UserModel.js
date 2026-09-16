@@ -139,6 +139,17 @@ const userSchema = new mongoose.Schema(
         enum: ["pending", "verified"],
         default: "pending",
       },
+
+      /*
+       * True only when Persona approved this identity. It records what the
+       * provider decided, which is not the same thing as accountState.status:
+       * an admin still activates the account, and may activate one Persona
+       * never saw or hold one it approved.
+       */
+      persona: {
+        type: Boolean,
+        default: false,
+      },
     },
 
     password: {
@@ -157,6 +168,9 @@ const userSchema = new mongoose.Schema(
           "pending",
           "inactive",
           "active",
+          // Verification was refused. authController already handles this
+          // status on login; it was missing here, so it could never be saved.
+          "rejected",
           "cancelled",
           "expired",
           "suspended",

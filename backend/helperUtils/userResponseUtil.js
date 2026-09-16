@@ -60,6 +60,7 @@ const formatUserResponse = (
       verificationStatus: {
         email: userObject.verificationStatus?.email || "pending",
         phoneNumber: userObject.verificationStatus?.phoneNumber || "pending",
+        persona: userObject.verificationStatus?.persona || false,
       },
       blueTick: userObject.accountState?.blueTick?.isActive || false,
     },
