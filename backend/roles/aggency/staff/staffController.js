@@ -10,6 +10,9 @@ const moment = require("moment");
 const csv = require("csv-parser");
 const { Readable } = require("stream");
 const StaffService = require("./staffService");
+const {
+  findUsableBranch,
+} = require("../branches/branchesRepository");
 const { buildStaffCsvTemplate } = require("./staffImportUtil");
 const { customerTypes, supplierTypes } = require("@UsersModel");
 const { sendUserNotifications } = require("@notificationsUtil");
@@ -96,6 +99,21 @@ const createStaff = async (req, res) => {
       })
     )
       return;
+  }
+
+  /*
+   * The branch id arrives in the request body, so it has to be proved: the
+   * employer's own, and active. A branch stays inactive until its
+   * verification is approved and cannot take staff before then.
+   */
+  const usableBranch = await findUsableBranch(branch, user);
+
+  if (!usableBranch) {
+    return sendResponse({
+      res,
+      statusCode: 403,
+      translationKey: "branch_not_available_or_not_verified",
+    });
   }
 
   let data = {
