@@ -1,5 +1,13 @@
 const mongoose = require("mongoose");
 
+/*
+ * Loaded for its side effect: it registers the JobRole model. The update
+ * endpoint populates jobType, and populate resolves the ref by name at call
+ * time, so the model has to exist by then rather than depending on some other
+ * route happening to load it first.
+ */
+require("../../admin/jobRole/JobRole");
+
 const USER_TYPES = ["agency", "homeCareCompany", "nurse"];
 
 const AgreedRateSchema = new mongoose.Schema(
@@ -11,7 +19,9 @@ const AgreedRateSchema = new mongoose.Schema(
     },
     jobType: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "JobType",
+      // The model is registered as JobRole (collection jobroles). There has
+      // never been a JobType model, so populating this ref threw.
+      ref: "JobRole",
       required: true,
     },
     objectType: {
