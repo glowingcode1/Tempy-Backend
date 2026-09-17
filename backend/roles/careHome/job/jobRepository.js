@@ -966,6 +966,76 @@ const completeJobIfAllShiftsDone = async (jobId) => {
   return true;
 };
 
+/*
+ * Apply a job edit without clobbering shift state that other requests own.
+ *
+ * Saving the whole shift array would regenerate shift ids (orphaning bids and
+ * bookings) and could write "pending" back over a shift that was claimed a
+ * moment ago. Shift writes are conditional on the shift still being
+ * "pending", so a shift claimed mid-edit is simply left alone. An edit marked
+ * anyStatus only touches fields that do not affect the deal (allowedPersons,
+ * isBiddingAllowed) and skips that condition.
+ */
+const updateJobAndShifts = async (
+  jobId,
+  { set = {}, shiftEdits = [], removeShiftIds = [], addShifts = [] },
+) => {
+  const $set = { ...set };
+  const arrayFilters = [];
+
+  shiftEdits.forEach(({ _id, changes, anyStatus }, i) => {
+    for (const [key, value] of Object.entries(changes)) {
+      $set[`shift.$[s${i}].${key}`] = value;
+    }
+    arrayFilters.push({
+      [`s${i}._id`]: new mongoose.Types.ObjectId(String(_id)),
+      ...(anyStatus ? {} : { [`s${i}.status`]: "pending" }),
+    });
+  });
+
+  if (Object.keys($set).length) {
+    await Job.updateOne({ _id: jobId }, { $set }, { arrayFilters });
+  }
+
+  // $pull and $push cannot touch the same array in one update.
+  if (removeShiftIds.length) {
+    await Job.updateOne(
+      { _id: jobId },
+      {
+        $pull: {
+          shift: {
+            _id: {
+              $in: removeShiftIds.map(
+                (id) => new mongoose.Types.ObjectId(String(id)),
+              ),
+            },
+            status: "pending",
+          },
+        },
+      },
+    );
+  }
+
+  if (addShifts.length) {
+    await Job.updateOne(
+      { _id: jobId },
+      { $push: { shift: { $each: addShifts } } },
+    );
+  }
+
+  return Job.findById(jobId).lean();
+};
+
+// A job someone is booked on (or working) cannot be deleted from under them.
+const hasLiveBookings = async (jobId) => {
+  return Boolean(
+    await Booking.exists({
+      job: jobId,
+      status: { $in: LIVE_BOOKING_STATUSES },
+    }),
+  );
+};
+
 const updateShiftStatus = async (jobId, shiftId, status) => {
   const allowed = ["pending", "booked", "completed"];
   if (!allowed.includes(status)) {
@@ -1005,4 +1075,6 @@ module.exports = {
   updateShiftStatus,
   claimShiftForAward,
   completeJobIfAllShiftsDone,
+  updateJobAndShifts,
+  hasLiveBookings,
 };

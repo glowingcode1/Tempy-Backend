@@ -568,10 +568,29 @@ const updateBooking = async (id, data) => {
   return Booking;
 };
 
-const getBookingDetails = async (id, timezone, currentUserId, customer) => {
+/*
+ * Only the customer, the worker and the supplier on a booking may read it.
+ * Admin callers pass isAdmin and skip the check.
+ */
+const isBookingParty = (booking, userId) =>
+  [booking.user, booking.worker, booking.employer].some(
+    (party) => party && String(party._id || party) === String(userId),
+  );
+
+const getBookingDetails = async (
+  id,
+  timezone,
+  currentUserId,
+  customer,
+  isAdmin = false,
+) => {
   const Booking = await BookingRepo.findBookingById(id);
 
   if (!Booking) {
+    return null;
+  }
+
+  if (!isAdmin && !isBookingParty(Booking, currentUserId)) {
     return null;
   }
 
@@ -764,11 +783,20 @@ const updateBookingCheckinCheckout = async (id, data) => {
 
   return Booking;
 };
-const getBookingCheckInLogs = async (bookingId, timezone) => {
+const getBookingCheckInLogs = async (
+  bookingId,
+  timezone,
+  currentUserId,
+  isAdmin = false,
+) => {
   const Booking = await BookingRepo.findBookingById_(bookingId);
 
   if (!Booking) {
-    return { error: "Booking_not_found" };
+    return null;
+  }
+
+  if (!isAdmin && !isBookingParty(Booking, currentUserId)) {
+    return null;
   }
   const attendance = Booking.attendance?.toObject() || {};
   const formattedAttendance = formatAttendance(attendance, timezone);

@@ -791,17 +791,88 @@ const updateBidStatuses = async (
     // Accept the selected bid
     Bid.updateOne({ _id: bidId }, { $set: { status: currentBidStatus } }),
 
-    // Reject all other bids for the same shift
+    /*
+     * Settle the other bids for the same shift. Only open or rejected ones:
+     * reopening a shift must not bring back bids their owners withdrew or
+     * deleted, nor ones closed out by an earlier award.
+     */
     Bid.updateMany(
       {
         "shift._id": bid.shift._id,
         _id: { $ne: bidId },
+        status: { $in: ["pending", "rejected"] },
       },
       { $set: { status: remainingBidStatus } },
     ),
   ]);
 };
+/*
+ * Keep open bids in step with an edited shift. Only pending bids are touched:
+ * anything settled keeps the terms it was settled on.
+ */
+const syncPendingBidShift = async (shiftId, shift) => {
+  const $set = {};
+  for (const key of ["date", "startTime", "endTime", "isBreak", "breakMin"]) {
+    if (shift[key] !== undefined) $set[`shift.${key}`] = shift[key];
+  }
+  if (!Object.keys($set).length) return;
+
+  await Bid.updateMany({ "shift._id": shiftId, status: "pending" }, { $set });
+};
+
+// Open bids on shifts that were removed from their job.
+const deletePendingBidsForShifts = async (shiftIds = []) => {
+  if (!shiftIds.length) return;
+
+  await Bid.updateMany(
+    {
+      "shift._id": {
+        $in: shiftIds.map((id) => new mongoose.Types.ObjectId(String(id))),
+      },
+      status: "pending",
+    },
+    { $set: { status: "deleted" } },
+  );
+};
+
+/*
+ * Close every open bid on a job that is being deleted, and return who placed
+ * them so they can be told. Unstaffed awards are closed too, otherwise the
+ * unstaffed-award sweep would later "reopen" shifts of a deleted job.
+ */
+const closeOpenBidsForJob = async (jobId) => {
+  const job = new mongoose.Types.ObjectId(String(jobId));
+
+  const bidderIds = await Bid.distinct("user", {
+    job,
+    status: { $in: ["pending", "accepted"] },
+  });
+
+  await Promise.all([
+    Bid.updateMany({ job, status: "pending" }, { $set: { status: "deleted" } }),
+    Bid.updateMany(
+      { job, status: "accepted" },
+      { $set: { status: "cancelledByUser" } },
+    ),
+  ]);
+
+  return bidderIds;
+};
+
+const findUserBidForShift = async (userId, shiftId) => {
+  return Bid.findOne({
+    user: new mongoose.Types.ObjectId(String(userId)),
+    "shift._id": new mongoose.Types.ObjectId(String(shiftId)),
+  })
+    .select("_id status")
+    .lean();
+};
+
 module.exports = {
+  findUserBidForShift,
+  syncPendingBidShift,
+  deletePendingBidsForShifts,
+  closeOpenBidsForJob,
   createBid,
   getBid,
   findBidById,

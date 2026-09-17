@@ -27,6 +27,7 @@ router.post(
     "admin",
     "agency",
     "nurse",
+    "careHome",
     "homeCareCompany",
     "hospital",
     "user",
@@ -45,6 +46,7 @@ router.get(
     "nurse",
     "homeCareCompany",
     "hospital",
+    "careHome",
     "user",
   ]),
   BidRateLimiter,
@@ -53,7 +55,7 @@ router.get(
 // Get a specific Bid by ID
 router.get(
   "/:id",
-  roleMiddleware(["admin", "agency", "nurse", "homeCareCompany", "user"]),
+  roleMiddleware(["admin", "agency", "nurse", "homeCareCompany", "user", "hospital", "localAuthority", "careHome"]),
   BidRateLimiter,
   getBidDetails,
 );

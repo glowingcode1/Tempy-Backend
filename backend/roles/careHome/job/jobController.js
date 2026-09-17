@@ -537,36 +537,65 @@ const updateJob = async (req, res) => {
       translationKey: "shift_must_be_array",
     });
   }
-  if (req.body.isBreak && !req.body.breakMin) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "breakMin_required_when_isBreak_true",
-    });
-  }
   let convertedJobs = undefined;
   if (shift && Array.isArray(shift)) {
-    convertedJobs = shift.map((job) => {
-      const startUtc = moment
-        .tz(`${job.date} ${job.startTime}`, "YYYY-MM-DD HH:mm", timezone)
-        .utc();
+    /*
+     * Shifts are matched to the stored ones by _id (see JobService.updateJob).
+     * Timing is converted only when the whole of it is sent: a shift sent
+     * with just its _id and, say, isBiddingAllowed must not pick up an
+     * "Invalid date". Dates may come back as the full ISO string the API
+     * returns, so only the local calendar day is used.
+     */
+    for (const job of shift) {
+      const hasTiming = job.date || job.startTime || job.endTime;
+      if (hasTiming && !(job.date && job.startTime && job.endTime)) {
+        return sendResponse({
+          res,
+          statusCode: 400,
+          translationKey: "invalid_shift_date_or_time",
+        });
+      }
+    }
 
-      const endUtc = moment
-        .tz(`${job.date} ${job.endTime}`, "YYYY-MM-DD HH:mm", timezone)
-        .utc();
+    convertedJobs = shift.map((job) => {
+      if (!job.date) return job;
+
+      const day = String(job.date).slice(0, 10);
+      const startUtc = moment.tz(
+        `${day} ${job.startTime}`,
+        "YYYY-MM-DD HH:mm",
+        true,
+        timezone,
+      );
+      const endUtc = moment.tz(
+        `${day} ${job.endTime}`,
+        "YYYY-MM-DD HH:mm",
+        true,
+        timezone,
+      );
+
+      if (!startUtc.isValid() || !endUtc.isValid()) {
+        return { ...job, date: null };
+      }
 
       return {
         ...job,
-        date: startUtc.format("YYYY-MM-DD"),
-        startTime: startUtc.format("HH:mm"),
-        endTime: endUtc.format("HH:mm"),
+        date: startUtc.utc().format("YYYY-MM-DD"),
+        startTime: startUtc.utc().format("HH:mm"),
+        endTime: endUtc.utc().format("HH:mm"),
       };
     });
+
+    if (convertedJobs.some((job) => job.date === null)) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "invalid_shift_date_or_time",
+      });
+    }
   }
 
-  const user = req.user._id;
   let data = {
-    user,
     name,
     description,
     type,
@@ -580,7 +609,11 @@ const updateJob = async (req, res) => {
     documents,
   };
   try {
-    const updated = await JobService.updateJob(id, data);
+    const updated = await JobService.updateJob(id, data, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+      timezone,
+    });
     if (updated && updated.error) {
       return sendResponse({
         res,
@@ -664,12 +697,22 @@ const deleteJob = async (req, res) => {
     return;
 
   try {
-    const deleted = await JobService.deleteJob(id);
+    const deleted = await JobService.deleteJob(id, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
     if (!deleted) {
       return sendResponse({
         res,
         statusCode: 404,
         translationKey: "Job_not_found",
+      });
+    }
+    if (deleted.error) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: deleted.error,
       });
     }
     if (Array.isArray(deleted.bidderIds) && deleted.bidderIds.length > 0) {

@@ -200,5 +200,14 @@
   "Bid_rejected_due_to_nurse_unavailability": "Bid rejected because the nurse is not available for the requested shift.",
   "account_verification_pending": "Your account is awaiting verification. You can complete your profile, but you cannot post or bid on jobs until it is approved.",
   "branch_not_available_or_not_verified": "That branch is not available. It must belong to your account and have passed verification.",
-  "persona_verification_required": "Your identity verification has not been approved yet. You cannot post or bid on jobs until it is."
+  "persona_verification_required": "Your identity verification has not been approved yet. You cannot post or bid on jobs until it is.",
+  "Shift_not_found": "One of the shifts could not be found on this job.",
+  "Duplicate_shift_in_request": "The same shift was sent more than once.",
+  "Cannot_edit_booked_or_completed_shift": "The date and time of a booked or completed shift cannot be changed.",
+  "Cannot_remove_booked_or_completed_shift": "A booked or completed shift cannot be removed.",
+  "Job_must_have_at_least_one_shift": "A job must have at least one shift.",
+  "Cannot_delete_job_with_active_bookings": "This job has active bookings. Cancel them before deleting the job.",
+  "Cannot_withdraw_bid_with_active_booking": "Staff are already booked on this bid. Cancel the booking instead.",
+  "Withdraw_accepted_bid_before_deleting": "This bid has been accepted. Withdraw it before deleting it.",
+  "Bid_not_editable": "This bid can no longer be edited."
 }

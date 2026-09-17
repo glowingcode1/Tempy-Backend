@@ -457,6 +457,7 @@ const getBookingDetails = async (req, res) => {
       timezone,
       req.user._id,
       customerTypes.includes(req.user.userType),
+      req.user.userType === "admin",
     );
     if (!job) {
       return sendResponse({
@@ -627,6 +628,8 @@ const getBookingCheckInLogs = async (req, res) => {
     const logs = await BookingService.getBookingCheckInLogs(
       bookingId,
       timezone,
+      req.user._id,
+      req.user.userType === "admin",
     );
     if (!logs) {
       return sendResponse({
