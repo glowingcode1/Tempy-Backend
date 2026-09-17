@@ -28,6 +28,64 @@ const createStaff = async (data) => {
     throw err;
   }
 };
+/*
+ * A customer's staff are the workers booked on its jobs, one per worker,
+ * counted by the WORKER'S account status - what the staff list filters on.
+ * Counting bookings instead gave tabs such as "completed" a badge, while
+ * clicking one filtered accountState.status against a value no account can
+ * hold, so the list came back empty.
+ *
+ * Shared by the staff list and the customer dashboard so the two agree.
+ * With no customer it counts every booked worker (admin view).
+ */
+const countCustomerStaffByStatus = async (customerId) => {
+  const statusRows = await Booking.aggregate([
+    {
+      $match: customerId
+        ? { user: new mongoose.Types.ObjectId(String(customerId)) }
+        : {},
+    },
+    {
+      $lookup: {
+        from: "users",
+        let: { workerId: "$worker" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$workerId"] } } },
+          { $project: { "accountState.status": 1 } },
+        ],
+        as: "worker",
+      },
+    },
+    { $unwind: { path: "$worker", preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: "$worker._id",
+        status: { $first: "$worker.accountState.status" },
+      },
+    },
+    { $group: { _id: "$status", count: { $sum: 1 } } },
+  ]);
+
+  const countOf = (value) =>
+    statusRows.find((row) => row._id === value)?.count || 0;
+
+  /*
+   * Mirrors the list's default match ($ne "deleted"), which in Mongo also
+   * keeps workers with no account status recorded.
+   */
+  const total = statusRows
+    .filter((row) => row._id !== "deleted")
+    .reduce((sum, row) => sum + row.count, 0);
+
+  return {
+    total,
+    active: countOf("active"),
+    pending: countOf("pending"),
+    inactive: countOf("inactive"),
+    deleted: countOf("deleted"),
+  };
+};
+
 const getStaffCustomer = async ({
   page,
   limit,
@@ -276,62 +334,11 @@ const getStaffCustomer = async ({
   const staff = result[0]?.data || [];
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
-  const countFilter = {
-    ...(customer && { user: new mongoose.Types.ObjectId(user) }),
-  };
-
-  /*
-   * The tabs must count what the list actually filters on - the WORKER'S
-   * account status - not Booking.status. Counting bookings gave tabs such as
-   * "completed" a badge, while clicking one filtered accountState.status
-   * against a value no account can hold, so the list came back empty.
-   *
-   * One pass: collapse to a single row per worker (a worker with several
-   * bookings is still one staff member), then tally those rows by status.
-   */
-  const statusRows = await Booking.aggregate([
-    { $match: countFilter },
-    {
-      $lookup: {
-        from: "users",
-        let: { workerId: "$worker" },
-        pipeline: [
-          { $match: { $expr: { $eq: ["$_id", "$$workerId"] } } },
-          { $project: { "accountState.status": 1 } },
-        ],
-        as: "worker",
-      },
-    },
-    { $unwind: { path: "$worker", preserveNullAndEmptyArrays: true } },
-    {
-      $group: {
-        _id: "$worker._id",
-        status: { $first: "$worker.accountState.status" },
-      },
-    },
-    { $group: { _id: "$status", count: { $sum: 1 } } },
-  ]);
-
-  const countOf = (value) =>
-    statusRows.find((row) => row._id === value)?.count || 0;
-
-  /*
-   * Mirrors the list's default match ($ne "deleted"), which in Mongo also
-   * keeps workers with no account status recorded.
-   */
-  const total = statusRows
-    .filter((row) => row._id !== "deleted")
-    .reduce((sum, row) => sum + row.count, 0);
-
   const meta = generateMeta(page, limit, totalFiltered);
 
-  meta.StaffCount = {
-    total,
-    active: countOf("active"),
-    pending: countOf("pending"),
-    inactive: countOf("inactive"),
-    deleted: countOf("deleted"),
-  };
+  meta.StaffCount = await countCustomerStaffByStatus(
+    customer ? user : null,
+  );
 
   return { staff, meta };
 };
@@ -1097,6 +1104,22 @@ const findStaffNearJob = async (user, jobDetails, km = 50) => {
 const getStaffIdsByUser = (userId) =>
   Staff.find({ user: userId }).distinct("staff");
 
+// Staff currently working for this employer (pending invites and leavers out).
+const getActiveStaffIds = (employerId) =>
+  Staff.find({
+    user: new mongoose.Types.ObjectId(String(employerId)),
+    status: "active",
+  }).distinct("staff");
+
+const isActiveStaffOf = async (employerId, staffId) =>
+  Boolean(
+    await Staff.exists({
+      user: new mongoose.Types.ObjectId(String(employerId)),
+      staff: new mongoose.Types.ObjectId(String(staffId)),
+      status: "active",
+    }),
+  );
+
 const findStaffRequestById = async (id) => {
   return Staff.findById(id);
 };
@@ -1213,6 +1236,9 @@ module.exports = {
   findStaffByUserAndStaff,
   findStaffNearJob,
   getStaffIdsByUser,
+  countCustomerStaffByStatus,
+  getActiveStaffIds,
+  isActiveStaffOf,
   findStaffRequestById,
   getMyStaffRequests,
 };

@@ -1,6 +1,9 @@
 const Job = require("../../careHome/job/Job");
 const Bid = require("../../aggency/bid/Bid");
 const Staff = require("../../aggency/staff/Staff");
+const {
+  countCustomerStaffByStatus,
+} = require("../../aggency/staff/staffRepository");
 const Booking = require("../../careHome/booking/Booking");
 const Branches = require("../../aggency/branches/Branches");
 
@@ -249,39 +252,18 @@ const getBranchStats = async ({ userId }) => {
 // STAFF STATS
 // --------------------------------------------------
 
+/*
+ * A customer employs no staff of its own: its staff are the workers booked on
+ * its jobs. Counted exactly as the customer's staff list counts them.
+ */
 const getStaffStats = async ({ userId }) => {
-  const baseMatch = {
-    user: userId,
-    status: {
-      $ne: "deleted",
-    },
-  };
-
-  const [totalStaff, activeStaff, pendingStaff, inactiveStaff] =
-    await Promise.all([
-      Staff.countDocuments(baseMatch),
-
-      Staff.countDocuments({
-        ...baseMatch,
-        status: "active",
-      }),
-
-      Staff.countDocuments({
-        ...baseMatch,
-        status: "pending",
-      }),
-
-      Staff.countDocuments({
-        ...baseMatch,
-        status: "inactive",
-      }),
-    ]);
+  const counts = await countCustomerStaffByStatus(userId);
 
   return {
-    totalStaff,
-    activeStaff,
-    pendingStaff,
-    inactiveStaff,
+    totalStaff: counts.total,
+    activeStaff: counts.active,
+    pendingStaff: counts.pending,
+    inactiveStaff: counts.inactive,
   };
 };
 
@@ -566,6 +548,8 @@ const getCustomerDashboardStats = async ({ userId }) => {
 
   return {
     summary: {
+      totalJobs: jobs.totalJobs,
+      activeJobs: jobs.activeJobs,
       totalBookings: bookings.totalBookings,
       activeStaff: staff.activeStaff,
       totalBranches: branches.totalBranches,

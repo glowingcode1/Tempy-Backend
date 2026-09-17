@@ -4,7 +4,11 @@ const {
   parsePaginationParams,
 } = require("../helperUtils/responseUtil");
 const moment = require("moment-timezone");
-const { NotificationExp } = require("../models/Notifications");
+const {
+  NotificationExp,
+  NotificationTypes,
+} = require("../models/Notifications");
+const Booking = require("../roles/careHome/booking/Booking");
 const { getFullImageUrl } = require("@helperUtils/imageHelper");
 const {
   emitNotificationReadToUser,
@@ -42,12 +46,38 @@ const getNotifications = async (req, res) => {
       });
     }
 
+    /*
+     * A job offer (job_assigned) is answered from the notification itself, so
+     * the app needs the booking's current state: once the worker has answered,
+     * or the supplier has withdrawn it, the Accept / Reject buttons must go.
+     */
+    const bookingIds = notifications
+      .filter((n) => n.objectType === "Booking" && n.objectId)
+      .map((n) => n.objectId);
+
+    const bookings = bookingIds.length
+      ? await Booking.find({ _id: { $in: bookingIds } })
+          .select("_id status worker")
+          .lean()
+      : [];
+    const bookingById = new Map(bookings.map((b) => [String(b._id), b]));
+
     const formatted = notifications.map(n => {
+      const booking =
+        n.objectType === "Booking" ? bookingById.get(String(n.objectId)) : null;
+
       return {
         _id: n._id,
         type: n.type,
         objectId: n.objectId,
         objectType: n.objectType,
+        objectStatus: booking?.status || null,
+        canRespond: Boolean(
+          booking &&
+            n.type === NotificationTypes.JOB_ASSIGNED &&
+            booking.status === "pending" &&
+            String(booking.worker) === String(userId),
+        ),
         title: n.title,
         body: n.body,
         isRead: n.isRead,
@@ -83,8 +113,9 @@ const getNotifications = async (req, res) => {
 // Mark a notification as read by ID
 const readNotification = async (req, res) => {
   try {
-    const notification = await NotificationExp.findByIdAndUpdate(
-      req.params.id,
+    // Only the receiver may mark their own notification as read.
+    const notification = await NotificationExp.findOneAndUpdate(
+      { _id: req.params.id, receiverId: req.user._id },
       { isRead: true },
       { new: true }
     );

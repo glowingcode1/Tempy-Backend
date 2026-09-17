@@ -14,8 +14,90 @@ const { sendUserNotifications } = require("@notificationsUtil");
 const {
   findUsableBranch,
 } = require("../../aggency/branches/branchesRepository");
+const { findUsableAddress } = require("../../nurse/address/addressRepository");
+const {
+  findUserById,
+} = require("../../admin/usersManagement/usersRepository");
 const { NotificationTypes } = require("@NotificationsModel");
 // const { isUserProfileComplete } = require("@helperUtils/userResponseUtil");
+
+const fileNameFromUrl = (url) => {
+  const last = String(url).split("?")[0].split("/").pop() || "";
+  try {
+    return decodeURIComponent(last);
+  } catch {
+    return last;
+  }
+};
+
+
+/*
+ * Job documents are stored as { name, url }. Clients send objects, bare URL
+ * strings, or - from multipart forms - a JSON string of either.
+ * Returns undefined when nothing was sent, null when the input is unusable.
+ */
+const normalizeDocuments = (documents) => {
+  if (documents === undefined || documents === null || documents === "") {
+    return undefined;
+  }
+
+  let list = documents;
+  if (typeof list === "string") {
+    try {
+      list = JSON.parse(list);
+    } catch {
+      list = [list];
+    }
+  }
+  if (!Array.isArray(list)) list = [list];
+
+  const normalized = [];
+  for (const doc of list) {
+    if (typeof doc === "string" && doc.trim()) {
+      normalized.push({
+        name: fileNameFromUrl(doc),
+        url: doc.trim(),
+      });
+    } else if (doc && typeof doc === "object" && typeof doc.url === "string") {
+      normalized.push({
+        name: typeof doc.name === "string" ? doc.name : "",
+        url: doc.url,
+      });
+    } else {
+      return null;
+    }
+  }
+  return normalized;
+};
+
+/*
+ * The contact blocks may also arrive flat (contactName, emergencyPhone, ...)
+ * as the job form sends them. Nested objects win when both are present.
+ */
+const readContactFields = (body) => {
+  const pick = (nested, fields) => {
+    if (nested !== undefined) return nested;
+    const entries = Object.entries(fields).filter(
+      ([, key]) => body[key] !== undefined,
+    );
+    if (!entries.length) return undefined;
+    return Object.fromEntries(entries.map(([field, key]) => [field, body[key]]));
+  };
+
+  return {
+    contactDetails: pick(body.contactDetails, {
+      name: "contactName",
+      phone: "contactPhone",
+      email: "contactEmail",
+    }),
+    emergencyContact: pick(body.emergencyContact, {
+      name: "emergencyName",
+      phone: "emergencyPhone",
+      relationship: "emergencyRelation",
+    }),
+    notes: body.notes !== undefined ? body.notes : body.careNotes,
+  };
+};
 
 const createJob = async (req, res) => {
   let {
@@ -147,15 +229,58 @@ const createJob = async (req, res) => {
     });
   }
 
-  const uploadedDocuments = (req.files || []).map(
-    (file) => file.location || file.path,
-  );
+  const sentDocuments = normalizeDocuments(documents);
+  if (sentDocuments === null) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_documents",
+    });
+  }
+
+  const uploadedDocuments = (req.files || []).map((file) => ({
+    name: file.originalname || "",
+    url: file.location || file.path,
+  }));
+
+  ({ contactDetails, emergencyContact, notes } = readContactFields(req.body));
 
   /*
    * The branch id comes straight from the request body, so it has to be
    * proved: the caller's own, and verified. An unverified branch cannot be
    * used, and until now any branch id at all was accepted.
    */
+  /*
+   * Individual users have saved addresses, not branches. Their apps send the
+   * address id (as `address`, or in `branch` like the other customers), so it
+   * is checked against their addresses and stored as the job's address.
+   */
+  let jobOwnerType = req.user.userType;
+  if (jobOwnerType === "admin") {
+    const owner = await findUserById(user);
+    jobOwnerType = owner?.accountState?.userType || owner?.userType;
+  }
+
+  let address = null;
+
+  if (jobOwnerType === "user") {
+    const addressId = req.body.address || branch;
+    branch = undefined;
+
+    if (addressId) {
+      const usableAddress = await findUsableAddress(addressId, user);
+
+      if (!usableAddress) {
+        return sendResponse({
+          res,
+          statusCode: 403,
+          translationKey: "address_not_available",
+        });
+      }
+      address = usableAddress._id;
+    }
+  }
+
   if (branch) {
     const usableBranch = await findUsableBranch(branch, user);
 
@@ -177,6 +302,7 @@ const createJob = async (req, res) => {
     user,
     location,
     branch,
+    address,
     image,
     worker,
     employer,
@@ -184,7 +310,7 @@ const createJob = async (req, res) => {
     instructions,
     contactDetails,
     emergencyContact,
-    documents: [...(documents || []), ...uploadedDocuments],
+    documents: [...(sentDocuments || []), ...uploadedDocuments],
   };
   try {
     const Job = await JobService.createJob(data, timezone);
@@ -537,36 +663,76 @@ const updateJob = async (req, res) => {
       translationKey: "shift_must_be_array",
     });
   }
-  if (req.body.isBreak && !req.body.breakMin) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "breakMin_required_when_isBreak_true",
-    });
-  }
   let convertedJobs = undefined;
   if (shift && Array.isArray(shift)) {
-    convertedJobs = shift.map((job) => {
-      const startUtc = moment
-        .tz(`${job.date} ${job.startTime}`, "YYYY-MM-DD HH:mm", timezone)
-        .utc();
+    /*
+     * Shifts are matched to the stored ones by _id (see JobService.updateJob).
+     * Timing is converted only when the whole of it is sent: a shift sent
+     * with just its _id and, say, isBiddingAllowed must not pick up an
+     * "Invalid date". Dates may come back as the full ISO string the API
+     * returns, so only the local calendar day is used.
+     */
+    for (const job of shift) {
+      const hasTiming = job.date || job.startTime || job.endTime;
+      if (hasTiming && !(job.date && job.startTime && job.endTime)) {
+        return sendResponse({
+          res,
+          statusCode: 400,
+          translationKey: "invalid_shift_date_or_time",
+        });
+      }
+    }
 
-      const endUtc = moment
-        .tz(`${job.date} ${job.endTime}`, "YYYY-MM-DD HH:mm", timezone)
-        .utc();
+    convertedJobs = shift.map((job) => {
+      if (!job.date) return job;
+
+      const day = String(job.date).slice(0, 10);
+      const startUtc = moment.tz(
+        `${day} ${job.startTime}`,
+        "YYYY-MM-DD HH:mm",
+        true,
+        timezone,
+      );
+      const endUtc = moment.tz(
+        `${day} ${job.endTime}`,
+        "YYYY-MM-DD HH:mm",
+        true,
+        timezone,
+      );
+
+      if (!startUtc.isValid() || !endUtc.isValid()) {
+        return { ...job, date: null };
+      }
 
       return {
         ...job,
-        date: startUtc.format("YYYY-MM-DD"),
-        startTime: startUtc.format("HH:mm"),
-        endTime: endUtc.format("HH:mm"),
+        date: startUtc.utc().format("YYYY-MM-DD"),
+        startTime: startUtc.utc().format("HH:mm"),
+        endTime: endUtc.utc().format("HH:mm"),
       };
+    });
+
+    if (convertedJobs.some((job) => job.date === null)) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "invalid_shift_date_or_time",
+      });
+    }
+  }
+
+  const sentDocuments = normalizeDocuments(documents);
+  if (sentDocuments === null) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_documents",
     });
   }
 
-  const user = req.user._id;
+  ({ contactDetails, emergencyContact, notes } = readContactFields(req.body));
+
   let data = {
-    user,
     name,
     description,
     type,
@@ -577,10 +743,14 @@ const updateJob = async (req, res) => {
     instructions,
     contactDetails,
     emergencyContact,
-    documents,
+    documents: sentDocuments,
   };
   try {
-    const updated = await JobService.updateJob(id, data);
+    const updated = await JobService.updateJob(id, data, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+      timezone,
+    });
     if (updated && updated.error) {
       return sendResponse({
         res,
@@ -664,12 +834,22 @@ const deleteJob = async (req, res) => {
     return;
 
   try {
-    const deleted = await JobService.deleteJob(id);
+    const deleted = await JobService.deleteJob(id, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
     if (!deleted) {
       return sendResponse({
         res,
         statusCode: 404,
         translationKey: "Job_not_found",
+      });
+    }
+    if (deleted.error) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: deleted.error,
       });
     }
     if (Array.isArray(deleted.bidderIds) && deleted.bidderIds.length > 0) {
