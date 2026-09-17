@@ -254,6 +254,8 @@ const getJobs = async ({
       longitude,
       km,
       projection,
+      worker,
+      employer,
     });
     return {
       Jobs: distanceOrigin

@@ -9,6 +9,32 @@ const {
   findJobById_,
 } = require("../../../roles/careHome/job/jobRepository");
 const moment = require("moment-timezone");
+
+const BID_STATUSES = Bid.schema.path("status").enumValues;
+
+/*
+ * One count per Bid status (every value in the schema enum, zero when there
+ * are none), plus total, which - like the listings - leaves out deleted bids.
+ */
+const countBidsByStatus = async (filter) => {
+  const rows = await Bid.aggregate([
+    { $match: filter },
+    { $group: { _id: "$status", count: { $sum: 1 } } },
+  ]);
+
+  const counts = Object.fromEntries(BID_STATUSES.map((s) => [s, 0]));
+  for (const row of rows) {
+    if (row._id in counts) counts[row._id] = row.count;
+  }
+
+  const total = BID_STATUSES.reduce(
+    (sum, s) => (s === "deleted" ? sum : sum + counts[s]),
+    0,
+  );
+
+  return { total, ...counts };
+};
+
 const createBid = async (data) => {
   try {
     const existingBid = await Bid.findOne({
@@ -254,50 +280,16 @@ const getBid = async ({
   const bid = result[0]?.data || [];
   const totalFiltered = result[0]?.totalFiltered?.[0]?.count || 0;
 
+  // Scoped the same way as the listing, so a customer only counts bids on
+  // their own jobs.
   const countFilter = {
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
+    ...(jobCreator && { jobCreator: new mongoose.Types.ObjectId(jobCreator) }),
   };
-
-  const [total, active, pending, inactive, deleted, withdraw] =
-    await Promise.all([
-      Bid.countDocuments({
-        ...countFilter,
-        status: { $ne: "deleted" },
-      }),
-
-      Bid.countDocuments({
-        ...countFilter,
-        status: "active",
-      }),
-      Bid.countDocuments({
-        ...countFilter,
-        status: "pending",
-      }),
-
-      Bid.countDocuments({
-        ...countFilter,
-        status: "inactive",
-      }),
-      Bid.countDocuments({
-        ...countFilter,
-        status: "deleted",
-      }),
-      Bid.countDocuments({
-        ...countFilter,
-        status: "withdraw",
-      }),
-    ]);
 
   const meta = generateMeta(page, limit, totalFiltered);
 
-  meta.BidCount = {
-    total,
-    active,
-    pending,
-    inactive,
-    withdraw,
-    deleted,
-  };
+  meta.BidCount = await countBidsByStatus(countFilter);
 
   return {
     bid,
@@ -684,74 +676,35 @@ const getBidByJob = async ({
     ...(jobCreator && { jobCreator: new mongoose.Types.ObjectId(jobCreator) }),
   };
 
-  const [
-    total,
-    active,
-    pending,
-    inactive,
-    deleted,
-    withdraw,
-    next24hCount,
-    thisWeekCount,
-    nextWeekCount,
-  ] = await Promise.all([
-    Bid.countDocuments({
-      ...countFilter,
-      status: { $ne: "deleted" },
-    }),
+  const [statusCounts, next24hCount, thisWeekCount, nextWeekCount] =
+    await Promise.all([
+      countBidsByStatus(countFilter),
+      // shift within the next 24 hours
+      Bid.countDocuments({
+        ...countFilter,
+        status: { $ne: "deleted" },
+        "shift.date": { $gte: now.toDate(), $lte: next24h },
+      }),
 
-    Bid.countDocuments({
-      ...countFilter,
-      status: "active",
-    }),
-    Bid.countDocuments({
-      ...countFilter,
-      status: "pending",
-    }),
+      // shift within this week
+      Bid.countDocuments({
+        ...countFilter,
+        status: { $ne: "deleted" },
+        "shift.date": { $gte: startOfThisWeek, $lte: endOfThisWeek },
+      }),
 
-    Bid.countDocuments({
-      ...countFilter,
-      status: "inactive",
-    }),
-    Bid.countDocuments({
-      ...countFilter,
-      status: "deleted",
-    }),
-    Bid.countDocuments({
-      ...countFilter,
-      status: "withdraw",
-    }),
-    // shift within the next 24 hours
-    Bid.countDocuments({
-      ...countFilter,
-      status: { $ne: "deleted" },
-      "shift.date": { $gte: now.toDate(), $lte: next24h },
-    }),
-
-    // shift within this week
-    Bid.countDocuments({
-      ...countFilter,
-      status: { $ne: "deleted" },
-      "shift.date": { $gte: startOfThisWeek, $lte: endOfThisWeek },
-    }),
-
-    // shift within next week
-    Bid.countDocuments({
-      ...countFilter,
-      status: { $ne: "deleted" },
-      "shift.date": { $gte: startOfNextWeek, $lte: endOfNextWeek },
-    }),
-  ]);
+      // shift within next week
+      Bid.countDocuments({
+        ...countFilter,
+        status: { $ne: "deleted" },
+        "shift.date": { $gte: startOfNextWeek, $lte: endOfNextWeek },
+      }),
+    ]);
 
   const meta = generateMeta(page, limit, totalFiltered);
 
   meta.BidCount = {
-    total,
-    active,
-    pending,
-    inactive,
-    withdraw,
-    deleted,
+    ...statusCounts,
     next24hCount,
     thisWeekCount,
     nextWeekCount,

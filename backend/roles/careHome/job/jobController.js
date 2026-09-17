@@ -14,8 +14,90 @@ const { sendUserNotifications } = require("@notificationsUtil");
 const {
   findUsableBranch,
 } = require("../../aggency/branches/branchesRepository");
+const { findUsableAddress } = require("../../nurse/address/addressRepository");
+const {
+  findUserById,
+} = require("../../admin/usersManagement/usersRepository");
 const { NotificationTypes } = require("@NotificationsModel");
 // const { isUserProfileComplete } = require("@helperUtils/userResponseUtil");
+
+const fileNameFromUrl = (url) => {
+  const last = String(url).split("?")[0].split("/").pop() || "";
+  try {
+    return decodeURIComponent(last);
+  } catch {
+    return last;
+  }
+};
+
+
+/*
+ * Job documents are stored as { name, url }. Clients send objects, bare URL
+ * strings, or - from multipart forms - a JSON string of either.
+ * Returns undefined when nothing was sent, null when the input is unusable.
+ */
+const normalizeDocuments = (documents) => {
+  if (documents === undefined || documents === null || documents === "") {
+    return undefined;
+  }
+
+  let list = documents;
+  if (typeof list === "string") {
+    try {
+      list = JSON.parse(list);
+    } catch {
+      list = [list];
+    }
+  }
+  if (!Array.isArray(list)) list = [list];
+
+  const normalized = [];
+  for (const doc of list) {
+    if (typeof doc === "string" && doc.trim()) {
+      normalized.push({
+        name: fileNameFromUrl(doc),
+        url: doc.trim(),
+      });
+    } else if (doc && typeof doc === "object" && typeof doc.url === "string") {
+      normalized.push({
+        name: typeof doc.name === "string" ? doc.name : "",
+        url: doc.url,
+      });
+    } else {
+      return null;
+    }
+  }
+  return normalized;
+};
+
+/*
+ * The contact blocks may also arrive flat (contactName, emergencyPhone, ...)
+ * as the job form sends them. Nested objects win when both are present.
+ */
+const readContactFields = (body) => {
+  const pick = (nested, fields) => {
+    if (nested !== undefined) return nested;
+    const entries = Object.entries(fields).filter(
+      ([, key]) => body[key] !== undefined,
+    );
+    if (!entries.length) return undefined;
+    return Object.fromEntries(entries.map(([field, key]) => [field, body[key]]));
+  };
+
+  return {
+    contactDetails: pick(body.contactDetails, {
+      name: "contactName",
+      phone: "contactPhone",
+      email: "contactEmail",
+    }),
+    emergencyContact: pick(body.emergencyContact, {
+      name: "emergencyName",
+      phone: "emergencyPhone",
+      relationship: "emergencyRelation",
+    }),
+    notes: body.notes !== undefined ? body.notes : body.careNotes,
+  };
+};
 
 const createJob = async (req, res) => {
   let {
@@ -147,15 +229,58 @@ const createJob = async (req, res) => {
     });
   }
 
-  const uploadedDocuments = (req.files || []).map(
-    (file) => file.location || file.path,
-  );
+  const sentDocuments = normalizeDocuments(documents);
+  if (sentDocuments === null) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_documents",
+    });
+  }
+
+  const uploadedDocuments = (req.files || []).map((file) => ({
+    name: file.originalname || "",
+    url: file.location || file.path,
+  }));
+
+  ({ contactDetails, emergencyContact, notes } = readContactFields(req.body));
 
   /*
    * The branch id comes straight from the request body, so it has to be
    * proved: the caller's own, and verified. An unverified branch cannot be
    * used, and until now any branch id at all was accepted.
    */
+  /*
+   * Individual users have saved addresses, not branches. Their apps send the
+   * address id (as `address`, or in `branch` like the other customers), so it
+   * is checked against their addresses and stored as the job's address.
+   */
+  let jobOwnerType = req.user.userType;
+  if (jobOwnerType === "admin") {
+    const owner = await findUserById(user);
+    jobOwnerType = owner?.accountState?.userType || owner?.userType;
+  }
+
+  let address = null;
+
+  if (jobOwnerType === "user") {
+    const addressId = req.body.address || branch;
+    branch = undefined;
+
+    if (addressId) {
+      const usableAddress = await findUsableAddress(addressId, user);
+
+      if (!usableAddress) {
+        return sendResponse({
+          res,
+          statusCode: 403,
+          translationKey: "address_not_available",
+        });
+      }
+      address = usableAddress._id;
+    }
+  }
+
   if (branch) {
     const usableBranch = await findUsableBranch(branch, user);
 
@@ -177,6 +302,7 @@ const createJob = async (req, res) => {
     user,
     location,
     branch,
+    address,
     image,
     worker,
     employer,
@@ -184,7 +310,7 @@ const createJob = async (req, res) => {
     instructions,
     contactDetails,
     emergencyContact,
-    documents: [...(documents || []), ...uploadedDocuments],
+    documents: [...(sentDocuments || []), ...uploadedDocuments],
   };
   try {
     const Job = await JobService.createJob(data, timezone);
@@ -595,6 +721,17 @@ const updateJob = async (req, res) => {
     }
   }
 
+  const sentDocuments = normalizeDocuments(documents);
+  if (sentDocuments === null) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_documents",
+    });
+  }
+
+  ({ contactDetails, emergencyContact, notes } = readContactFields(req.body));
+
   let data = {
     name,
     description,
@@ -606,7 +743,7 @@ const updateJob = async (req, res) => {
     instructions,
     contactDetails,
     emergencyContact,
-    documents,
+    documents: sentDocuments,
   };
   try {
     const updated = await JobService.updateJob(id, data, {

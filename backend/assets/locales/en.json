@@ -209,5 +209,11 @@
   "Cannot_delete_job_with_active_bookings": "This job has active bookings. Cancel them before deleting the job.",
   "Cannot_withdraw_bid_with_active_booking": "Staff are already booked on this bid. Cancel the booking instead.",
   "Withdraw_accepted_bid_before_deleting": "This bid has been accepted. Withdraw it before deleting it.",
-  "Bid_not_editable": "This bid can no longer be edited."
+  "Bid_not_editable": "This bid can no longer be edited.",
+  "address_not_available": "That address is not available. It must be one of your saved addresses.",
+  "Unauthorized_to_manage_availability": "You can only manage your own availability, or that of your active staff.",
+  "invalid_availability_status": "Status must be one of: busy, onCall, sleepover, dayOff, leave.",
+  "Availability_overlaps_with_existing_entry": "This time overlaps with an existing availability entry.",
+  "invalid_availability_date": "Dates must be valid date-times, for example 2026-09-20T08:00:00Z.",
+  "invalid_documents": "Each document must be a URL or an object with a url."
 }

@@ -3,6 +3,29 @@ const responseUtil = require("../../../../helperUtils/responseUtil.js");
 const { convertUtcToTimezone, formatShiftToTimezone } = responseUtil;
 const { isArray } = require("lodash");
 
+const fileNameFromUrl = (url) => {
+  const last = String(url).split("?")[0].split("/").pop() || "";
+  try {
+    return decodeURIComponent(last);
+  } catch {
+    return last;
+  }
+};
+
+// Documents are { name, url }; older jobs stored the URL string alone.
+const formatDocument = (doc) => {
+  if (typeof doc === "string") {
+    return {
+      name: fileNameFromUrl(doc),
+      url: getFullImageUrl(doc),
+    };
+  }
+  if (doc && typeof doc === "object") {
+    return { ...doc, url: doc.url ? getFullImageUrl(doc.url) : doc.url };
+  }
+  return doc;
+};
+
 const formatJobToTimezone = (job, timezone) => {
   if (!job) return job;
 
@@ -59,7 +82,7 @@ const formatJobToTimezone = (job, timezone) => {
     totalHours,
     image: getFullImageUrl(job.image),
     documents: Array.isArray(job.documents)
-      ? job.documents.map((doc) => getFullImageUrl(doc))
+      ? job.documents.map(formatDocument)
       : job.documents,
     snapshot: formatSnapshot(job.snapshot),
     shift: Array.isArray(job.shift)

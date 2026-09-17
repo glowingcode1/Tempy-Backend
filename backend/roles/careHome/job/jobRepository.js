@@ -37,18 +37,152 @@ const CANCELLED_BOOKING_STATUSES = [
   "cancelledByUser",
 ];
 
-const getSupplierBookedJobIds = async (supplierId) => {
-  // An agency holds the booking as employer; a nurse booked direct is both.
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/*
+ * Shift timing. A shift is stored as a UTC day plus "HH:mm" UTC start/end
+ * times; an end at or before the start means the shift runs past midnight.
+ */
+const toMinutes = (time) => {
+  if (typeof time !== "string") return 0;
+  const [hours, minutes] = time.split(":").map(Number);
+  return Number.isFinite(hours) && Number.isFinite(minutes)
+    ? hours * 60 + minutes
+    : 0;
+};
+
+const shiftStartsAt = (shift) =>
+  shift?.date
+    ? new Date(
+        new Date(shift.date).getTime() + toMinutes(shift.startTime) * 60000,
+      )
+    : null;
+
+const shiftEndsAt = (shift) => {
+  if (!shift?.date) return null;
+  const start = toMinutes(shift.startTime);
+  let end = toMinutes(shift.endTime);
+  if (end <= start) end += 24 * 60;
+  return new Date(new Date(shift.date).getTime() + end * 60000);
+};
+
+// The same calculations as aggregation expressions over a shift variable.
+const hhmmToMsExpr = (field) => ({
+  $multiply: [
+    {
+      $add: [
+        {
+          $multiply: [
+            {
+              $convert: {
+                input: { $arrayElemAt: [{ $split: [field, ":"] }, 0] },
+                to: "int",
+                onError: 0,
+                onNull: 0,
+              },
+            },
+            60,
+          ],
+        },
+        {
+          $convert: {
+            input: { $arrayElemAt: [{ $split: [field, ":"] }, 1] },
+            to: "int",
+            onError: 0,
+            onNull: 0,
+          },
+        },
+      ],
+    },
+    60000,
+  ],
+});
+
+const shiftStartExpr = (v) => ({
+  $add: [`$$${v}.date`, hhmmToMsExpr({ $ifNull: [`$$${v}.startTime`, ""] })],
+});
+
+const shiftEndExpr = (v) => {
+  const start = hhmmToMsExpr({ $ifNull: [`$$${v}.startTime`, ""] });
+  const end = hhmmToMsExpr({ $ifNull: [`$$${v}.endTime`, ""] });
+  return {
+    $add: [`$$${v}.date`, end, { $cond: [{ $lte: [end, start] }, DAY_MS, 0] }],
+  };
+};
+
+/*
+ * A job only counts as past for a supplier one day after its shift has
+ * ended (PAST_JOB_GRACE_HOURS, default 24). Until then it stays where it was
+ * - in the Active tab - although bidding still closes when the shift starts.
+ */
+const PAST_JOB_GRACE_MS =
+  (Number(process.env.PAST_JOB_GRACE_HOURS) || 24) * 60 * 60 * 1000;
+
+const staleBefore = (now) => new Date(now.getTime() - PAST_JOB_GRACE_MS);
+
+// Not past yet: the shift ended less than the grace period ago, or later.
+const recentShiftExpr = (v, now) => ({
+  $gt: [shiftEndExpr(v), staleBefore(now)],
+});
+
+// Still on the market for suppliers to see: unclaimed, biddable, not past.
+const listedShiftExpr = (v, now) => ({
+  $and: [
+    { $eq: [`$$${v}.status`, "pending"] },
+    { $ne: [`$$${v}.isBiddingAllowed`, false] },
+    recentShiftExpr(v, now),
+  ],
+});
+
+// A shift a supplier can still bid on: unclaimed, biddable, not started.
+const openShiftExpr = (v, now) => ({
+  $and: [
+    { $eq: [`$$${v}.status`, "pending"] },
+    { $ne: [`$$${v}.isBiddingAllowed`, false] },
+    { $gt: [shiftStartExpr(v), now] },
+  ],
+});
+
+const anyShiftExpr = (condition) => ({
+  $anyElementTrue: [
+    {
+      $map: {
+        input: { $ifNull: ["$shift", []] },
+        as: "s",
+        in: condition,
+      },
+    },
+  ],
+});
+
+const isNullExpr = (field) => ({ $eq: [{ $ifNull: [field, null] }, null] });
+
+/*
+ * What a supplier (agency, home care company, or nurse - direct or agency
+ * staff) is involved in.
+ *
+ *   liveJobIds      - its own work that is not past yet: a booking, or a won
+ *                     bid not yet staffed, whose shift ended less than a day
+ *                     ago (PAST_JOB_GRACE_MS) or has not ended
+ *   completedJobIds - its own finished work, whenever it was
+ *   involvedJobIds  - every job it was booked on or won, past included, so
+ *                     that its past work still shows (as inactive)
+ */
+const getSupplierBookedJobIds = async (supplierId, now = new Date()) => {
+  // An agency holds the booking as employer; its staff (and a nurse booked
+  // direct) as worker.
   const mine = {
     $or: [{ employer: supplierId }, { worker: supplierId }],
   };
 
-  const [bookedJobIds, completedJobIds, awardedBids, staffedShiftIds] =
+  const [liveBookings, completedJobIds, awardedBids, staffedShiftIds] =
     await Promise.all([
-      Booking.distinct("job", {
+      Booking.find({
         ...mine,
         status: { $in: LIVE_BOOKING_STATUSES },
-      }),
+      })
+        .select("job shift")
+        .lean(),
 
       Booking.distinct("job", {
         ...mine,
@@ -59,10 +193,10 @@ const getSupplierBookedJobIds = async (supplierId) => {
        * Won at the bid stage but not staffed yet. Accepting a bid rejects
        * every competing one and closes the shift, so the job is nobody
        * else's - it has to sit in this supplier's Active tab until a worker
-       * is assigned, not disappear from everyone's.
+       * is assigned.
        */
       Bid.find({ user: supplierId, status: "accepted" })
-        .select("job shift._id")
+        .select("job shift")
         .lean(),
 
       /*
@@ -81,27 +215,60 @@ const getSupplierBookedJobIds = async (supplierId) => {
 
   const staffed = new Set(staffedShiftIds.map(String));
 
+  const staleAt = staleBefore(now);
+
+  const bookedJobIds = liveBookings
+    .filter((booking) => shiftEndsAt(booking.shift) > staleAt)
+    .map((booking) => booking.job);
+
   const awaitingStaffJobIds = awardedBids
     .filter((bid) => !staffed.has(String(bid.shift?._id)))
+    .filter((bid) => shiftEndsAt(bid.shift) > staleAt)
     .map((bid) => bid.job);
 
   return {
     liveJobIds: [...bookedJobIds, ...awaitingStaffJobIds],
     completedJobIds,
+    involvedJobIds: [
+      ...liveBookings.map((booking) => booking.job),
+      ...awardedBids.map((bid) => bid.job),
+    ],
   };
 };
 
 // The tabs a supplier can ask for. Anything else falls back to all of them.
 const SUPPLIER_TABS = ["active", "completed", "inactive"];
 
-const getSupplierTabMatches = ({ supplierId, liveJobIds, completedJobIds }) => {
+/*
+ * A supplier does not see Job.status. It sees the job as it stands for itself:
+ *
+ *   completed - it (or its staff) finished work on the job, and has nothing
+ *               still ahead there. Shown whatever the date.
+ *   active    - its own work not past yet, or a job still on the market:
+ *               open to everyone with a shift unclaimed and biddable, or
+ *               handed to it when the job was created. "Past" means the
+ *               shift ended more than a day ago (PAST_JOB_GRACE_MS); bidding
+ *               itself still closes when the shift starts (canBid).
+ *   inactive  - everything else it can see: jobs booked by somebody else,
+ *               past jobs, jobs the customer deactivated or finished, and its
+ *               own past work. Nothing is hidden for being past.
+ *
+ * Jobs handed to a different supplier at creation are never visible. The
+ * three tabs are disjoint, so their counts add up to the total.
+ *
+ * Each tab is a single $expr so callers can spread it into their own filters.
+ * `statusExpr` is the same decision as a value, for the response.
+ */
+const getSupplierTabMatches = ({
+  supplierId,
+  liveJobIds,
+  completedJobIds,
+  involvedJobIds = [],
+  now = new Date(),
+}) => {
   const live = new Map(liveJobIds.map((id) => [String(id), id]));
 
-  /*
-   * A job whose other shift is still running stays Active, not Completed.
-   * Subtracting here rather than at the call site is what makes the three
-   * tabs disjoint no matter who builds them.
-   */
+  // A job with other work of mine still ahead stays Active, not Completed.
   const completedOnlyIds = completedJobIds.filter(
     (id) => !live.has(String(id)),
   );
@@ -111,52 +278,292 @@ const getSupplierTabMatches = ({ supplierId, liveJobIds, completedJobIds }) => {
   // Anything already decided for me: it cannot also be an open opportunity.
   const settledIds = [...liveIds, ...completedOnlyIds];
 
+  const inIds = (ids) => ({ $in: ["$_id", ids] });
+
+  const notDeleted = { $ne: ["$status", "deleted"] };
+
+  // Posted to the market rather than handed to one supplier.
+  const isPublic = { $and: [isNullExpr("$worker"), isNullExpr("$employer")] };
+
   /*
    * A job can be handed to a supplier when it is created. An agency is named
-   * as the employer, but a nurse is named as the worker with no employer at
-   * all - matching on employer alone hid those jobs from the very nurse they
-   * were assigned to, since they are not open either.
+   * as the employer, a nurse as the worker with no employer at all.
    */
-  const assignedToMe = [{ employer: supplierId }, { worker: supplierId }];
+  const assignedToMe = {
+    $or: [{ $eq: ["$worker", supplierId] }, { $eq: ["$employer", supplierId] }],
+  };
+
+  const isCompleted = { $and: [notDeleted, inIds(completedOnlyIds)] };
+
+  const isActive = {
+    $and: [
+      notDeleted,
+      {
+        $or: [
+          inIds(liveIds),
+          {
+            $and: [
+              { $not: [inIds(settledIds)] },
+              { $eq: ["$status", "active"] },
+              {
+                $or: [
+                  { $and: [isPublic, anyShiftExpr(listedShiftExpr("s", now))] },
+                  {
+                    $and: [
+                      assignedToMe,
+                      anyShiftExpr(recentShiftExpr("s", now)),
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  const isVisible = {
+    $and: [
+      notDeleted,
+      { $or: [isPublic, assignedToMe, inIds(involvedJobIds)] },
+    ],
+  };
+
+  const isInactive = {
+    $and: [isVisible, { $not: [isActive] }, { $not: [isCompleted] }],
+  };
 
   return {
-    active: {
-      $or: [
-        { _id: { $in: liveIds } },
-
-        {
-          _id: { $nin: settledIds },
-          status: "active",
-          $or: [
-            // Open to bid on - nobody is booked for it yet.
-            { worker: null, employer: null, "shift.status": "pending" },
-
-            // Handed to me directly when the job was created.
-            ...assignedToMe,
-          ],
-        },
-      ],
-    },
-
-    completed: {
-      _id: { $in: completedOnlyIds },
-    },
-
-    inactive: {
-      _id: { $nin: settledIds },
-      status: "inactive",
-      $or: assignedToMe,
-    },
+    active: { $expr: isActive },
+    completed: { $expr: isCompleted },
+    inactive: { $expr: isInactive },
 
     /*
      * Every job that is this supplier's in any sense, whatever its status.
      * Only used to scope counts that sit outside the three tabs.
      */
     mine: {
-      $or: [{ _id: { $in: settledIds } }, ...assignedToMe],
+      $or: [
+        { _id: { $in: [...settledIds, ...involvedJobIds] } },
+        { employer: supplierId },
+        { worker: supplierId },
+      ],
+    },
+
+    statusExpr: {
+      $switch: {
+        branches: [
+          { case: isCompleted, then: "completed" },
+          { case: isActive, then: "active" },
+        ],
+        default: "inactive",
+      },
     },
   };
 };
+
+/*
+ * Per-job view for a supplier.
+ *
+ *   status            - the job as it stands for this supplier (see
+ *                       getSupplierTabMatches); Job.status is kept as
+ *                       originalStatus
+ *   shift[].status    - likewise per shift: "pending" only while this
+ *                       supplier can still take it, "booked" / "completed"
+ *                       for its own work, "inactive" for everything else
+ *                       (booked by somebody else, or past). The stored value
+ *                       is kept as shift[].originalStatus
+ *   shift[].canBid    - a bid can be placed on it. A shift already bid on
+ *                       cannot take a second bid from the same supplier,
+ *                       whatever became of the first.
+ *   canBid            - any shift can take a bid
+ *   myBooking / myBid - this supplier's latest booking and bid on the job
+ */
+const supplierViewStages = (supplierId, now, statusExpr) => [
+  {
+    $lookup: {
+      from: "bookings",
+      let: { jobId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$job", "$$jobId"] },
+                {
+                  $or: [
+                    { $eq: ["$worker", supplierId] },
+                    { $eq: ["$employer", supplierId] },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $project: { status: 1, worker: 1, "shift._id": 1 } },
+      ],
+      as: "myBookings",
+    },
+  },
+  {
+    $lookup: {
+      from: "bids",
+      let: { jobId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$job", "$$jobId"] },
+                { $eq: ["$user", supplierId] },
+              ],
+            },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $project: { status: 1, bid: 1, "shift._id": 1 } },
+      ],
+      as: "myBids",
+    },
+  },
+  {
+    // Every expression in this stage still sees the stored "$status".
+    $addFields: {
+      originalStatus: "$status",
+      status: statusExpr,
+      shift: {
+        $map: {
+          input: { $ifNull: ["$shift", []] },
+          as: "s",
+          in: {
+            $let: {
+              vars: {
+                // My live or finished booking on this very shift.
+                booking: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$myBookings",
+                        as: "b",
+                        cond: {
+                          $and: [
+                            { $eq: ["$$b.shift._id", "$$s._id"] },
+                            {
+                              $not: [
+                                {
+                                  $in: [
+                                    "$$b.status",
+                                    CANCELLED_BOOKING_STATUSES,
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                wonIt: {
+                  $in: [
+                    { k: "$$s._id", v: "accepted" },
+                    {
+                      $map: {
+                        input: "$myBids",
+                        as: "bid",
+                        in: { k: "$$bid.shift._id", v: "$$bid.status" },
+                      },
+                    },
+                  ],
+                },
+                // Not past yet (ended less than the grace period ago).
+                ahead: recentShiftExpr("s", now),
+                onMarket: {
+                  $and: [
+                    isNullExpr("$worker"),
+                    isNullExpr("$employer"),
+                    { $eq: ["$status", "active"] },
+                  ],
+                },
+                handedToMe: {
+                  $and: [
+                    { $eq: ["$status", "active"] },
+                    {
+                      $or: [
+                        { $eq: ["$worker", supplierId] },
+                        { $eq: ["$employer", supplierId] },
+                      ],
+                    },
+                  ],
+                },
+              },
+              in: {
+                $mergeObjects: [
+                  "$$s",
+                  {
+                    originalStatus: "$$s.status",
+                    status: {
+                      $switch: {
+                        branches: [
+                          {
+                            case: { $eq: ["$$booking.status", "completed"] },
+                            then: "completed",
+                          },
+                          {
+                            case: {
+                              $and: [
+                                { $ne: [{ $type: "$$booking" }, "missing"] },
+                                "$$ahead",
+                              ],
+                            },
+                            then: "$$s.status",
+                          },
+                          {
+                            case: { $and: ["$$wonIt", "$$ahead"] },
+                            then: "$$s.status",
+                          },
+                          {
+                            case: { $and: ["$$handedToMe", "$$ahead"] },
+                            then: "$$s.status",
+                          },
+                          {
+                            case: {
+                              $and: ["$$onMarket", listedShiftExpr("s", now)],
+                            },
+                            then: "pending",
+                          },
+                        ],
+                        default: "inactive",
+                      },
+                    },
+                    canBid: {
+                      $and: [
+                        "$$onMarket",
+                        openShiftExpr("s", now),
+                        { $not: [{ $in: ["$$s._id", "$myBids.shift._id"] }] },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      myBooking: { $ifNull: [{ $arrayElemAt: ["$myBookings", 0] }, null] },
+      myBid: { $ifNull: [{ $arrayElemAt: ["$myBids", 0] }, null] },
+    },
+  },
+  {
+    $addFields: {
+      canBid: { $anyElementTrue: [{ $ifNull: ["$shift.canBid", []] }] },
+    },
+  },
+  { $project: { myBids: 0, myBookings: 0 } },
+];
 
 const createJob = async (data) => {
   try {
@@ -185,7 +592,10 @@ const getJobsSummary = async ({
   longitude, // user's longitude
   km, // radius in kilometers
   projection,
+  worker,
+  employer,
 }) => {
+  const now = new Date();
   const provideServicesToUser = await findUserById(requester);
   const servicePermissions = provideServicesToUser?.provideServicesTo || {};
   const allowedUserTypes = Object.keys(servicePermissions).filter(
@@ -194,10 +604,29 @@ const getJobsSummary = async ({
 
   const pipeline = [];
 
+  /*
+   * Suppliers get the same view as the full listing: open jobs, and their
+   * own live or completed work - never every job on the platform.
+   */
+  const supplierId =
+    worker || employer ? new mongoose.Types.ObjectId(employer || worker) : null;
+
+  const supplierTabs = supplierId
+    ? getSupplierTabMatches({
+        supplierId,
+        now,
+        ...(await getSupplierBookedJobIds(supplierId, now)),
+      })
+    : null;
+
   // Base filters shared by both geo and non-geo modes
   const baseMatch = {
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
-    ...(status ? { status } : { status: { $ne: "deleted" } }),
+    ...(supplierTabs
+      ? { status: { $ne: "deleted" } }
+      : status
+        ? { status }
+        : { status: { $ne: "deleted" } }),
   };
 
   const hasGeo =
@@ -230,6 +659,15 @@ const getJobsSummary = async ({
     });
   } else {
     pipeline.push({ $match: baseMatch });
+  }
+
+  // Kept out of $geoNear's query, as in getJobs.
+  if (supplierTabs) {
+    pipeline.push({
+      $match: SUPPLIER_TABS.includes(status)
+        ? supplierTabs[status]
+        : { $or: SUPPLIER_TABS.map((tab) => supplierTabs[tab]) },
+    });
   }
 
   pipeline.push({
@@ -266,10 +704,21 @@ const getJobsSummary = async ({
   }
 
   pipeline.push({ $sort: { createdAt: -1 } });
+
+  if (supplierId) {
+    pipeline.push(
+      ...supplierViewStages(supplierId, now, supplierTabs.statusExpr),
+    );
+  }
+
   if (projection) {
     pipeline.push({
       // Keep the calculated distance in compact/summary responses as well.
-      $project: hasGeo ? { ...projection, distanceInKM: 1 } : projection,
+      $project: {
+        ...projection,
+        ...(hasGeo && { distanceInKM: 1 }),
+        ...(supplierId && { canBid: 1, myBooking: 1, myBid: 1 }),
+      },
     });
   }
   pipeline.push({
@@ -288,13 +737,30 @@ const getJobsSummary = async ({
     ...(user && { user: new mongoose.Types.ObjectId(user) }),
   };
 
-  const [total, active, inactive, completed, deleted] = await Promise.all([
-    Job.countDocuments({ ...countFilter, status: { $ne: "deleted" } }),
-    Job.countDocuments({ ...countFilter, status: "active" }),
-    Job.countDocuments({ ...countFilter, status: "inactive" }),
-    Job.countDocuments({ ...countFilter, status: "completed" }),
-    Job.countDocuments({ ...countFilter, status: "deleted" }),
-  ]);
+  const [total, active, inactive, completed, deleted] = supplierTabs
+    ? await Promise.all([
+        Job.countDocuments({
+          status: { $ne: "deleted" },
+          $or: SUPPLIER_TABS.map((tab) => supplierTabs[tab]),
+        }),
+        Job.countDocuments({
+          status: { $ne: "deleted" },
+          ...supplierTabs.active,
+        }),
+        Job.countDocuments(supplierTabs.inactive),
+        Job.countDocuments({
+          status: { $ne: "deleted" },
+          ...supplierTabs.completed,
+        }),
+        Job.countDocuments({ ...supplierTabs.mine, status: "deleted" }),
+      ])
+    : await Promise.all([
+        Job.countDocuments({ ...countFilter, status: { $ne: "deleted" } }),
+        Job.countDocuments({ ...countFilter, status: "active" }),
+        Job.countDocuments({ ...countFilter, status: "inactive" }),
+        Job.countDocuments({ ...countFilter, status: "completed" }),
+        Job.countDocuments({ ...countFilter, status: "deleted" }),
+      ]);
 
   const meta = generateMeta(page, limit, totalFiltered);
   meta.JobsCount = { total, active, inactive, completed, deleted };
@@ -382,14 +848,13 @@ const getJobs = async ({
   const pipeline = [];
 
   const supplierId =
-    worker || employer
-      ? new mongoose.Types.ObjectId(employer || worker)
-      : null;
+    worker || employer ? new mongoose.Types.ObjectId(employer || worker) : null;
 
   const supplierTabs = supplierId
     ? getSupplierTabMatches({
         supplierId,
-        ...(await getSupplierBookedJobIds(supplierId)),
+        now,
+        ...(await getSupplierBookedJobIds(supplierId, now)),
       })
     : null;
 
@@ -628,6 +1093,18 @@ const getJobs = async ({
   pipeline.push({
     $unwind: { path: "$branch", preserveNullAndEmptyArrays: true },
   });
+  pipeline.push({
+    $lookup: {
+      from: "addresses",
+      localField: "address",
+      foreignField: "_id",
+      pipeline: [{ $project: { title: 1, location: 1, status: 1 } }],
+      as: "address",
+    },
+  });
+  pipeline.push({
+    $unwind: { path: "$address", preserveNullAndEmptyArrays: true },
+  });
 
   pipeline.push({
     $lookup: {
@@ -664,6 +1141,14 @@ const getJobs = async ({
   }
 
   pipeline.push({ $sort: { createdAt: -1 } });
+
+  // canBid / myBooking / myBid tell the app which action a job offers.
+  if (supplierId) {
+    pipeline.push(
+      ...supplierViewStages(supplierId, now, supplierTabs.statusExpr),
+    );
+  }
+
   if (projection) {
     pipeline.push({
       $project: projection,
@@ -893,7 +1378,10 @@ const getJobs = async ({
 };
 
 const findJobById = async (id) => {
-  return Job.findById(id).lean().populate("user", "name email profileIcon");
+  return Job.findById(id)
+    .lean()
+    .populate("user", "name email profileIcon")
+    .populate("address", "title location status");
 };
 const findJobById_ = async (id, projection = null) => {
   return Job.findById(id, projection || {});
