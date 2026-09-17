@@ -132,6 +132,19 @@ const findAddressById = async (id) => {
   return AddressModel.findById(id);
 };
 
+// An address id taken from a request: it must be a live address of this user.
+const findUsableAddress = async (addressId, userId) => {
+  if (!addressId || !mongoose.Types.ObjectId.isValid(addressId)) return null;
+
+  return AddressModel.findOne({
+    _id: addressId,
+    user: userId,
+    status: { $ne: "deleted" },
+  })
+    .select("_id title status")
+    .lean();
+};
+
 const findAddressByUser = async (userId, limit = 3) => {
   return AddressModel.find({ user: new mongoose.Types.ObjectId(userId) }).limit(limit);
 };
@@ -158,4 +171,5 @@ module.exports = {
   findByIdAndUpdate,
   deleteAddress,
   findAddressByUser,
+  findUsableAddress,
 };

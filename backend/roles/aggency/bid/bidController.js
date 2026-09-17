@@ -218,6 +218,25 @@ const updateBid = async (req, res) => {
       });
     }
 
+    // The customer may have been counting on this bid, or have just lost a
+    // winner and seen the shift reopen.
+    if (status === "withdraw" && updated.jobCreator) {
+      void sendUserNotifications({
+        recipientIds: [updated.jobCreator],
+        title: "Bid Withdrawn",
+        body: `A bid on your job ${updated.snapshot?.name || ""} has been withdrawn.`,
+        data: {
+          type: NotificationTypes.BID_WITHDRAWN,
+          objectType: "Bid",
+          jobId: updated.job,
+          status,
+        },
+        sender: user,
+        objectId: updated._id,
+        saveNotification: true,
+      });
+    }
+
     return sendResponse({
       res,
       statusCode: 200,
@@ -248,7 +267,10 @@ const getBidDetails = async (req, res) => {
     return;
 
   try {
-    const job = await BidService.getBidDetails(id, timezone);
+    const job = await BidService.getBidDetails(id, timezone, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
     if (!job) {
       return sendResponse({
         res,
@@ -285,12 +307,22 @@ const deleteBid = async (req, res) => {
     return;
 
   try {
-    const deleted = await BidService.deleteBid(id);
+    const deleted = await BidService.deleteBid(id, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
     if (!deleted) {
       return sendResponse({
         res,
         statusCode: 404,
         translationKey: "Bid_not_found",
+      });
+    }
+    if (deleted.error) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: deleted.error,
       });
     }
 

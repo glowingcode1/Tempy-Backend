@@ -60,6 +60,7 @@ const connectToDB = require("./helperUtils/server-setup");
 const { backupMongoDB } = require("./helperUtils/dataBaseBackup");
 const { getRedisClient } = require("./config/redis/redisConfig");
 // const { startCrons } = require("./config/cron");
+const { startAwardReleaseCron } = require("./config/cron/awardRelease");
 
 /**
  * ------------------------------------------------
@@ -233,6 +234,14 @@ server.listen(PORT, () => {
     await initTextModeration();
     getRedisClient();
     // startCrons();
+
+    /*
+     * Started on its own rather than through startCrons(). requiring
+     * ./config/cron throws, because its legacy user-bookings job imports a
+     * model that no longer exists - which is why startCrons() is commented
+     * out. Calling this twice is safe; it registers the cron once.
+     */
+    startAwardReleaseCron();
 
     setInterval(backupMongoDB, 24 * 60 * 60 * 1000);
   } catch (err) {

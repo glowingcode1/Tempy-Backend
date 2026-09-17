@@ -10,6 +10,7 @@ const {
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
 const roleMiddleware = require("../../../middlewares/roleMiddleware");
+const requireVerifiedAccount = require("../../../middlewares/requireVerifiedAccount");
 
 const router = express.Router();
 
@@ -26,10 +27,12 @@ router.post(
     "admin",
     "agency",
     "nurse",
+    "careHome",
     "homeCareCompany",
     "hospital",
     "user",
   ]),
+  requireVerifiedAccount,
   BidRateLimiter,
   createBid,
 );
@@ -43,6 +46,7 @@ router.get(
     "nurse",
     "homeCareCompany",
     "hospital",
+    "careHome",
     "user",
   ]),
   BidRateLimiter,
@@ -51,7 +55,7 @@ router.get(
 // Get a specific Bid by ID
 router.get(
   "/:id",
-  roleMiddleware(["admin", "agency", "nurse", "homeCareCompany", "user"]),
+  roleMiddleware(["admin", "agency", "nurse", "homeCareCompany", "user", "hospital", "localAuthority", "careHome"]),
   BidRateLimiter,
   getBidDetails,
 );

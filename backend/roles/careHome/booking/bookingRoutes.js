@@ -14,6 +14,7 @@ const {
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
 const roleMiddleware = require("../../../middlewares/roleMiddleware");
+const requireVerifiedAccount = require("../../../middlewares/requireVerifiedAccount");
 
 const router = express.Router();
 
@@ -50,6 +51,7 @@ router.get(
     "localAuthority",
     "user",
     "hospital",
+    "homeCareCompany",
   ]),
   getShiftPlanCalendar,
 );
@@ -61,11 +63,13 @@ router.post(
     "admin",
     "careHome",
     "localAuthority",
+    "homeCareCompany",
     "agency",
     "nurse",
     "hospital",
     "user",
   ]),
+  requireVerifiedAccount,
   BookingRateLimiter,
   createBooking,
 );
@@ -81,6 +85,7 @@ router.get(
     "localAuthority",
     "user",
     "hospital",
+    "homeCareCompany",
   ]),
   BookingRateLimiter,
   getBooking,
@@ -96,6 +101,8 @@ router.get(
     "careHome",
     "localAuthority",
     "user",
+    "hospital",
+    "homeCareCompany",
   ]),
   BookingRateLimiter,
   getBookingDetails,
@@ -111,6 +118,9 @@ router.put(
     "nurse",
     "localAuthority",
     "user",
+    "careHome",
+    "hospital",
+    "homeCareCompany",
   ]),
   updateBooking,
 );
@@ -123,6 +133,9 @@ router.get(
     "nurse",
     "localAuthority",
     "user",
+    "careHome",
+    "hospital",
+    "homeCareCompany",
   ]),
   getBookingCheckInLogs,
 );

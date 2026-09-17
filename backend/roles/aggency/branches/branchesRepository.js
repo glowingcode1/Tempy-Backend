@@ -280,8 +280,38 @@ const findDuplicateBranch = async ({ user, name, excludeId }) => {
   });
 };
 
+/*
+ * A branch may only be attached to a job once it belongs to the caller and
+ * has been verified - branches start life "pending" and are only activated
+ * once their CQC and insurance documents pass.
+ *
+ * Ownership is checked here too: the branch id arrived in the request body and
+ * nothing had ever confirmed it was the caller's.
+ */
+const findUsableBranch = async (branchId, userId) => {
+  if (!branchId || !mongoose.Types.ObjectId.isValid(branchId)) return null;
+
+  /*
+   * Ownership is always checked. The status requirement waits for the same
+   * switch as the account gate: until verifications can actually be granted,
+   * demanding an active branch would make every existing branch unusable.
+   */
+  const enforced = process.env.PERSONA_VERIFICATION_ENFORCED === "true";
+
+  return Branches.findOne({
+    _id: branchId,
+    user: userId,
+    ...(enforced
+      ? { status: "active" }
+      : { status: { $ne: "deleted" } }),
+  })
+    .select("_id name status")
+    .lean();
+};
+
 module.exports = {
   createBranch,
+  findUsableBranch,
   getBranch,
   findBranchById,
   findBranchById_,

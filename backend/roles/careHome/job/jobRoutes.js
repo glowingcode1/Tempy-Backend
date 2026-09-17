@@ -12,6 +12,7 @@ const {
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
 const roleMiddleware = require("../../../middlewares/roleMiddleware");
+const requireVerifiedAccount = require("../../../middlewares/requireVerifiedAccount");
 const { getJobRole } = require("../../admin/jobRole/jobRoleController");
 
 const router = express.Router();
@@ -26,6 +27,7 @@ const JobRateLimiter = createRateLimiter("Jobs");
 router.post(
   "/",
   roleMiddleware(["admin", "careHome", "localAuthority", "hospital", "user"]),
+  requireVerifiedAccount,
   JobRateLimiter,
   createJob,
 );
@@ -67,6 +69,7 @@ router.get(
     "admin",
     "careHome",
     "agency",
+    "nurse",
     "employee",
     "localAuthority",
     "homeCareCompany",
@@ -88,6 +91,7 @@ router.put(
     "hospital",
     "user",
   ]),
+  requireVerifiedAccount,
   JobRateLimiter,
   updateJobBids,
 );
@@ -100,6 +104,8 @@ router.get(
     "agency",
     "employee",
     "localAuthority",
+    "nurse",
+    "homeCareCompany",
     "hospital",
     "user",
   ]),

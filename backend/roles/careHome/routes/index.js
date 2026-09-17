@@ -5,6 +5,8 @@ const router = express.Router();
 // router.use(auth, roleMiddleware(["careHome"]));
 
 router.use("/job", require("../job/jobRoutes"));
+router.use("/bids", require("../../aggency/bid/bidRoutes"));
+// Legacy singular path, kept so existing clients keep working.
 router.use("/bid", require("../../aggency/bid/bidRoutes"));
 router.use("/staff", require("../../aggency/staff/staffRoutes"));
 router.use("/booking", require("../booking/bookingRoutes"));

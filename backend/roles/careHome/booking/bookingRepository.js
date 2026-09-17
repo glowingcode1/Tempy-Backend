@@ -6,6 +6,15 @@ const {
 const { generateMeta } = require("@helperUtils/responseUtil");
 const { getUserAndShift, findJobById_ } = require("../job/jobRepository");
 
+/*
+ * A booking only exists for the customer once the assigned staff member has
+ * accepted it. Until then it is the supplier's private assignment: the
+ * supplier and the assigned worker see it - the worker is asked to accept or
+ * decline it - but the customer must not, because the supplier may still have
+ * to assign somebody else.
+ */
+const UNACCEPTED_ASSIGNMENT_STATUS = "pending";
+
 const createBooking = async (data) => {
   try {
     const booking = new Booking(data);
@@ -29,6 +38,7 @@ const getBooking = async ({
   latitude,
   longitude,
   km,
+  hideUnacceptedAssignments,
 }) => {
   const pipeline = [];
   const baseMatch = {};
@@ -124,6 +134,20 @@ const getBooking = async ({
       },
     });
   }
+
+  /*
+   * Applied after the requested status so it cannot be filtered around: a
+   * customer asking for ?status=pending gets nothing rather than a peek at
+   * assignments the supplier has not settled yet.
+   */
+  if (hideUnacceptedAssignments) {
+    pipeline.push({
+      $match: {
+        status: { $ne: UNACCEPTED_ASSIGNMENT_STATUS },
+      },
+    });
+  }
+
   pipeline.push({
     $lookup: {
       from: "users",
@@ -453,6 +477,22 @@ const findByIdAndUpdate = async (id, data) => {
     .lean()
     .populate("user", "name email profileIcon");
 };
+
+/*
+ * Is this bid currently staffed? A declined or cancelled booking does not
+ * count: the supplier is expected to assign somebody else, and a new booking
+ * is created for the same bid when it does.
+ */
+const findBookingByBid = async (bidId) => {
+  return Booking.findOne({
+    bid: bidId,
+    status: {
+      $nin: ["cancelledByWorker", "cancelledByEmployer", "cancelledByUser"],
+    },
+  })
+    .select("_id status")
+    .lean();
+};
 const deleteBooking = async (id) => {
   return await Booking.findByIdAndUpdate(
     id,
@@ -746,7 +786,12 @@ const getWeeklyHours = async (userIds = []) => {
   return userIds.map((id) => ({ userId: id, hours: map.get(String(id)) ?? 0 }));
 };
 
-const getBookingsByUsersAndDateRange = async (worker, startDate, endDate) => {
+const getBookingsByUsersAndDateRange = async (
+  worker,
+  startDate,
+  endDate,
+  hideUnacceptedAssignments,
+) => {
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
@@ -756,6 +801,9 @@ const getBookingsByUsersAndDateRange = async (worker, startDate, endDate) => {
     {
       $match: {
         worker: { $in: worker },
+        ...(hideUnacceptedAssignments && {
+          status: { $ne: UNACCEPTED_ASSIGNMENT_STATUS },
+        }),
         "shift.date": { $gte: start, $lte: end },
       },
     },
@@ -841,10 +889,13 @@ const getBookingsByDateRangeForUser = async ({
   userType,
   startDate,
   endDate,
+  hideUnacceptedAssignments,
 }) => {
   const match = {
     "shift.date": { $gte: startDate, $lte: endDate },
-    status: { $ne: "deleted" },
+    status: hideUnacceptedAssignments
+      ? { $nin: ["deleted", UNACCEPTED_ASSIGNMENT_STATUS] }
+      : { $ne: "deleted" },
   };
 
   // nurse sees own shifts, careHome/customer/employer sees shifts they created
@@ -964,6 +1015,7 @@ module.exports = {
   findByIdAndUpdate,
   deleteBooking,
   findBookingById_,
+  findBookingByBid,
   findJobById_,
   getBookingByJob,
   findBookingByUserId,

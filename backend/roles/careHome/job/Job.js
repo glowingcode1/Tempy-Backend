@@ -55,6 +55,12 @@ const JobSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Branch",
     },
+    // Individual users ("user") have saved addresses instead of branches.
+    address: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Address",
+      default: null,
+    },
     description: {
       type: String,
       trim: true,
@@ -78,13 +84,19 @@ const JobSchema = new mongoose.Schema(
       type: EmergencyContactSchema,
       default: () => ({}),
     },
+    /*
+     * Stored as { name, url }. Older jobs hold plain URL strings, hence Mixed:
+     * a typed sub-schema would fail to load those. formatJobToTimezone turns
+     * both shapes into { name, url } for the response.
+     */
     documents: {
-      type: [String],
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
     type: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "JobType",
+      // Registered as JobRole - there is no JobType model.
+      ref: "JobRole",
       required: true,
     },
     isSpecial: {
