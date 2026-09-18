@@ -296,10 +296,13 @@ const getJobs = async ({
       worker,
       employer,
     });
+    const visibleJobs = Jobs.map((job) =>
+      hideAlertFromOthers(job, requester, userType === "admin"),
+    );
     return {
       Jobs: distanceOrigin
-        ? Jobs.map((job) => addDistanceFromOrigin(job, distanceOrigin))
-        : Jobs,
+        ? visibleJobs.map((job) => addDistanceFromOrigin(job, distanceOrigin))
+        : visibleJobs,
       meta,
     };
   }
@@ -320,8 +323,15 @@ const getJobs = async ({
     employer,
     dateFilter,
   });
+  const isAdmin = userType === "admin";
   const formatedJobs = (await withJobReviews(Jobs)).map((job) =>
-    addDistanceFromOrigin(formatJobToTimezone(job, timezone), distanceOrigin),
+    addDistanceFromOrigin(
+      formatJobToTimezone(
+        hideAlertFromOthers(job, requester, isAdmin),
+        timezone,
+      ),
+      distanceOrigin,
+    ),
   );
 
   return { Jobs: formatedJobs, meta };
@@ -537,7 +547,7 @@ const updateJob = async (id, data, { requesterId, isAdmin, timezone } = {}) => {
   return formatJobToTimezone(updated, timezone);
 };
 
-const getJobDetails = async (id, timezone) => {
+const getJobDetails = async (id, timezone, { requesterId, isAdmin } = {}) => {
   const Job = await JobRepo.findJobById(id);
 
   if (!Job) {
@@ -545,7 +555,77 @@ const getJobDetails = async (id, timezone) => {
   }
 
   const [withReviews] = await withJobReviews([Job]);
-  return formatJobToTimezone(withReviews, timezone);
+  return formatJobToTimezone(
+    hideAlertFromOthers(withReviews, requesterId, isAdmin),
+    timezone,
+  );
+};
+
+// The alert number is the job owner's private contact; suppliers browsing
+// the job must not see it.
+const hideAlertFromOthers = (job, requesterId, isAdmin) => {
+  const { alert, ...rest } = job;
+  if (!alert || !(isAdmin || isJobOwner(job, requesterId))) return rest;
+  return { ...rest, alert: publicAlert(alert) };
+};
+
+// The sent log is bookkeeping for the alert cron, not part of the setting.
+const publicAlert = (alert) => {
+  const { sent, ...rest } = alert || {};
+  return rest;
+};
+
+const DEFAULT_ALERT = {
+  enabled: false,
+  phoneNumber: { code: "", number: "" },
+  hoursBefore: 0,
+  minutesBefore: 0,
+};
+
+/*
+ * Saves the job's shift alert. `alert` is merged over what is stored, so the
+ * toggle alone can be sent to switch it off. An enabled alert needs a phone
+ * number and a lead time above zero.
+ */
+const updateJobAlert = async (id, alert, { requesterId, isAdmin } = {}) => {
+  const job = await JobRepo.findJobById_(id, "user status alert");
+  if (!job || job.status === "deleted") return null;
+  if (!isAdmin && !isJobOwner(job, requesterId)) return null;
+
+  const current = job.alert?.toObject?.() || DEFAULT_ALERT;
+  const next = {
+    ...DEFAULT_ALERT,
+    ...current,
+    ...alert,
+    phoneNumber: {
+      ...DEFAULT_ALERT.phoneNumber,
+      ...current.phoneNumber,
+      ...(alert.phoneNumber || {}),
+    },
+  };
+
+  if (next.enabled) {
+    if (!next.phoneNumber.code || !next.phoneNumber.number) {
+      return { error: "alert_phone_number_required" };
+    }
+    if (next.hoursBefore * 60 + next.minutesBefore <= 0) {
+      return { error: "alert_time_required" };
+    }
+  }
+
+  job.alert = next;
+  await job.save();
+  return publicAlert(job.alert.toObject());
+};
+
+const clearJobAlert = async (id, { requesterId, isAdmin } = {}) => {
+  const job = await JobRepo.findJobById_(id, "user status alert");
+  if (!job || job.status === "deleted") return null;
+  if (!isAdmin && !isJobOwner(job, requesterId)) return null;
+
+  job.alert = DEFAULT_ALERT;
+  await job.save();
+  return publicAlert(job.alert.toObject());
 };
 const deleteJob = async (id, { requesterId, isAdmin } = {}) => {
   if (!id) throw new Error("Job ID is required");
@@ -569,6 +649,8 @@ const deleteJob = async (id, { requesterId, isAdmin } = {}) => {
 };
 
 module.exports = {
+  updateJobAlert,
+  clearJobAlert,
   createJob,
   getJobs,
   updateJob,

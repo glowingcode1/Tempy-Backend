@@ -61,6 +61,7 @@ const { backupMongoDB } = require("./helperUtils/dataBaseBackup");
 const { getRedisClient } = require("./config/redis/redisConfig");
 // const { startCrons } = require("./config/cron");
 const { startAwardReleaseCron } = require("./config/cron/awardRelease");
+const { startShiftAlertCron } = require("./config/cron/shiftAlerts");
 
 /**
  * ------------------------------------------------
@@ -242,6 +243,7 @@ server.listen(PORT, () => {
      * out. Calling this twice is safe; it registers the cron once.
      */
     startAwardReleaseCron();
+    startShiftAlertCron();
 
     setInterval(backupMongoDB, 24 * 60 * 60 * 1000);
   } catch (err) {

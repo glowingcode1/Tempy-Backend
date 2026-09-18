@@ -218,5 +218,12 @@
   "invalid_documents": "Each document must be a URL or an object with a url.",
   "invalid_job_roles": "Job roles must be a list of active job role ids.",
   "invalid_radius": "Radius must be a number of 0 or more.",
-  "invalid_provide_services_to": "Services must be true or false for careHome, hospital, localAuthority and user."
+  "invalid_provide_services_to": "Services must be true or false for careHome, hospital, localAuthority and user.",
+  "invalid_alert": "Alert settings are invalid.",
+  "invalid_alert_phone_number": "Enter a valid alert phone number with its country code, for example +44 7700900123.",
+  "invalid_alert_time": "Hours before must be 0-168 and minutes before 0-59, as whole numbers.",
+  "alert_phone_number_required": "Add a phone number to turn the alert on.",
+  "alert_time_required": "Set how long before the shift the alert should go out.",
+  "Job_alert_saved_successfully": "Alert saved.",
+  "Job_alert_cleared_successfully": "Alert cleared."
 }

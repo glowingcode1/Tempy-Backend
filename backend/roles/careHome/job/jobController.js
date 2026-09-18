@@ -797,7 +797,10 @@ const getJobDetails = async (req, res) => {
     return;
 
   try {
-    const job = await JobService.getJobDetails(id, timezone);
+    const job = await JobService.getJobDetails(id, timezone, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
     if (!job) {
       return sendResponse({
         res,
@@ -822,6 +825,118 @@ const getJobDetails = async (req, res) => {
     });
   }
 };
+const ALERT_PHONE_CODE = /^\+\d{1,4}$/;
+const ALERT_PHONE_NUMBER = /^\d{4,14}$/;
+const MAX_ALERT_HOURS = 168; // one week
+
+const isWholeNumber = (value, min, max) =>
+  Number.isInteger(value) && value >= min && value <= max;
+
+// Checks only what was sent; the service merges it over the stored alert.
+const readAlertBody = (body = {}) => {
+  const alert = {};
+
+  if (body.enabled !== undefined) {
+    if (typeof body.enabled !== "boolean") return { error: "invalid_alert" };
+    alert.enabled = body.enabled;
+  }
+
+  if (body.phoneNumber !== undefined) {
+    const { code, number } = body.phoneNumber || {};
+    const cleanNumber = String(number ?? "").replace(/[\s-]/g, "");
+    if (
+      !ALERT_PHONE_CODE.test(String(code ?? "").trim()) ||
+      !ALERT_PHONE_NUMBER.test(cleanNumber)
+    ) {
+      return { error: "invalid_alert_phone_number" };
+    }
+    alert.phoneNumber = { code: String(code).trim(), number: cleanNumber };
+  }
+
+  if (body.hoursBefore !== undefined) {
+    if (!isWholeNumber(body.hoursBefore, 0, MAX_ALERT_HOURS)) {
+      return { error: "invalid_alert_time" };
+    }
+    alert.hoursBefore = body.hoursBefore;
+  }
+
+  if (body.minutesBefore !== undefined) {
+    if (!isWholeNumber(body.minutesBefore, 0, 59)) {
+      return { error: "invalid_alert_time" };
+    }
+    alert.minutesBefore = body.minutesBefore;
+  }
+
+  return { alert };
+};
+
+const sendAlertResult = (res, result, translationKey) => {
+  if (!result) {
+    return sendResponse({ res, statusCode: 404, translationKey: "Job_not_found" });
+  }
+  if (result.error) {
+    return sendResponse({ res, statusCode: 400, translationKey: result.error });
+  }
+  return sendResponse({ res, statusCode: 200, translationKey, data: result });
+};
+
+const updateJobAlert = async (req, res) => {
+  if (
+    !validateParams(req, res, {
+      pathParams: ["id"],
+      objectIdFields: ["id"],
+    })
+  )
+    return;
+
+  const { alert, error } = readAlertBody(req.body);
+  if (error) {
+    return sendResponse({ res, statusCode: 400, translationKey: error });
+  }
+
+  try {
+    const result = await JobService.updateJobAlert(req.params.id, alert, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
+    return sendAlertResult(res, result, "Job_alert_saved_successfully");
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
+const clearJobAlert = async (req, res) => {
+  if (
+    !validateParams(req, res, {
+      pathParams: ["id"],
+      objectIdFields: ["id"],
+    })
+  )
+    return;
+
+  try {
+    const result = await JobService.clearJobAlert(req.params.id, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
+    return sendAlertResult(res, result, "Job_alert_cleared_successfully");
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
 const deleteJob = async (req, res) => {
   const { id } = req.params;
 
@@ -890,6 +1005,8 @@ const deleteJob = async (req, res) => {
   }
 };
 module.exports = {
+  updateJobAlert,
+  clearJobAlert,
   createJob,
   getJobs,
   updateJob,

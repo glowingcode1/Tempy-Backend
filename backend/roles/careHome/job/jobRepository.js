@@ -1565,4 +1565,5 @@ module.exports = {
   completeJobIfAllShiftsDone,
   updateJobAndShifts,
   hasLiveBookings,
+  shiftStartsAt,
 };
