@@ -370,6 +370,16 @@ const getUserDetails = async (req, res) => {
 
     userObject.completeDetails = isUserProfileComplete(userObject);
 
+    // Same "<department> <title>" label the shift calendar uses for its rows.
+    if (Array.isArray(userObject.jobRoles)) {
+      userObject.jobRoles = userObject.jobRoles
+        .filter(Boolean)
+        .map((role) => ({
+          ...role,
+          name: [role.department, role.title].filter(Boolean).join(" "),
+        }));
+    }
+
     const withReviews = await withUserReviews(userObject, {
       currentUserId: req.user?._id,
     });

@@ -4,5 +4,7 @@
   "account_verification_pending": "Su cuenta está pendiente de verificación. Puede completar su perfil, pero no puede publicar ni pujar por trabajos hasta que sea aprobada.",
   "branch_not_available_or_not_verified": "Esa sucursal no está disponible. Debe pertenecer a su cuenta y haber superado la verificación.",
   "persona_verification_required": "Su verificación de identidad aún no ha sido aprobada. No puede publicar ni pujar por trabajos hasta que lo sea.",
-  "invalid_job_roles": "Los tipos de trabajo deben ser una lista de identificadores de tipos de trabajo activos."
+  "invalid_job_roles": "Los tipos de trabajo deben ser una lista de identificadores de tipos de trabajo activos.",
+  "invalid_radius": "El radio debe ser un número igual o mayor que 0.",
+  "invalid_provide_services_to": "Los servicios deben ser verdadero o falso para careHome, hospital, localAuthority y user."
 }

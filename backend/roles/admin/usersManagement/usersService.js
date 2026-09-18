@@ -6,7 +6,17 @@ const {
 const userRepo = require("./usersRepository");
 const { formatUserResponse } = require("../../../helperUtils/userResponseUtil");
 const { userCache } = require("../../../config/nodeCache");
-const { User } = require("../../../models/UserModel");
+const { User, supplierTypes } = require("../../../models/UserModel");
+const {
+  countActiveJobRoles,
+} = require("../jobRole/jobRoleRepository");
+
+const PROVIDE_SERVICES_TO_KEYS = [
+  "careHome",
+  "hospital",
+  "localAuthority",
+  "user",
+];
 const { default: mongoose } = require("mongoose");
 const {
   generate2FASecret,
@@ -218,6 +228,10 @@ const updateUser = async (req, res, options = {}) => {
     }
 
     const userType = user.accountState?.userType;
+    // Account-level decisions (approval, blue tick, what a supplier serves)
+    // are the admin's. A user updating their own profile must not reach them.
+    const isAdmin = req.user?.userType === "admin";
+    const isSupplier = supplierTypes.includes(userType);
 
     // -----------------------------------------
     // Basic profile fields
@@ -304,7 +318,7 @@ const updateUser = async (req, res, options = {}) => {
     // Status
     // -----------------------------------------
 
-    if (req.body.status !== undefined) {
+    if (isAdmin && req.body.status !== undefined) {
       user.accountState.status = req.body.status;
     }
 
@@ -312,7 +326,7 @@ const updateUser = async (req, res, options = {}) => {
     // Blue tick
     // -----------------------------------------
 
-    if (req.body.blueTick !== undefined) {
+    if (isAdmin && req.body.blueTick !== undefined) {
       const blueTick = req.body.blueTick;
 
       if (!user.accountState.blueTick) {
@@ -328,6 +342,49 @@ const updateUser = async (req, res, options = {}) => {
       }
 
       user.markModified("accountState.blueTick");
+    }
+
+    // -----------------------------------------
+    // Admin-only supplier settings
+    // -----------------------------------------
+
+    if (isAdmin && req.body.radius !== undefined) {
+      const radius = Number(req.body.radius);
+      if (!Number.isFinite(radius) || radius < 0) {
+        return { errorCode: 400, message: "invalid_radius" };
+      }
+      user.radius = radius;
+    }
+
+    if (isAdmin && isSupplier && req.body.provideServicesTo !== undefined) {
+      const provideServicesTo = req.body.provideServicesTo;
+      if (!provideServicesTo || typeof provideServicesTo !== "object") {
+        return { errorCode: 400, message: "invalid_provide_services_to" };
+      }
+
+      for (const key of PROVIDE_SERVICES_TO_KEYS) {
+        if (provideServicesTo[key] === undefined) continue;
+        if (typeof provideServicesTo[key] !== "boolean") {
+          return { errorCode: 400, message: "invalid_provide_services_to" };
+        }
+        user.set(`provideServicesTo.${key}`, provideServicesTo[key]);
+      }
+    }
+
+    if (isAdmin && isSupplier && req.body.jobRoles !== undefined) {
+      const jobRoles = req.body.jobRoles;
+      if (
+        !Array.isArray(jobRoles) ||
+        !jobRoles.every((id) => mongoose.isValidObjectId(id))
+      ) {
+        return { errorCode: 400, message: "invalid_job_roles" };
+      }
+
+      const ids = [...new Set(jobRoles.map(String))];
+      if (ids.length && (await countActiveJobRoles(ids)) !== ids.length) {
+        return { errorCode: 400, message: "invalid_job_roles" };
+      }
+      user.jobRoles = ids;
     }
 
     // -----------------------------------------
@@ -379,7 +436,15 @@ const deleteUser = async (id) => {
 };
 
 const getUserDetails = async (id) => {
-  return await userRepo.findUserById(id);
+  const user = await userRepo.findUserById(id);
+  if (!user) return null;
+
+  // findUserById is async, so populate the document rather than the query.
+  await user.populate({
+    path: "jobRoles",
+    select: "department title status",
+  });
+  return user;
 };
 
 const getUserDetailsForQRService = async (id) => {

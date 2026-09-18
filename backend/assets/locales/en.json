@@ -216,5 +216,7 @@
   "Availability_overlaps_with_existing_entry": "This time overlaps with an existing availability entry.",
   "invalid_availability_date": "Dates must be valid date-times, for example 2026-09-20T08:00:00Z.",
   "invalid_documents": "Each document must be a URL or an object with a url.",
-  "invalid_job_roles": "Job roles must be a list of active job role ids."
+  "invalid_job_roles": "Job roles must be a list of active job role ids.",
+  "invalid_radius": "Radius must be a number of 0 or more.",
+  "invalid_provide_services_to": "Services must be true or false for careHome, hospital, localAuthority and user."
 }
