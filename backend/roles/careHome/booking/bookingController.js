@@ -425,7 +425,12 @@ const updateBooking = async (req, res) => {
         res,
         statusCode: 200,
         translationKey: "Booking_updated_successfully",
-        data: updated,
+        // `strike` is set when this cancellation counted under the three
+        // strikes rule: { strikes, limit, suspended }.
+        data: {
+          ...(updated.toObject ? updated.toObject() : updated),
+          strike: updated.strike || null,
+        },
       });
     } catch (error) {
       const readableError = getReadableErrorMessage(error);

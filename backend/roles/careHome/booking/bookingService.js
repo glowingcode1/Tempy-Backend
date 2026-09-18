@@ -31,6 +31,7 @@ const {
 } = require("../../../roles/aggency/staff/staffRepository");
 const { customerTypes, supplierTypes } = require("@UsersModel");
 const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
+const { recordLateCancellation } = require("./cancellationStrikes");
 const {
   getReviewsForObjects,
 } = require("../../../commonModules/reviews/reviewRepository");
@@ -548,6 +549,21 @@ const updateBooking = async (id, data) => {
       previousStatus === "pending" &&
       (data.status === CANCEL_STATUS.nurse ||
         data.status === CANCEL_STATUS.supplier);
+
+    /*
+     * Three strikes: a supplier pulling out of a booking the worker had
+     * accepted, under 24 hours before it starts, earns a strike - whoever on
+     * the supplier side cancelled it (the nurse, or the agency that employs
+     * them). Undoing an unaccepted assignment never reached the customer, so
+     * it does not count.
+     */
+    if (
+      previousStatus === "active" &&
+      (data.status === CANCEL_STATUS.nurse ||
+        data.status === CANCEL_STATUS.supplier)
+    ) {
+      Booking.strike = await recordLateCancellation(data.currentUser, Booking);
+    }
 
     if (!assignmentUndone) {
       runInBackground(

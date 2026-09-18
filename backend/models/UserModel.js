@@ -342,6 +342,23 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    /*
+     * Suppliers only: bookings they cancelled with under 24 hours' notice.
+     * The third uncleared strike suspends the account; an admin reactivating
+     * it clears them. Kept as history rather than a counter.
+     */
+    cancellationStrikes: {
+      type: [
+        {
+          _id: false,
+          booking: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
+          shiftStartsAt: { type: Date },
+          cancelledAt: { type: Date, default: Date.now },
+          cleared: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
     // Suppliers only: the job types they work in. The shift calendar shows
     // these as rows even before any shift of that type exists.
     jobRoles: {

@@ -319,6 +319,21 @@ const updateUser = async (req, res, options = {}) => {
     // -----------------------------------------
 
     if (isAdmin && req.body.status !== undefined) {
+      // Reactivating a suspended supplier gives it a clean slate under the
+      // three strikes rule; otherwise its next late cancellation would
+      // suspend it again straight away.
+      if (
+        user.accountState.status === "suspended" &&
+        req.body.status === "active"
+      ) {
+        (user.cancellationStrikes || []).forEach((strike) => {
+          strike.cleared = true;
+        });
+        user.markModified("cancellationStrikes");
+        if (user.accountState.reason === "late_cancellation_strikes") {
+          user.accountState.reason = "";
+        }
+      }
       user.accountState.status = req.body.status;
     }
 
