@@ -347,6 +347,13 @@ const createReview = async (data = {}) => {
   return reviews[0] || null;
 };
 
+// The review `subject` left on a booking, if any.
+const findBookingReviewBy = async (bookingId, subject) =>
+  Review.findOne({ reviewType: "booking", object: bookingId, subject })
+    .sort({ createdAt: -1 })
+    .select("_id")
+    .lean();
+
 const findReviewByUniqueScope = async ({ subject, object }) => {
   return Review.findOne({ subject, object });
 };
@@ -825,6 +832,7 @@ const findReviewByStaff = async (staffIds = []) => {
 module.exports = {
   createReview,
   findReviewByUniqueScope,
+  findBookingReviewBy,
   hasReview,
   getReviewsForObjects,
   getReviewsForObjectUsers,

@@ -5,6 +5,7 @@ const { generateMeta } = require("@helperUtils/responseUtil");
 const mongoose = require("mongoose");
 const Booking = require("../../roles/careHome/booking/Booking");
 const Branches = require("../../roles/aggency/branches/Branches");
+const Job = require("../../roles/careHome/job/Job");
 
 const REVIEW_TYPE_TO_OBJECT_MODEL = {
   booking: "Booking",
@@ -45,13 +46,42 @@ const getReviewedUserFromBooking = (booking, currentUserId) => {
   return bookingUserId;
 };
 
+/*
+ * Booking.isReviewed / Booking.review mirror the customer's review of that
+ * booking, and Job.isReviewed is true while any of the job's bookings is
+ * reviewed. Recomputed from the reviews themselves so create and delete
+ * cannot drift apart.
+ */
+const syncBookingReviewFlags = async (bookingId) => {
+  const booking = await Booking.findById(bookingId).select("user job");
+  if (!booking) return;
+
+  const review = await reviewRepository.findBookingReviewBy(
+    booking._id,
+    booking.user,
+  );
+
+  await Booking.updateOne(
+    { _id: booking._id },
+    { isReviewed: Boolean(review), review: review?._id || null },
+  );
+
+  if (!booking.job) return;
+
+  const jobReviewed = await Booking.exists({
+    job: booking.job,
+    isReviewed: true,
+  });
+  await Job.updateOne(
+    { _id: booking.job },
+    { isReviewed: Boolean(jobReviewed) },
+  );
+};
+
 const createReview = async ({ reviewData, timezone }) => {
   const { reviewType, objectId, rating, comment, currentUserId } = reviewData;
   const targetModel = getTargetModelByReviewType(reviewType);
-  const [targetObject, currentUser] = await Promise.all([
-    targetModel.findById(objectId),
-    User.findById(currentUserId),
-  ]);
+  const targetObject = await targetModel.findById(objectId);
 
   if (!targetObject) {
     throw buildAppError(
@@ -81,23 +111,19 @@ const createReview = async ({ reviewData, timezone }) => {
       return buildAppError("cannot_review_incomplete_booking", 400);
     }
 
-    const currentUserIdString = toIdString(currentUserId);
-    if (
-      currentUserIdString !== toIdString(targetObject.user) &&
-      currentUserIdString !== toIdString(targetObject.worker)
-    ) {
+    // Only the customer who made the booking can review it.
+    if (toIdString(currentUserId) !== toIdString(targetObject.user)) {
       return buildAppError("unauthorized_to_perform_this_action", 403);
     }
 
+    if (targetObject.isReviewed) {
+      return buildAppError("review_already", 400);
+    }
+
     bookingId = objectId;
-    // A booking review is always about the other side of that booking:
-    // the customer rates the nurse who worked it, the nurse rates the
-    // customer who booked them. Booking.employer is the agency that bid and
-    // is null on direct nurse bookings, so it is never the reviewed party.
-    objectUser =
-      currentUser.accountState.userType === "nurse"
-        ? targetObject.user
-        : targetObject.worker;
+    // The customer rates the nurse who worked the booking. Booking.employer
+    // is the agency that bid, so it is never the reviewed party.
+    objectUser = targetObject.worker;
 
     if (!objectUser) {
       return buildAppError("booking_has_no_counterparty_to_review", 400);
@@ -140,6 +166,10 @@ const createReview = async ({ reviewData, timezone }) => {
     rating,
     comment,
   });
+
+  if (reviewType === "booking") {
+    await syncBookingReviewFlags(objectId);
+  }
 
   return {
     review: createdReview,
@@ -266,6 +296,10 @@ const deleteReviewById = async ({ reviewId, userId, userType }) => {
   }
 
   await reviewRepository.deleteReviewById(reviewId);
+
+  if (review.reviewType === "booking") {
+    await syncBookingReviewFlags(review.object);
+  }
 };
 
 const getReview = async ({

@@ -179,6 +179,7 @@ const getBooking = async ({
       preserveNullAndEmptyArrays: true,
     },
   });
+
   if (keyword) {
     const keywordMatch = buildKeywordQueryFromModels(
       [{ schema: Booking.schema }],
@@ -200,7 +201,27 @@ const getBooking = async ({
 
   pipeline.push({
     $facet: {
-      data: [{ $skip: skip }, ...(limit === 0 ? [] : [{ $limit: limit }])],
+      data: [
+        { $skip: skip },
+        ...(limit === 0 ? [] : [{ $limit: limit }]),
+        // only the page needs it, so look it up after pagination
+        {
+          $lookup: {
+            from: "jobs",
+            localField: "job",
+            foreignField: "_id",
+            pipeline: [{ $project: { status: 1 } }],
+            as: "jobStatus",
+          },
+        },
+        {
+          $addFields: {
+            jobStatus: {
+              $ifNull: [{ $arrayElemAt: ["$jobStatus.status", 0] }, null],
+            },
+          },
+        },
+      ],
       totalFiltered: [
         {
           $count: "count",
@@ -444,6 +465,12 @@ const getBookingByJob = async ({
 
   return { jobBookings: Booking, meta };
 };
+
+// Bookings of these jobs that the customer has reviewed.
+const findReviewedBookingsByJobs = async (jobIds = []) =>
+  Booking.find({ job: { $in: jobIds }, isReviewed: true })
+    .select("_id job user review")
+    .lean();
 
 const findBookingById = async (id, projection = null) => {
   return Booking.findById(id)
@@ -1008,6 +1035,7 @@ const getEarnings = async ({
 };
 
 module.exports = {
+  findReviewedBookingsByJobs,
   createBooking,
   getBooking,
   findBookingById,

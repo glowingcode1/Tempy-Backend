@@ -84,11 +84,6 @@ const JobSchema = new mongoose.Schema(
       type: EmergencyContactSchema,
       default: () => ({}),
     },
-    /*
-     * Stored as { name, url }. Older jobs hold plain URL strings, hence Mixed:
-     * a typed sub-schema would fail to load those. formatJobToTimezone turns
-     * both shapes into { name, url } for the response.
-     */
     documents: {
       type: [mongoose.Schema.Types.Mixed],
       default: [],
@@ -100,6 +95,10 @@ const JobSchema = new mongoose.Schema(
       required: true,
     },
     isSpecial: {
+      type: Boolean,
+      default: false,
+    },
+    isReviewed: {
       type: Boolean,
       default: false,
     },

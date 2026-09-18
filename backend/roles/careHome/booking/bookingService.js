@@ -20,6 +20,7 @@ const {
 const {
   updateShiftStatus,
   completeJobIfAllShiftsDone,
+  findJobById_,
 } = require("../job/jobRepository");
 const { runInBackground } = require("@helperUtils/runInBackground");
 const { formatAttendance } = require("./formator/formatAttendance");
@@ -32,7 +33,6 @@ const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
 const {
   getReviewsForObjects,
 } = require("../../../commonModules/reviews/reviewRepository");
-const reviewService = require("../../../commonModules/reviews/reviewService");
 const platformFee = Number(process.env.PLATFORM_FEE);
 // weither Data
 const WEATHER_API_URL = process.env.WEATHER_API_URL;
@@ -424,26 +424,22 @@ const getBooking = async ({
     // The customer has no booking until the assigned worker accepts it.
     hideUnacceptedAssignments: Boolean(customer),
   });
-  // One aggregation for the whole page instead of two per row. Each party
-  // sees only their own review of a booking, plus whether they left one.
+  // One aggregation for the whole page instead of two per row.
   const reviewsByBooking = await getReviewsForObjects({
     objectIds: booking.map((b) => b._id),
     objectType: "Booking",
     currentUserId,
-    onlyOwn: true,
     limit: 0,
   });
 
-  const formatedBooking = booking.map((job) => {
-    const formattedBooking = formatBookingToTimezone(job, timezone);
-    const reviewContext = reviewsByBooking.get(String(job._id));
-
-    return {
-      ...formattedBooking,
-      reviews: reviewContext?.reviews || [],
-      hasReview: reviewContext?.hasReview || false,
-    };
-  });
+  const formatedBooking = booking.map((job) => ({
+    ...formatBookingToTimezone(job, timezone),
+    ...bookingReviewFields(
+      job,
+      reviewsByBooking.get(String(job._id)),
+      currentUserId,
+    ),
+  }));
 
   return { Booking: formatedBooking, meta };
 };
@@ -577,6 +573,25 @@ const isBookingParty = (booking, userId) =>
     (party) => party && String(party._id || party) === String(userId),
   );
 
+const isReviewBy = (userId) => (review) =>
+  String(review.subject?._id || review.subject) === String(userId);
+
+/*
+ * Only the booking's customer can review it, so `review` is that one review
+ * and every party on the booking sees it. `reviews` / `hasReview` stay the
+ * caller's own, as before.
+ */
+const bookingReviewFields = (booking, reviewContext, currentUserId) => {
+  const allReviews = reviewContext?.reviews || [];
+
+  return {
+    isReviewed: Boolean(booking.isReviewed),
+    review: allReviews.find(isReviewBy(booking.user?._id || booking.user)) || null,
+    reviews: allReviews.filter(isReviewBy(currentUserId)),
+    hasReview: reviewContext?.hasReview || false,
+  };
+};
+
 const getBookingDetails = async (
   id,
   timezone,
@@ -599,16 +614,25 @@ const getBookingDetails = async (
     return null;
   }
 
-  const formattedBooking = formatBookingToTimezone(Booking, timezone);
-  const { reviews, hasReview } = await reviewService.getReviewsByType({
-    reviewType: "booking",
-    entityId: id,
-    currentUserId,
-    onlyOwn: true,
-    timezone,
-  });
+  const [reviewsByBooking, job] = await Promise.all([
+    getReviewsForObjects({
+      objectIds: [Booking._id],
+      objectType: "Booking",
+      currentUserId,
+      limit: 0,
+    }),
+    findJobById_(Booking.job, "status"),
+  ]);
 
-  return { ...formattedBooking, reviews, hasReview };
+  return {
+    ...formatBookingToTimezone(Booking, timezone),
+    jobStatus: job?.status || null,
+    ...bookingReviewFields(
+      Booking,
+      reviewsByBooking.get(String(Booking._id)),
+      currentUserId,
+    ),
+  };
 };
 const deleteBooking = async (id) => {
   if (!id) throw new Error("Booking ID is required");

@@ -18,9 +18,48 @@ const {
 } = require("../../../roles/aggency/bid/bidRepository");
 const { findUserById } = require("../../admin/usersManagement/usersRepository");
 const { runInBackground } = require("@helperUtils/runInBackground");
+const {
+  getReviewsForObjects,
+} = require("../../../commonModules/reviews/reviewRepository");
 const moment = require("moment-timezone");
 
 // Application locations are represented as [latitude, longitude].
+/*
+ * A job's reviews are its customer's reviews of the job's bookings. Only jobs
+ * flagged isReviewed are looked up, in one query for the whole page.
+ */
+const withJobReviews = async (jobs) => {
+  const reviewedJobIds = jobs.filter((job) => job.isReviewed).map((job) => job._id);
+
+  const bookings = reviewedJobIds.length
+    ? await BookingRepo.findReviewedBookingsByJobs(reviewedJobIds)
+    : [];
+  const reviewsByBooking = await getReviewsForObjects({
+    objectIds: bookings.map((booking) => booking._id),
+    objectType: "Booking",
+    limit: 0,
+  });
+
+  const reviewsByJob = new Map();
+  for (const booking of bookings) {
+    const review = reviewsByBooking
+      .get(String(booking._id))
+      ?.reviews.find(
+        (r) => String(r.subject?._id || r.subject) === String(booking.user),
+      );
+    if (!review) continue;
+
+    const key = String(booking.job);
+    reviewsByJob.set(key, [...(reviewsByJob.get(key) || []), review]);
+  }
+
+  return jobs.map((job) => ({
+    ...job,
+    isReviewed: Boolean(job.isReviewed),
+    reviews: reviewsByJob.get(String(job._id)) || [],
+  }));
+};
+
 const addDistanceFromOrigin = (job, origin) => {
   if (!origin || !Array.isArray(job?.location?.coordinates)) return job;
 
@@ -281,7 +320,7 @@ const getJobs = async ({
     employer,
     dateFilter,
   });
-  const formatedJobs = Jobs.map((job) =>
+  const formatedJobs = (await withJobReviews(Jobs)).map((job) =>
     addDistanceFromOrigin(formatJobToTimezone(job, timezone), distanceOrigin),
   );
 
@@ -505,7 +544,8 @@ const getJobDetails = async (id, timezone) => {
     return null;
   }
 
-  return formatJobToTimezone(Job, timezone);
+  const [withReviews] = await withJobReviews([Job]);
+  return formatJobToTimezone(withReviews, timezone);
 };
 const deleteJob = async (id, { requesterId, isAdmin } = {}) => {
   if (!id) throw new Error("Job ID is required");
