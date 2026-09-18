@@ -20,6 +20,35 @@ const EmergencyContactSchema = new mongoose.Schema(
   { _id: false },
 );
 
+/*
+ * A phone number to alert a set time before each of the job's shifts starts.
+ * Set from job details by the job owner; nobody else sees it.
+ */
+const AlertSchema = new mongoose.Schema(
+  {
+    enabled: { type: Boolean, default: false },
+    phoneNumber: {
+      code: { type: String, trim: true, default: "" }, // "+44"
+      number: { type: String, trim: true, default: "" }, // "7700900123"
+    },
+    hoursBefore: { type: Number, min: 0, default: 0 },
+    minutesBefore: { type: Number, min: 0, max: 59, default: 0 },
+    // Alerts already sent, one per shift start. Keyed by start time too, so
+    // moving a shift re-arms its alert.
+    sent: {
+      type: [
+        {
+          _id: false,
+          shift: { type: mongoose.Schema.Types.ObjectId },
+          startsAt: { type: Date },
+        },
+      ],
+      default: [],
+    },
+  },
+  { _id: false },
+);
+
 const JobSchema = new mongoose.Schema(
   {
     location: {
@@ -84,11 +113,6 @@ const JobSchema = new mongoose.Schema(
       type: EmergencyContactSchema,
       default: () => ({}),
     },
-    /*
-     * Stored as { name, url }. Older jobs hold plain URL strings, hence Mixed:
-     * a typed sub-schema would fail to load those. formatJobToTimezone turns
-     * both shapes into { name, url } for the response.
-     */
     documents: {
       type: [mongoose.Schema.Types.Mixed],
       default: [],
@@ -102,6 +126,21 @@ const JobSchema = new mongoose.Schema(
     isSpecial: {
       type: Boolean,
       default: false,
+    },
+    // Hourly rate the customer offers for the job, in the platform currency.
+    // Optional: older jobs have none.
+    rate: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    isReviewed: {
+      type: Boolean,
+      default: false,
+    },
+    alert: {
+      type: AlertSchema,
+      default: () => ({}),
     },
     status: {
       type: String,
@@ -135,6 +174,7 @@ const JobSchema = new mongoose.Schema(
   { timestamps: true },
 );
 JobSchema.index({ location: "2dsphere" });
+JobSchema.index({ "alert.enabled": 1, status: 1 });
 const Job = mongoose.model("Job", JobSchema);
 
 module.exports = Job;

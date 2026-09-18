@@ -7,6 +7,7 @@ const {
   convertTimezoneToUtc,
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment");
+const mongoose = require("mongoose");
 const JobRoleService = require("./jobRoleService");
 
 const createJobRole = async (req, res) => {
@@ -217,7 +218,81 @@ const deleteJobRole = async (req, res) => {
     });
   }
 };
+const getMyJobRoles = async (req, res) => {
+  try {
+    const jobRoles = await JobRoleService.getMyJobRoles(req.user._id);
+    if (!jobRoles) {
+      return sendResponse({
+        res,
+        statusCode: 404,
+        translationKey: "User_not_found",
+      });
+    }
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "JobRole_fetched_successfully",
+      data: jobRoles,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
+const updateMyJobRoles = async (req, res) => {
+  const { jobRoles } = req.body;
+
+  if (
+    !Array.isArray(jobRoles) ||
+    !jobRoles.every((id) => mongoose.isValidObjectId(id))
+  ) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_job_roles",
+    });
+  }
+
+  try {
+    const result = await JobRoleService.updateMyJobRoles(
+      req.user._id,
+      jobRoles,
+    );
+    if (result?.error) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: result.error,
+      });
+    }
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "JobRole_updated_successfully",
+      data: result,
+    });
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
 module.exports = {
+  getMyJobRoles,
+  updateMyJobRoles,
   createJobRole,
   getJobRole,
   updateJobRole,

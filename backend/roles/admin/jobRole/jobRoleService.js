@@ -66,7 +66,26 @@ const deleteJobRole = async (id) => {
   return !!deleted;
 };
 
+const getMyJobRoles = async (userId) => JobRoleRepo.getUserJobRoles(userId);
+
+/*
+ * Replaces the supplier's job roles with `jobRoleIds`. Every id has to be an
+ * active role; an empty list clears them.
+ */
+const updateMyJobRoles = async (userId, jobRoleIds = []) => {
+  const ids = [...new Set(jobRoleIds.map(String))];
+
+  if (ids.length && (await JobRoleRepo.countActiveJobRoles(ids)) !== ids.length) {
+    return { error: "invalid_job_roles" };
+  }
+
+  await JobRoleRepo.setUserJobRoles(userId, ids);
+  return JobRoleRepo.getUserJobRoles(userId);
+};
+
 module.exports = {
+  getMyJobRoles,
+  updateMyJobRoles,
   createJobRole,
   getJobRole,
   updateJobRole,

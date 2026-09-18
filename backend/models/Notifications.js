@@ -26,6 +26,8 @@ const NotificationTypes = {
   JOB_CANCELLED: "job_cancelled",
   NEW_JOB: "new_job",
   NEW_STAFF: "new_staff",
+  SHIFT_ALERT: "shift_alert",
+  CANCELLATION_STRIKE: "cancellation_strike",
   NEW_BOOKING: "new_booking",
 };
 

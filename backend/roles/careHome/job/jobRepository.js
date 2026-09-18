@@ -158,6 +158,112 @@ const anyShiftExpr = (condition) => ({
 const isNullExpr = (field) => ({ $eq: [{ $ifNull: [field, null] }, null] });
 
 /*
+ * Listing filters shared by getJobs and getJobsSummary.
+ *   dateRange - { from, to } instants: the job has a shift starting in
+ *               [from, to). Shift dates are UTC days, so the elemMatch is only
+ *               a cheap pre-filter; the $expr decides.
+ *   jobRoles  - job type ids; the job's type is one of them.
+ */
+/*
+ * "filled": the job has at least one bid still standing; "unfilled": none.
+ * Withdrawn and deleted bids do not count.
+ */
+const BID_FILTERS = ["filled", "unfilled"];
+const DEAD_BID_STATUSES = ["withdraw", "deleted"];
+
+// Whether a job is "filled": it has at least one bid still standing.
+const hasStandingBids = async (jobId) =>
+  Boolean(
+    await Bid.exists({
+      job: new mongoose.Types.ObjectId(jobId),
+      status: { $nin: DEAD_BID_STATUSES },
+    }),
+  );
+
+const bidFilterStages = (bids) => {
+  if (!BID_FILTERS.includes(bids)) return [];
+
+  return [
+    {
+      $lookup: {
+        from: "bids",
+        let: { jobId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$job", "$$jobId"] },
+              status: { $nin: DEAD_BID_STATUSES },
+            },
+          },
+          { $limit: 1 },
+          { $project: { _id: 1 } },
+        ],
+        as: "standingBid",
+      },
+    },
+    {
+      $match: {
+        standingBid: bids === "filled" ? { $ne: [] } : { $size: 0 },
+      },
+    },
+    { $project: { standingBid: 0 } },
+  ];
+};
+
+/*
+ * Listing order. "rate_asc" / "rate_desc" sort by Job.rate with jobs that
+ * have no rate last either way; anything else is newest first.
+ */
+const JOB_SORTS = ["rate_asc", "rate_desc"];
+
+const listingSortStages = (sort) => {
+  if (!JOB_SORTS.includes(sort)) return [{ $sort: { createdAt: -1 } }];
+
+  return [
+    { $addFields: { hasRate: { $isNumber: "$rate" } } },
+    {
+      $sort: {
+        hasRate: -1,
+        rate: sort === "rate_asc" ? 1 : -1,
+        createdAt: -1,
+        _id: 1,
+      },
+    },
+    { $project: { hasRate: 0 } },
+  ];
+};
+
+const listingFilterStages = ({ dateRange, jobRoles } = {}) => {
+  const match = {};
+
+  if (jobRoles?.length) {
+    // Older jobs may hold the type as a string rather than an ObjectId.
+    match.type = {
+      $in: jobRoles.flatMap((id) => [new mongoose.Types.ObjectId(id), String(id)]),
+    };
+  }
+
+  if (dateRange) {
+    match.shift = {
+      $elemMatch: {
+        date: {
+          $gte: new Date(dateRange.from.getTime() - DAY_MS),
+          $lt: dateRange.to,
+        },
+      },
+    };
+    match.$expr = anyShiftExpr({
+      $and: [
+        { $gte: [shiftStartExpr("s"), dateRange.from] },
+        { $lt: [shiftStartExpr("s"), dateRange.to] },
+      ],
+    });
+  }
+
+  return Object.keys(match).length ? [{ $match: match }] : [];
+};
+
+/*
  * What a supplier (agency, home care company, or nurse - direct or agency
  * staff) is involved in.
  *
@@ -594,6 +700,10 @@ const getJobsSummary = async ({
   projection,
   worker,
   employer,
+  dateRange,
+  jobRoles,
+  sort,
+  bids,
 }) => {
   const now = new Date();
   const provideServicesToUser = await findUserById(requester);
@@ -660,6 +770,10 @@ const getJobsSummary = async ({
   } else {
     pipeline.push({ $match: baseMatch });
   }
+  pipeline.push(
+    ...listingFilterStages({ dateRange, jobRoles }),
+    ...bidFilterStages(bids),
+  );
 
   // Kept out of $geoNear's query, as in getJobs.
   if (supplierTabs) {
@@ -703,7 +817,7 @@ const getJobsSummary = async ({
     }
   }
 
-  pipeline.push({ $sort: { createdAt: -1 } });
+  pipeline.push(...listingSortStages(sort));
 
   if (supplierId) {
     pipeline.push(
@@ -716,6 +830,7 @@ const getJobsSummary = async ({
       // Keep the calculated distance in compact/summary responses as well.
       $project: {
         ...projection,
+        rate: 1,
         ...(hasGeo && { distanceInKM: 1 }),
         ...(supplierId && { canBid: 1, myBooking: 1, myBid: 1 }),
       },
@@ -812,6 +927,10 @@ const getJobs = async ({
   employer,
   projection,
   dateFilter, // optional date range filter
+  dateRange, // { from, to } - a shift starts in this range
+  jobRoles, // job type ids
+  sort, // "rate_asc" | "rate_desc"; default newest first
+  bids, // "filled" | "unfilled"
 }) => {
   const now = new Date();
 
@@ -923,6 +1042,10 @@ const getJobs = async ({
   } else {
     pipeline.push({ $match: baseMatch });
   }
+  pipeline.push(
+    ...listingFilterStages({ dateRange, jobRoles }),
+    ...bidFilterStages(bids),
+  );
   if (supplierTabMatch) {
     pipeline.push({ $match: supplierTabMatch });
   }
@@ -1140,7 +1263,7 @@ const getJobs = async ({
     }
   }
 
-  pipeline.push({ $sort: { createdAt: -1 } });
+  pipeline.push(...listingSortStages(sort));
 
   // canBid / myBooking / myBid tell the app which action a job offers.
   if (supplierId) {
@@ -1544,6 +1667,9 @@ const updateShiftStatus = async (jobId, shiftId, status) => {
 };
 
 module.exports = {
+  JOB_SORTS,
+  BID_FILTERS,
+  hasStandingBids,
   createJob,
   getJobs,
 
@@ -1565,4 +1691,5 @@ module.exports = {
   completeJobIfAllShiftsDone,
   updateJobAndShifts,
   hasLiveBookings,
+  shiftStartsAt,
 };

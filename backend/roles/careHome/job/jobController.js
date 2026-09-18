@@ -7,6 +7,8 @@ const {
   convertTimezoneToUtc,
 } = require("../../../helperUtils/responseUtil");
 const moment = require("moment-timezone");
+const mongoose = require("mongoose");
+const { JOB_SORTS, BID_FILTERS } = require("./jobRepository");
 const JobService = require("./jobService");
 const { customerTypes, supplierTypes, User } = require("@UsersModel");
 const { buildProjection } = require("@helperUtils/buildProjection");
@@ -238,6 +240,11 @@ const createJob = async (req, res) => {
     });
   }
 
+  const { rate, error: rateError } = readRate(req.body.rate);
+  if (rateError) {
+    return sendResponse({ res, statusCode: 400, translationKey: rateError });
+  }
+
   const uploadedDocuments = (req.files || []).map((file) => ({
     name: file.originalname || "",
     url: file.location || file.path,
@@ -311,6 +318,7 @@ const createJob = async (req, res) => {
     contactDetails,
     emergencyContact,
     documents: [...(sentDocuments || []), ...uploadedDocuments],
+    rate,
   };
   try {
     const Job = await JobService.createJob(data, timezone);
@@ -339,10 +347,101 @@ const createJob = async (req, res) => {
   }
 };
 
+/*
+ * Job.rate from a request body. Multipart create requests send numbers as
+ * strings. undefined = not sent, null = clear it (update only).
+ */
+const readRate = (value, { allowNull = false } = {}) => {
+  if (value === undefined) return { rate: undefined };
+  if (value === null || value === "") {
+    return allowNull ? { rate: null } : { rate: undefined };
+  }
+  const rate = Number(value);
+  if (!Number.isFinite(rate) || rate <= 0) return { error: "invalid_rate" };
+  return { rate: Math.round(rate * 100) / 100 };
+};
+
+const toIdList = (value) =>
+  (Array.isArray(value) ? value : String(value).split(","))
+    .map((id) => String(id).trim())
+    .filter(Boolean);
+
+/*
+ * Optional listing filters:
+ *   startDate / endDate  YYYY-MM-DD in the caller's timezone, inclusive; the
+ *                        job has a shift starting on one of those days. Either
+ *                        may be sent alone.
+ *   jobRoles             job type ids, comma separated (jobTypes accepted too).
+ */
+const readJobListFilters = (query, timezone = "UTC") => {
+  const filters = {};
+
+  const roleParam = query.jobRoles ?? query.jobTypes;
+  if (roleParam !== undefined && roleParam !== "") {
+    const jobRoles = toIdList(roleParam);
+    if (!jobRoles.every((id) => mongoose.isValidObjectId(id))) {
+      return { error: "invalid_job_roles" };
+    }
+    filters.jobRoles = jobRoles;
+  }
+
+  const { startDate, endDate } = query;
+  if (startDate || endDate) {
+    const tz = timezone || "UTC";
+    const from = startDate ? moment.tz(startDate, "YYYY-MM-DD", true, tz) : null;
+    const to = endDate ? moment.tz(endDate, "YYYY-MM-DD", true, tz) : null;
+
+    if ((from && !from.isValid()) || (to && !to.isValid())) {
+      return {
+        error: "invalid_date_format",
+        values: { field: "startDate/endDate", format: "YYYY-MM-DD" },
+      };
+    }
+    if (from && to && from.isAfter(to)) {
+      return { error: "start_date_must_be_before_end_date" };
+    }
+
+    filters.dateRange = {
+      from: from ? from.startOf("day").toDate() : new Date(0),
+      to: to
+        ? to.clone().add(1, "day").startOf("day").toDate()
+        : new Date(8640000000000000),
+    };
+  }
+
+  return filters;
+};
+
 const getJobs = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, dateFilter, user, latitude, longitude, km, summary } =
     req.query;
+
+  const filters = readJobListFilters(req.query, req.user.timezone);
+  const sort = req.query.sort;
+  if (sort !== undefined && sort !== "" && !JOB_SORTS.includes(sort)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_job_sort",
+    });
+  }
+  const bids = req.query.bids;
+  if (bids !== undefined && bids !== "" && !BID_FILTERS.includes(bids)) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: "invalid_bids_filter",
+    });
+  }
+  if (filters.error) {
+    return sendResponse({
+      res,
+      statusCode: 400,
+      translationKey: filters.error,
+      values: filters.values,
+    });
+  }
   const customer = await customerTypes.includes(req.user.userType);
   const supplier = await supplierTypes.includes(req.user.userType);
   let employer = null;
@@ -449,6 +548,10 @@ const getJobs = async (req, res) => {
       employer,
       dateFilter,
       distanceOrigin,
+      dateRange: filters.dateRange,
+      jobRoles: filters.jobRoles,
+      sort,
+      bids,
     });
 
     return sendResponse({
@@ -732,7 +835,15 @@ const updateJob = async (req, res) => {
 
   ({ contactDetails, emergencyContact, notes } = readContactFields(req.body));
 
+  const { rate, error: rateError } = readRate(req.body.rate, {
+    allowNull: true,
+  });
+  if (rateError) {
+    return sendResponse({ res, statusCode: 400, translationKey: rateError });
+  }
+
   let data = {
+    rate,
     name,
     description,
     type,
@@ -754,7 +865,7 @@ const updateJob = async (req, res) => {
     if (updated && updated.error) {
       return sendResponse({
         res,
-        statusCode: 400,
+        statusCode: updated.statusCode || 400,
         translationKey: updated.error,
       });
     }
@@ -797,7 +908,10 @@ const getJobDetails = async (req, res) => {
     return;
 
   try {
-    const job = await JobService.getJobDetails(id, timezone);
+    const job = await JobService.getJobDetails(id, timezone, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
     if (!job) {
       return sendResponse({
         res,
@@ -822,6 +936,118 @@ const getJobDetails = async (req, res) => {
     });
   }
 };
+const ALERT_PHONE_CODE = /^\+\d{1,4}$/;
+const ALERT_PHONE_NUMBER = /^\d{4,14}$/;
+const MAX_ALERT_HOURS = 168; // one week
+
+const isWholeNumber = (value, min, max) =>
+  Number.isInteger(value) && value >= min && value <= max;
+
+// Checks only what was sent; the service merges it over the stored alert.
+const readAlertBody = (body = {}) => {
+  const alert = {};
+
+  if (body.enabled !== undefined) {
+    if (typeof body.enabled !== "boolean") return { error: "invalid_alert" };
+    alert.enabled = body.enabled;
+  }
+
+  if (body.phoneNumber !== undefined) {
+    const { code, number } = body.phoneNumber || {};
+    const cleanNumber = String(number ?? "").replace(/[\s-]/g, "");
+    if (
+      !ALERT_PHONE_CODE.test(String(code ?? "").trim()) ||
+      !ALERT_PHONE_NUMBER.test(cleanNumber)
+    ) {
+      return { error: "invalid_alert_phone_number" };
+    }
+    alert.phoneNumber = { code: String(code).trim(), number: cleanNumber };
+  }
+
+  if (body.hoursBefore !== undefined) {
+    if (!isWholeNumber(body.hoursBefore, 0, MAX_ALERT_HOURS)) {
+      return { error: "invalid_alert_time" };
+    }
+    alert.hoursBefore = body.hoursBefore;
+  }
+
+  if (body.minutesBefore !== undefined) {
+    if (!isWholeNumber(body.minutesBefore, 0, 59)) {
+      return { error: "invalid_alert_time" };
+    }
+    alert.minutesBefore = body.minutesBefore;
+  }
+
+  return { alert };
+};
+
+const sendAlertResult = (res, result, translationKey) => {
+  if (!result) {
+    return sendResponse({ res, statusCode: 404, translationKey: "Job_not_found" });
+  }
+  if (result.error) {
+    return sendResponse({ res, statusCode: 400, translationKey: result.error });
+  }
+  return sendResponse({ res, statusCode: 200, translationKey, data: result });
+};
+
+const updateJobAlert = async (req, res) => {
+  if (
+    !validateParams(req, res, {
+      pathParams: ["id"],
+      objectIdFields: ["id"],
+    })
+  )
+    return;
+
+  const { alert, error } = readAlertBody(req.body);
+  if (error) {
+    return sendResponse({ res, statusCode: 400, translationKey: error });
+  }
+
+  try {
+    const result = await JobService.updateJobAlert(req.params.id, alert, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
+    return sendAlertResult(res, result, "Job_alert_saved_successfully");
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
+const clearJobAlert = async (req, res) => {
+  if (
+    !validateParams(req, res, {
+      pathParams: ["id"],
+      objectIdFields: ["id"],
+    })
+  )
+    return;
+
+  try {
+    const result = await JobService.clearJobAlert(req.params.id, {
+      requesterId: req.user._id,
+      isAdmin: req.user.userType === "admin",
+    });
+    return sendAlertResult(res, result, "Job_alert_cleared_successfully");
+  } catch (error) {
+    const readableError = getReadableErrorMessage(error);
+    return sendResponse({
+      res,
+      statusCode: readableError.statusCode,
+      translationKey: readableError.message,
+      error,
+    });
+  }
+};
+
 const deleteJob = async (req, res) => {
   const { id } = req.params;
 
@@ -890,6 +1116,8 @@ const deleteJob = async (req, res) => {
   }
 };
 module.exports = {
+  updateJobAlert,
+  clearJobAlert,
   createJob,
   getJobs,
   updateJob,

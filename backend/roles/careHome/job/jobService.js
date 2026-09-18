@@ -18,9 +18,48 @@ const {
 } = require("../../../roles/aggency/bid/bidRepository");
 const { findUserById } = require("../../admin/usersManagement/usersRepository");
 const { runInBackground } = require("@helperUtils/runInBackground");
+const {
+  getReviewsForObjects,
+} = require("../../../commonModules/reviews/reviewRepository");
 const moment = require("moment-timezone");
 
 // Application locations are represented as [latitude, longitude].
+/*
+ * A job's reviews are its customer's reviews of the job's bookings. Only jobs
+ * flagged isReviewed are looked up, in one query for the whole page.
+ */
+const withJobReviews = async (jobs) => {
+  const reviewedJobIds = jobs.filter((job) => job.isReviewed).map((job) => job._id);
+
+  const bookings = reviewedJobIds.length
+    ? await BookingRepo.findReviewedBookingsByJobs(reviewedJobIds)
+    : [];
+  const reviewsByBooking = await getReviewsForObjects({
+    objectIds: bookings.map((booking) => booking._id),
+    objectType: "Booking",
+    limit: 0,
+  });
+
+  const reviewsByJob = new Map();
+  for (const booking of bookings) {
+    const review = reviewsByBooking
+      .get(String(booking._id))
+      ?.reviews.find(
+        (r) => String(r.subject?._id || r.subject) === String(booking.user),
+      );
+    if (!review) continue;
+
+    const key = String(booking.job);
+    reviewsByJob.set(key, [...(reviewsByJob.get(key) || []), review]);
+  }
+
+  return jobs.map((job) => ({
+    ...job,
+    isReviewed: Boolean(job.isReviewed),
+    reviews: reviewsByJob.get(String(job._id)) || [],
+  }));
+};
+
 const addDistanceFromOrigin = (job, origin) => {
   if (!origin || !Array.isArray(job?.location?.coordinates)) return job;
 
@@ -236,6 +275,10 @@ const getJobs = async ({
   employer,
   dateFilter,
   distanceOrigin,
+  dateRange,
+  jobRoles,
+  sort,
+  bids,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -256,11 +299,18 @@ const getJobs = async ({
       projection,
       worker,
       employer,
+      dateRange,
+      jobRoles,
+      sort,
+      bids,
     });
+    const visibleJobs = Jobs.map((job) =>
+      hideAlertFromOthers(job, requester, userType === "admin"),
+    );
     return {
       Jobs: distanceOrigin
-        ? Jobs.map((job) => addDistanceFromOrigin(job, distanceOrigin))
-        : Jobs,
+        ? visibleJobs.map((job) => addDistanceFromOrigin(job, distanceOrigin))
+        : visibleJobs,
       meta,
     };
   }
@@ -280,9 +330,20 @@ const getJobs = async ({
     worker,
     employer,
     dateFilter,
+    dateRange,
+    jobRoles,
+    sort,
+    bids,
   });
-  const formatedJobs = Jobs.map((job) =>
-    addDistanceFromOrigin(formatJobToTimezone(job, timezone), distanceOrigin),
+  const isAdmin = userType === "admin";
+  const formatedJobs = (await withJobReviews(Jobs)).map((job) =>
+    addDistanceFromOrigin(
+      formatJobToTimezone(
+        hideAlertFromOthers(job, requester, isAdmin),
+        timezone,
+      ),
+      distanceOrigin,
+    ),
   );
 
   return { Jobs: formatedJobs, meta };
@@ -299,6 +360,13 @@ const SHIFT_TIMING_FIELDS = [
   "isBreak",
   "breakMin",
 ];
+// Only editable on a pending job nobody has bid on (see updateJob).
+const BID_LOCKED_SHIFT_FIELDS = ["date", "startTime", "endTime"];
+
+// A job is pending while none of its shifts has been booked or completed.
+const isJobPending = (job) =>
+  (job.shift || []).every((shift) => shift.status === "pending");
+
 const SHIFT_EDITABLE_FIELDS = [
   ...SHIFT_TIMING_FIELDS,
   "allowedPersons",
@@ -441,6 +509,7 @@ const updateJob = async (id, data, { requesterId, isAdmin, timezone } = {}) => {
     "contactDetails",
     "emergencyContact",
     "documents",
+    "rate",
   ];
 
   const set = {};
@@ -459,6 +528,32 @@ const updateJob = async (id, data, { requesterId, isAdmin, timezone } = {}) => {
       data.shift,
     );
     if (plan.error) return { error: plan.error };
+  }
+
+  /*
+   * The rate and when a shift happens are what suppliers bid against, so
+   * they can only change while the job is pending (no shift booked or
+   * completed) and unfilled (no standing bid), and only by the job's
+   * creator - not an admin acting on its behalf.
+   */
+  const rateChanged =
+    set.rate !== undefined && (set.rate ?? null) !== (Job.rate ?? null);
+  if (!rateChanged) delete set.rate;
+
+  const shiftTimeChanged = plan.shiftEdits.some((edit) =>
+    BID_LOCKED_SHIFT_FIELDS.some((key) => key in edit.changes),
+  );
+
+  if (rateChanged || shiftTimeChanged) {
+    if (!isJobOwner(Job, requesterId)) {
+      return { error: "Only_job_creator_can_edit_rate_or_shift_time", statusCode: 403 };
+    }
+    if (!isJobPending(Job)) {
+      return { error: "Cannot_edit_rate_or_shift_time_job_not_pending" };
+    }
+    if (await JobRepo.hasStandingBids(id)) {
+      return { error: "Cannot_edit_rate_or_shift_time_job_has_bids" };
+    }
   }
 
   const nothingToDo =
@@ -498,14 +593,95 @@ const updateJob = async (id, data, { requesterId, isAdmin, timezone } = {}) => {
   return formatJobToTimezone(updated, timezone);
 };
 
-const getJobDetails = async (id, timezone) => {
+const getJobDetails = async (id, timezone, { requesterId, isAdmin } = {}) => {
   const Job = await JobRepo.findJobById(id);
 
   if (!Job) {
     return null;
   }
 
-  return formatJobToTimezone(Job, timezone);
+  const [[withReviews], isFilled] = await Promise.all([
+    withJobReviews([Job]),
+    JobRepo.hasStandingBids(Job._id),
+  ]);
+
+  return formatJobToTimezone(
+    {
+      ...hideAlertFromOthers(withReviews, requesterId, isAdmin),
+      // Filled jobs have their rate and shift times locked.
+      isFilled,
+      canEditRateAndShiftTimes:
+        !isFilled && isJobPending(Job) && isJobOwner(Job, requesterId),
+    },
+    timezone,
+  );
+};
+
+// The alert number is the job owner's private contact; suppliers browsing
+// the job must not see it.
+const hideAlertFromOthers = (job, requesterId, isAdmin) => {
+  const { alert, ...rest } = job;
+  if (!alert || !(isAdmin || isJobOwner(job, requesterId))) return rest;
+  return { ...rest, alert: publicAlert(alert) };
+};
+
+// The sent log is bookkeeping for the alert cron, not part of the setting.
+const publicAlert = (alert) => {
+  const { sent, ...rest } = alert || {};
+  return rest;
+};
+
+const DEFAULT_ALERT = {
+  enabled: false,
+  phoneNumber: { code: "", number: "" },
+  hoursBefore: 0,
+  minutesBefore: 0,
+};
+
+/*
+ * Saves the job's shift alert. `alert` is merged over what is stored, so the
+ * toggle alone can be sent to switch it off. An enabled alert needs a phone
+ * number and a lead time above zero.
+ */
+const updateJobAlert = async (id, alert, { requesterId, isAdmin } = {}) => {
+  const job = await JobRepo.findJobById_(id, "user status alert");
+  if (!job || job.status === "deleted") return null;
+  if (!isAdmin && !isJobOwner(job, requesterId)) return null;
+
+  const current = job.alert?.toObject?.() || DEFAULT_ALERT;
+  const next = {
+    ...DEFAULT_ALERT,
+    ...current,
+    ...alert,
+    phoneNumber: {
+      ...DEFAULT_ALERT.phoneNumber,
+      ...current.phoneNumber,
+      ...(alert.phoneNumber || {}),
+    },
+  };
+
+  if (next.enabled) {
+    if (!next.phoneNumber.code || !next.phoneNumber.number) {
+      return { error: "alert_phone_number_required" };
+    }
+    if (next.hoursBefore * 60 + next.minutesBefore <= 0) {
+      return { error: "alert_time_required" };
+    }
+  }
+
+  job.alert = next;
+  await job.save();
+  return publicAlert(job.alert.toObject());
+};
+
+const clearJobAlert = async (id, { requesterId, isAdmin } = {}) => {
+  const job = await JobRepo.findJobById_(id, "user status alert");
+  if (!job || job.status === "deleted") return null;
+  if (!isAdmin && !isJobOwner(job, requesterId)) return null;
+
+  job.alert = DEFAULT_ALERT;
+  await job.save();
+  return publicAlert(job.alert.toObject());
 };
 const deleteJob = async (id, { requesterId, isAdmin } = {}) => {
   if (!id) throw new Error("Job ID is required");
@@ -529,6 +705,8 @@ const deleteJob = async (id, { requesterId, isAdmin } = {}) => {
 };
 
 module.exports = {
+  updateJobAlert,
+  clearJobAlert,
   createJob,
   getJobs,
   updateJob,

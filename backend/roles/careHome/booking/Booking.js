@@ -159,7 +159,7 @@ const attendanceSchema = new mongoose.Schema(
 const bookingSchema = new mongoose.Schema(
   {
     user: {
-      type: mongoose.Schema.Types.ObjectId, // the user who created the booking (care home)
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -222,6 +222,15 @@ const bookingSchema = new mongoose.Schema(
         default: null,
       },
       cancelledAt: { type: Date, default: null },
+    },
+    isReviewed: {
+      type: Boolean,
+      default: false,
+    },
+    review: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Review",
+      default: null,
     },
 
     // ---- attendance + payment ----

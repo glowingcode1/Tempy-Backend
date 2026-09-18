@@ -88,6 +88,7 @@ const BidSchema = new mongoose.Schema(
   },
 );
 BidSchema.index({ user: 1, shift: 1 }, { unique: true });
+BidSchema.index({ job: 1, status: 1 });
 
 const Bid = mongoose.model("Bid", BidSchema);
 

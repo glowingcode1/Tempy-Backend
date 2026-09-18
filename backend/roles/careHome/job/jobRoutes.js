@@ -8,6 +8,8 @@ const {
   getJobDetails,
   getJobBids,
   updateJobBids,
+  updateJobAlert,
+  clearJobAlert,
 } = require("./jobController"); // Assuming you have a separate controller for promo codes
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
@@ -118,6 +120,20 @@ router.put(
   "/:id",
   roleMiddleware(["admin", "careHome", "localAuthority", "hospital", "user"]),
   updateJob,
+);
+
+// Shift alert set from job details: save it, or clear it back to off.
+router.put(
+  "/:id/alert",
+  roleMiddleware(["admin", "careHome", "localAuthority", "hospital", "user"]),
+  JobRateLimiter,
+  updateJobAlert,
+);
+router.delete(
+  "/:id/alert",
+  roleMiddleware(["admin", "careHome", "localAuthority", "hospital", "user"]),
+  JobRateLimiter,
+  clearJobAlert,
 );
 
 // Delete a Job
