@@ -127,6 +127,13 @@ const JobSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Hourly rate the customer offers for the job, in the platform currency.
+    // Optional: older jobs have none.
+    rate: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
     isReviewed: {
       type: Boolean,
       default: false,

@@ -275,6 +275,10 @@ const getJobs = async ({
   employer,
   dateFilter,
   distanceOrigin,
+  dateRange,
+  jobRoles,
+  sort,
+  bids,
 }) => {
   const skip = limit === 0 ? 0 : (page - 1) * limit;
 
@@ -295,6 +299,10 @@ const getJobs = async ({
       projection,
       worker,
       employer,
+      dateRange,
+      jobRoles,
+      sort,
+      bids,
     });
     const visibleJobs = Jobs.map((job) =>
       hideAlertFromOthers(job, requester, userType === "admin"),
@@ -322,6 +330,10 @@ const getJobs = async ({
     worker,
     employer,
     dateFilter,
+    dateRange,
+    jobRoles,
+    sort,
+    bids,
   });
   const isAdmin = userType === "admin";
   const formatedJobs = (await withJobReviews(Jobs)).map((job) =>
@@ -348,6 +360,13 @@ const SHIFT_TIMING_FIELDS = [
   "isBreak",
   "breakMin",
 ];
+// Only editable on a pending job nobody has bid on (see updateJob).
+const BID_LOCKED_SHIFT_FIELDS = ["date", "startTime", "endTime"];
+
+// A job is pending while none of its shifts has been booked or completed.
+const isJobPending = (job) =>
+  (job.shift || []).every((shift) => shift.status === "pending");
+
 const SHIFT_EDITABLE_FIELDS = [
   ...SHIFT_TIMING_FIELDS,
   "allowedPersons",
@@ -490,6 +509,7 @@ const updateJob = async (id, data, { requesterId, isAdmin, timezone } = {}) => {
     "contactDetails",
     "emergencyContact",
     "documents",
+    "rate",
   ];
 
   const set = {};
@@ -508,6 +528,32 @@ const updateJob = async (id, data, { requesterId, isAdmin, timezone } = {}) => {
       data.shift,
     );
     if (plan.error) return { error: plan.error };
+  }
+
+  /*
+   * The rate and when a shift happens are what suppliers bid against, so
+   * they can only change while the job is pending (no shift booked or
+   * completed) and unfilled (no standing bid), and only by the job's
+   * creator - not an admin acting on its behalf.
+   */
+  const rateChanged =
+    set.rate !== undefined && (set.rate ?? null) !== (Job.rate ?? null);
+  if (!rateChanged) delete set.rate;
+
+  const shiftTimeChanged = plan.shiftEdits.some((edit) =>
+    BID_LOCKED_SHIFT_FIELDS.some((key) => key in edit.changes),
+  );
+
+  if (rateChanged || shiftTimeChanged) {
+    if (!isJobOwner(Job, requesterId)) {
+      return { error: "Only_job_creator_can_edit_rate_or_shift_time", statusCode: 403 };
+    }
+    if (!isJobPending(Job)) {
+      return { error: "Cannot_edit_rate_or_shift_time_job_not_pending" };
+    }
+    if (await JobRepo.hasStandingBids(id)) {
+      return { error: "Cannot_edit_rate_or_shift_time_job_has_bids" };
+    }
   }
 
   const nothingToDo =
@@ -554,9 +600,19 @@ const getJobDetails = async (id, timezone, { requesterId, isAdmin } = {}) => {
     return null;
   }
 
-  const [withReviews] = await withJobReviews([Job]);
+  const [[withReviews], isFilled] = await Promise.all([
+    withJobReviews([Job]),
+    JobRepo.hasStandingBids(Job._id),
+  ]);
+
   return formatJobToTimezone(
-    hideAlertFromOthers(withReviews, requesterId, isAdmin),
+    {
+      ...hideAlertFromOthers(withReviews, requesterId, isAdmin),
+      // Filled jobs have their rate and shift times locked.
+      isFilled,
+      canEditRateAndShiftTimes:
+        !isFilled && isJobPending(Job) && isJobOwner(Job, requesterId),
+    },
     timezone,
   );
 };

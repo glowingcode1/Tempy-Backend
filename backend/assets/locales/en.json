@@ -225,5 +225,12 @@
   "alert_phone_number_required": "Add a phone number to turn the alert on.",
   "alert_time_required": "Set how long before the shift the alert should go out.",
   "Job_alert_saved_successfully": "Alert saved.",
-  "Job_alert_cleared_successfully": "Alert cleared."
+  "Job_alert_cleared_successfully": "Alert cleared.",
+  "start_date_must_be_before_end_date": "Start date must be on or before end date.",
+  "invalid_rate": "Rate must be a number greater than 0.",
+  "invalid_job_sort": "sort must be rate_asc or rate_desc.",
+  "invalid_bids_filter": "bids must be filled or unfilled.",
+  "Only_job_creator_can_edit_rate_or_shift_time": "Only the person who posted this job can change its rate or shift times.",
+  "Cannot_edit_rate_or_shift_time_job_has_bids": "This job already has bids, so its rate and shift times can no longer be changed.",
+  "Cannot_edit_rate_or_shift_time_job_not_pending": "A shift on this job has already been booked or completed, so its rate and shift times can no longer be changed."
 }

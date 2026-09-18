@@ -26,6 +26,22 @@ const formatDocument = (doc) => {
   return doc;
 };
 
+// Stored as a UTC day plus "HH:mm" UTC start, so this is the real start.
+const shiftStartMs = (shift) => {
+  const day = shift?.date ? new Date(shift.date).getTime() : NaN;
+  const [hours, minutes] = String(shift?.startTime || "").split(":").map(Number);
+  const offset =
+    Number.isFinite(hours) && Number.isFinite(minutes)
+      ? (hours * 60 + minutes) * 60000
+      : 0;
+  return Number.isFinite(day) ? day + offset : Infinity; // undated last
+};
+
+// Earliest shift first. Sorted before converting to the viewer's timezone,
+// where the local date/time strings would no longer order correctly.
+const sortShifts = (shifts) =>
+  [...shifts].sort((a, b) => shiftStartMs(a) - shiftStartMs(b));
+
 const formatJobToTimezone = (job, timezone) => {
   if (!job) return job;
 
@@ -86,7 +102,7 @@ const formatJobToTimezone = (job, timezone) => {
       : job.documents,
     snapshot: formatSnapshot(job.snapshot),
     shift: Array.isArray(job.shift)
-      ? job.shift.map(formatShift)
+      ? sortShifts(job.shift).map(formatShift)
       : formatShift(job.shift),
     user: formatUser(job.user),
     rating: job.rating
