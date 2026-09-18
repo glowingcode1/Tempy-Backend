@@ -11,6 +11,7 @@ router.use("/job", require("../careHome/job/jobRoutes"));
 router.use("/branches", require("../aggency/branches/branchesRoutes"));
 router.use("/booking", require("../careHome/booking/bookingRoutes"));
 router.use("/staff", require("../aggency/staff/staffRoutes"));
+router.use("/job-roles", require("../admin/jobRole/jobRoleRoutes"));
 router.use("/home", require("./employeeHome/employeeHomeRoutes"));
 router.use(
   "/availability",

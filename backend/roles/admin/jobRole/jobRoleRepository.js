@@ -1,5 +1,6 @@
 const JobRole = require("./JobRole");
 const mongoose = require("mongoose");
+const { User } = require("@UsersModel");
 const {
   buildKeywordQueryFromModels,
 } = require("@helperUtils/dbUtils/queryUtil");
@@ -217,7 +218,46 @@ const getActiveJobRoles = async () => {
   }
 };
 
+// Labels for the job roles the given ids point at, whatever their status —
+// a booking keeps its type even if the role is later deactivated.
+const getJobRolesByIds = async (ids = []) => {
+  const validIds = [...new Set(ids.map(String))].filter((id) =>
+    mongoose.isValidObjectId(id),
+  );
+  if (!validIds.length) return [];
+
+  return JobRole.find({ _id: { $in: validIds } })
+    .sort({ department: 1, title: 1 })
+    .select("department title")
+    .lean();
+};
+
+// The job roles a supplier picked for itself, deleted ones left out.
+const getUserJobRoles = async (userId) => {
+  const user = await User.findById(userId)
+    .select("jobRoles")
+    .populate({
+      path: "jobRoles",
+      match: { status: { $ne: "deleted" } },
+      select: "department title status",
+      options: { sort: { department: 1, title: 1 } },
+    })
+    .lean();
+
+  return user ? user.jobRoles || [] : null;
+};
+
+const setUserJobRoles = async (userId, jobRoleIds = []) =>
+  User.updateOne({ _id: userId }, { jobRoles: jobRoleIds });
+
+const countActiveJobRoles = async (ids = []) =>
+  JobRole.countDocuments({ _id: { $in: ids }, status: "active" });
+
 module.exports = {
+  getJobRolesByIds,
+  getUserJobRoles,
+  setUserJobRoles,
+  countActiveJobRoles,
   createJobRole,
   getJobRole,
   findJobRoleById,

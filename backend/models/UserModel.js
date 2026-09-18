@@ -342,6 +342,17 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Suppliers only: the job types they work in. The shift calendar shows
+    // these as rows even before any shift of that type exists.
+    jobRoles: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "JobRole",
+        },
+      ],
+      default: [],
+    },
     //last signed in
     lastSignedIn: {
       type: Date,

@@ -10,7 +10,8 @@ const {
   findUserById,
 } = require("../../../roles/admin/usersManagement/usersRepository");
 const {
-  getActiveJobRoles,
+  getJobRolesByIds,
+  getUserJobRoles,
 } = require("../../../roles/admin/jobRole/jobRoleRepository");
 const convertToMongoArray = require("@helperUtils/convertToMongoArray");
 const {
@@ -660,8 +661,7 @@ const getBookingCalendar = async ({
       ? BookingRepo.getWorkerIdsByUserOrBranch(user, branch)
       : getStaffIdsByUser(user));
   }
-  const [jobRoles, bookings, weather] = await Promise.all([
-    getActiveJobRoles(),
+  const [bookings, weather] = await Promise.all([
     BookingRepo.getBookingsByUsersAndDateRange(
       worker,
       startDate,
@@ -669,6 +669,17 @@ const getBookingCalendar = async ({
       Boolean(customer),
     ),
     getWeather({ latitude, longitude, startDate, endDate, timezone }),
+  ]);
+
+  // Rows are the job types this account works in: a supplier's own picks
+  // (shown even while empty) plus whatever its shifts actually carry. Never
+  // every role on the platform.
+  const ownJobRoleIds = supplier
+    ? (await getUserJobRoles(user))?.map((role) => role._id) || []
+    : [];
+  const jobRoles = await getJobRolesByIds([
+    ...ownJobRoleIds,
+    ...bookings.map((b) => b?.snapshot?.type).filter(Boolean),
   ]);
 
   const { calendar, meta } = formatCalendar({

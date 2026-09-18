@@ -6,10 +6,13 @@ const {
   updateJobRole,
   deleteJobRole,
   getJobRoleDetails,
+  getMyJobRoles,
+  updateMyJobRoles,
 } = require("./jobRoleController"); // Assuming you have a separate controller for promo codes
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
 const roleMiddleware = require("../../../middlewares/roleMiddleware");
+const { supplierTypes } = require("@UsersModel");
 
 const router = express.Router();
 
@@ -23,9 +26,14 @@ const JobRoleRateLimiter = createRateLimiter("JobRole");
 router.post("/", roleMiddleware(["admin"]), JobRoleRateLimiter, createJobRole);
 
 // Get all JobRole with pagination
-router.get("/", roleMiddleware(["admin","agency","employee"]), JobRoleRateLimiter, getJobRole);
+router.get("/", roleMiddleware(["admin", "employee", ...supplierTypes]), JobRoleRateLimiter, getJobRole);
+// A supplier's own job roles (shown as rows on its shift calendar).
+// Declared before "/:id" so "mine" is not read as an id.
+router.get("/mine", roleMiddleware(supplierTypes), JobRoleRateLimiter, getMyJobRoles);
+router.put("/mine", roleMiddleware(supplierTypes), JobRoleRateLimiter, updateMyJobRoles);
+
 // Get a specific JobRole by ID
-router.get("/:id", roleMiddleware(["admin","agency","employee"]), JobRoleRateLimiter, getJobRoleDetails);
+router.get("/:id", roleMiddleware(["admin", "employee", ...supplierTypes]), JobRoleRateLimiter, getJobRoleDetails);
 
 
 // Update an existing JobRole
