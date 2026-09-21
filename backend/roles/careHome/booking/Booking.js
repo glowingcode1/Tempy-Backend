@@ -124,7 +124,17 @@ const attendanceSchema = new mongoose.Schema(
       default: "",
     },
     signature: {
-      type: String, // URL to the signature image taken at check-out
+      type: String, // URL to the signature image taken at check-in
+      default: "",
+    },
+    // The same pair taken again at check-out. A shift the sweep closed has
+    // neither, and the worker is asked for them before their next check-in.
+    checkOutProofPicture: {
+      type: String,
+      default: "",
+    },
+    checkOutSignature: {
+      type: String,
       default: "",
     },
     checkInLocation: {
@@ -148,6 +158,12 @@ const attendanceSchema = new mongoose.Schema(
         type: [Number],
         default: [0, 0],
       },
+    },
+    // Set when the worker never checked out and the sweep closed the shift
+    // at its scheduled end time, so a timesheet can tell the two apart.
+    autoCheckedOut: {
+      type: Boolean,
+      default: false,
     },
   },
   { _id: false },

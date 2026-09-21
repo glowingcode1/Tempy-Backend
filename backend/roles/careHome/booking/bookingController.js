@@ -272,7 +272,12 @@ const updateBooking = async (req, res) => {
 
   if (checkinCheckout) {
     const isNurse = req.user.userType === "nurse";
-    const allowedStatuses = ["checkin", "checkout"];
+    /*
+     * checkOutProof is the late hand-in of the picture and signature for a
+     * shift the auto-checkout sweep closed, so it needs neither a status
+     * change nor a location — the shift is already over.
+     */
+    const allowedStatuses = ["checkin", "checkout", "checkOutProof"];
     const { status, location, proofPicture, signature } = req.body;
     if (!isNurse) {
       return sendResponse({
@@ -288,32 +293,47 @@ const updateBooking = async (req, res) => {
         translationKey: "invalid_status_for_checkin_checkout",
       });
     }
-    if (!location) {
+    if (status !== "checkOutProof" && !location) {
       return sendResponse({
         res,
         statusCode: 400,
         translationKey: "location_required_for_checkin_checkout",
       });
     }
-    if (status === "checkin" && (!proofPicture || !signature)) {
+    if (!proofPicture || !signature) {
       return sendResponse({
         res,
         statusCode: 400,
-        translationKey: "proofPicture_and_signature_required_for_checkin",
+        translationKey:
+          status === "checkin"
+            ? "proofPicture_and_signature_required_for_checkin"
+            : "proofPicture_and_signature_required_for_checkout",
       });
     }
     try {
-      const updated = await BookingService.updateBookingCheckinCheckout(id, {
-        status,
-        location,
-        proofPicture,
-        signature,
-      });
+      const updated =
+        status === "checkOutProof"
+          ? await BookingService.submitCheckOutProof(id, {
+              workerId: req.user._id,
+              proofPicture,
+              signature,
+            })
+          : await BookingService.updateBookingCheckinCheckout(id, {
+              status,
+              location,
+              proofPicture,
+              signature,
+            });
       if (updated && updated.error) {
         return sendResponse({
           res,
           statusCode: 400,
           translationKey: updated.error,
+          /*
+           * Carries the shift that is in the way, so the app can send the
+           * worker straight to it instead of making them hunt for it.
+           */
+          data: updated.data,
         });
       }
 
