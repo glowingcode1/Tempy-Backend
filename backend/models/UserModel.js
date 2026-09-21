@@ -29,7 +29,7 @@ const USER_TYPES = [
   "nurse",
 ];
 const GENDER_TYPES = ["Male", "Female", "Other"];
-   
+
 const userSchema = new mongoose.Schema(
   {
     profileIcon: {
