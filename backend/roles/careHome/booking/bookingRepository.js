@@ -735,6 +735,66 @@ const findConflictingBooking = async (workerId, shift) => {
   return conflicts[0] || null;
 };
 
+/*
+ * A shift the sweep closed for a worker who never checked out, still missing
+ * the picture and signature a check-out needs. It is what holds up their next
+ * check-in until they hand those in.
+ *
+ * Scoped to auto-closed shifts on purpose. A manual check-out cannot be made
+ * without both, so the only rows that can lack them are these — and shifts
+ * completed before check-out proof existed, which must not block anyone.
+ */
+const findBookingAwaitingCheckOutProof = async (workerId, excludeBookingId) => {
+  if (!workerId) return null;
+
+  const query = {
+    worker: workerId,
+    "attendance.autoCheckedOut": true,
+    $or: [
+      { "attendance.checkOutProofPicture": { $in: [null, ""] } },
+      { "attendance.checkOutProofPicture": { $exists: false } },
+      { "attendance.checkOutSignature": { $in: [null, ""] } },
+      { "attendance.checkOutSignature": { $exists: false } },
+    ],
+  };
+
+  if (excludeBookingId) {
+    query._id = { $ne: excludeBookingId };
+  }
+
+  return Booking.findOne(query)
+    .select("_id shift status attendance job")
+    .sort({ "shift.date": 1 })
+    .lean();
+};
+
+/*
+ * The shift the worker is standing in right now: checked in and not yet
+ * checked out. A worker can only be in one place at a time, so this is what
+ * blocks a second check-in while an earlier shift is still open.
+ */
+const findOpenCheckedInBooking = async (workerId, excludeBookingId) => {
+  if (!workerId) return null;
+
+  const query = {
+    worker: workerId,
+    status: "inProgress",
+    "attendance.checkIn": { $ne: null },
+    $or: [
+      { "attendance.checkOut": null },
+      { "attendance.checkOut": { $exists: false } },
+    ],
+  };
+
+  if (excludeBookingId) {
+    query._id = { $ne: excludeBookingId };
+  }
+
+  return Booking.findOne(query)
+    .select("_id job shift status attendance")
+    .lean();
+};
+
 const getWeeklyHours = async (userIds = []) => {
   if (!userIds.length) return [];
 
@@ -1049,6 +1109,8 @@ module.exports = {
   findBookingByUserId,
   filterFreeStaff,
   findConflictingBooking,
+  findOpenCheckedInBooking,
+  findBookingAwaitingCheckOutProof,
   getWeeklyHours,
   getBookingsByUsersAndDateRange,
   getWorkerIdsByUserOrBranch,

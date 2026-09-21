@@ -26,6 +26,11 @@ const {
 const { runInBackground } = require("@helperUtils/runInBackground");
 const { formatAttendance } = require("./formator/formatAttendance");
 const {
+  isCheckInWindowOpen,
+  isCheckOutWindowOpen,
+} = require("./attendanceWindow");
+const { closeAbandonedShift } = require("./closeAbandonedShift");
+const {
   getStaffIdsByUser,
   findStaffByUserAndStaff,
 } = require("../../../roles/aggency/staff/staffRepository");
@@ -769,17 +774,62 @@ const updateBookingCheckinCheckout = async (id, data) => {
   if (data.status === "checkout" && Booking.status !== "inProgress") {
     return { error: "Cannot_check_out_inactive_booking" };
   }
-  if (hasShiftPassed(Booking.shift)) {
+  if (data.status === "checkin" && hasShiftPassed(Booking.shift)) {
     return {
       error: "cannot_check_in_or_out_after_shift_end_time",
     };
   }
+  /*
+   * Checking out runs a little past the end of the shift: a worker finishing
+   * on time still needs a moment to press the button. Past that the sweep has
+   * already closed the shift, so there is nothing left to check out of.
+   */
+  if (data.status === "checkout" && !isCheckOutWindowOpen(Booking.shift)) {
+    return {
+      error: "cannot_check_out_after_shift_end_grace_period",
+    };
+  }
   if (data.status === "checkin") {
-    // if (!hasShiftStarted(Booking.shift)) {
-    //   return {
-    //     error: "cannot_check_in_before_shift_start_time",
-    //   };
-    // }
+    if (!isCheckInWindowOpen(Booking.shift)) {
+      return {
+        error: "cannot_check_in_more_than_15_minutes_before_shift_start_time",
+      };
+    }
+    /*
+     * A worker can only be on one shift at a time. If an earlier shift is
+     * still open — checked in, never checked out — they have to close it
+     * before the next one starts, even when the next job is at the same site.
+     *
+     * An open shift whose own grace period has already lapsed is closed here
+     * rather than refused: the sweep would do it within minutes anyway, and
+     * waiting for that tick would keep the worker out of a back-to-back
+     * shift. They are still asked for that shift's check-out proof below.
+     */
+    const openBooking = await BookingRepo.findOpenCheckedInBooking(
+      Booking.worker,
+      Booking._id,
+    );
+    if (openBooking && !(await closeAbandonedShift(openBooking))) {
+      return {
+        error: "must_check_out_of_current_shift_before_checking_in",
+        data: { bookingId: openBooking._id },
+      };
+    }
+    /*
+     * A shift the sweep closed has no picture or signature against it. The
+     * worker owes that proof for the hours already recorded, so it is
+     * collected before they start anywhere else.
+     */
+    const awaitingProof = await BookingRepo.findBookingAwaitingCheckOutProof(
+      Booking.worker,
+      Booking._id,
+    );
+    if (awaitingProof) {
+      return {
+        error: "must_submit_check_out_proof_before_checking_in",
+        data: { bookingId: awaitingProof._id },
+      };
+    }
     const attendance = {
       checkIn: new Date(),
       proofPicture: data.proofPicture || "",
@@ -805,6 +855,8 @@ const updateBookingCheckinCheckout = async (id, data) => {
     Booking.status = "completed";
     const attendance = Booking.attendance || {};
     attendance.checkOut = new Date();
+    attendance.checkOutProofPicture = data.proofPicture || "";
+    attendance.checkOutSignature = data.signature || "";
     attendance.checkOutLocation = {
       type: "Point",
       coordinates: [data.location.coordinates[0], data.location.coordinates[1]],
@@ -831,6 +883,40 @@ const updateBookingCheckinCheckout = async (id, data) => {
       "complete shift and job for booking " + id,
     );
   }
+
+  return Booking;
+};
+/*
+ * Hand in the picture and signature for a shift the sweep closed. Only that
+ * case can be missing them — a manual check-out collects both — so this is
+ * the one way a worker clears the block on their next check-in.
+ */
+const submitCheckOutProof = async (
+  id,
+  { workerId, proofPicture, signature },
+) => {
+  const Booking = await BookingRepo.findBookingById_(id);
+
+  if (!Booking) {
+    return { error: "Booking_not_found" };
+  }
+  if (workerId && Booking.worker?.toString() !== workerId.toString()) {
+    return { error: "not_your_booking" };
+  }
+  if (!Booking.attendance?.autoCheckedOut) {
+    return { error: "booking_does_not_need_check_out_proof" };
+  }
+  if (
+    Booking.attendance.checkOutProofPicture &&
+    Booking.attendance.checkOutSignature
+  ) {
+    return { error: "check_out_proof_already_submitted" };
+  }
+
+  Booking.attendance.checkOutProofPicture = proofPicture;
+  Booking.attendance.checkOutSignature = signature;
+
+  await Booking.save();
 
   return Booking;
 };
@@ -894,6 +980,7 @@ module.exports = {
   getBookingDetails,
   getBookingCalendar,
   updateBookingCheckinCheckout,
+  submitCheckOutProof,
   getBookingCheckInLogs,
   getShiftPlanCalendar,
   getEarnings,

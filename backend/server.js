@@ -62,6 +62,7 @@ const { getRedisClient } = require("./config/redis/redisConfig");
 // const { startCrons } = require("./config/cron");
 const { startAwardReleaseCron } = require("./config/cron/awardRelease");
 const { startShiftAlertCron } = require("./config/cron/shiftAlerts");
+const { startAutoCheckoutCron } = require("./config/cron/autoCheckout");
 
 /**
  * ------------------------------------------------
@@ -244,6 +245,7 @@ server.listen(PORT, () => {
      */
     startAwardReleaseCron();
     startShiftAlertCron();
+    startAutoCheckoutCron();
 
     setInterval(backupMongoDB, 24 * 60 * 60 * 1000);
   } catch (err) {
