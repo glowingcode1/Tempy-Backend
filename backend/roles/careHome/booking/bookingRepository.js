@@ -1,4 +1,5 @@
 const Booking = require("./Booking");
+const { getEarningsSummary } = require("./earnings");
 const mongoose = require("mongoose");
 const {
   buildKeywordQueryFromModels,
@@ -1021,78 +1022,12 @@ const getBookingsByDateRangeForUser = async ({
   ]);
 };
 
-const getEarnings = async ({
-  userId,
-  userType,
-  customer,
-  supplier,
-  from,
-  to,
-}) => {
-  const match = {
-    status: "completed",
-  };
-
-  let amountField = "$payment.totalAmount";
-
-  if (customer) {
-    match.user = new mongoose.Types.ObjectId(userId);
-    amountField = "$payment.totalAmount";
-  } else if (supplier && userType !== "nurse") {
-    match.employer = new mongoose.Types.ObjectId(userId);
-    amountField = "$payment.amountPayedToEmployer";
-  } else if (userType === "nurse") {
-    match.worker = new mongoose.Types.ObjectId(userId);
-    amountField = "$payment.amountPayedToWorker";
-  }
-
-  if (from || to) {
-    match["shift.date"] = {};
-
-    if (from) {
-      match["shift.date"].$gte = new Date(from);
-    }
-
-    if (to) {
-      const endDate = new Date(to);
-      endDate.setHours(23, 59, 59, 999);
-      match["shift.date"].$lte = endDate;
-    }
-  }
-
-  const pipeline = [
-    {
-      $match: match,
-    },
-    {
-      $group: {
-        _id: null,
-        totalBookings: { $sum: 1 },
-        totalEarnings: {
-          $sum: {
-            $ifNull: [amountField, 0],
-          },
-        },
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        totalBookings: 1,
-        totalEarnings: 1,
-      },
-    },
-  ];
-
-  const result = await Booking.aggregate(pipeline);
-
-  return (
-    result[0] || {
-      totalBookings: 0,
-      totalEarnings: 0,
-    }
-  );
-};
+/*
+ * Earnings/spend for one account. The arithmetic and the role rules live in
+ * ./earnings so every screen that shows money reads the same numbers.
+ */
+const getEarnings = async ({ userId, userType, timezone, from, to }) =>
+  getEarningsSummary({ userId, userType, timezone, from, to });
 
 module.exports = {
   findReviewedBookingsByJobs,

@@ -2,7 +2,11 @@ const Job = require("../../careHome/job/Job");
 const Bid = require("../bid/Bid");
 const Staff = require("../staff/Staff");
 const Booking = require("../../careHome/booking/Booking");
+const {
+  getEarningsSummary,
+} = require("../../careHome/booking/earnings");
 const Branches = require("../../aggency/branches/Branches");
+const { User } = require("../../../models/UserModel");
 const mongoose = require("mongoose");
 const {
   getSupplierBookedJobIds,
@@ -44,12 +48,40 @@ const uniqueIds = (...lists) => {
 };
 
 /*
+ * Which bookings belong to this supplier depends on how it supplies work.
+ *
+ * An agency or home care company is the employer on its staff's bookings. A
+ * nurse bidding directly is the worker, and the booking has no employer at
+ * all - so scoping the whole dashboard by employer showed a nurse with won
+ * bids an entirely empty one.
+ *
+ * Shifts a nurse worked for an agency are included here: they are work the
+ * nurse did. The money for them is not, because it is the agency's - see
+ * booking/earnings.js.
+ */
+const getSupplierBookingMatch = ({ userId, userType }) =>
+  userType === "nurse" ? { worker: userId } : { employer: userId };
+
+/*
+ * The account the dashboard is about, which is not always the caller: an
+ * admin may open it with ?userId=. The userType decides every booking match,
+ * so it is read from that account rather than assumed.
+ */
+const getDashboardUserType = async (userId) => {
+  const account = await User.findById(userId)
+    .select("userType accountState")
+    .lean();
+
+  return account?.accountState?.userType || account?.userType || null;
+};
+
+/*
  * A Job is always created by the CUSTOMER (careHome / hospital / user),
  * so Job.user is never the supplier. A job only becomes the supplier's
  * once it has actually been won:
  *
  *   - an accepted bid of theirs      -> Bid.user = supplier, status accepted
- *   - a live booking of theirs       -> Booking.employer = supplier
+ *   - a live booking of theirs       -> see getSupplierBookingMatch
  *   - jobs assigned directly to them -> Job.employer = supplier
  *
  * Pending / rejected / withdrawn bids are NOT jobs. They already have their
@@ -59,7 +91,7 @@ const uniqueIds = (...lists) => {
  * Cancelling drops the job on both sides: it resets the bid to cancelledBy*
  * (see updateBidStatuses), so the job stops being theirs.
  */
-const getSupplierJobMatch = async ({ userId }) => {
+const getSupplierJobMatch = async ({ userId, userType }) => {
   // The match also feeds $match, which does not cast the way find() does.
   userId = toObjectId(userId) || userId;
 
@@ -70,7 +102,7 @@ const getSupplierJobMatch = async ({ userId }) => {
     }),
 
     Booking.distinct("job", {
-      employer: userId,
+      ...getSupplierBookingMatch({ userId, userType }),
       status: {
         $nin: CANCELLED_BOOKING_STATUSES,
       },
@@ -236,10 +268,8 @@ const getJobStats = async ({ userId }) => {
 // BOOKING STATS
 // ============================================================
 
-const getBookingStats = async ({ userId }) => {
-  const baseMatch = {
-    employer: userId,
-  };
+const getBookingStats = async ({ userId, userType }) => {
+  const baseMatch = getSupplierBookingMatch({ userId, userType });
 
   const [
     totalBookings,
@@ -433,7 +463,7 @@ const getBranchesActivity = async ({ userId }) => {
 // MONTHLY ACTIVITY
 // ============================================================
 
-const getMonthlyActivity = async ({ userId }) => {
+const getMonthlyActivity = async ({ userId, userType }) => {
   const months = 12;
 
   const [bookings, bids] = await Promise.all([
@@ -441,9 +471,7 @@ const getMonthlyActivity = async ({ userId }) => {
     getMonthlyAggregation({
       Model: Booking,
 
-      match: {
-        employer: userId,
-      },
+      match: getSupplierBookingMatch({ userId, userType }),
 
       months,
     }),
@@ -483,11 +511,12 @@ const getMonthlyActivity = async ({ userId }) => {
 // RECENT ACTIVITY
 // ============================================================
 
-const getRecentActivity = async ({ userId, jobMatch }) => {
+const getRecentActivity = async ({ userId, jobMatch, userType }) => {
   const supplierJobMatch =
     jobMatch ||
     (await getSupplierJobMatch({
       userId,
+      userType,
     }));
 
   const [jobs, bookings, bids, staff] = await Promise.all([
@@ -506,9 +535,7 @@ const getRecentActivity = async ({ userId, jobMatch }) => {
     // Bookings
     // --------------------------------------------------------
 
-    Booking.find({
-      employer: userId,
-    })
+    Booking.find(getSupplierBookingMatch({ userId, userType }))
       .sort({
         createdAt: -1,
       })
@@ -822,9 +849,9 @@ const getWinRateByRegion = async ({ userId }) => {
 // SHIFTS & EARNINGS
 // ============================================================
 
-const getShiftsAndEarnings = async ({ userId, timezone }) => {
+const getShiftsAndEarnings = async ({ userId, timezone, userType }) => {
   const bookings = await Booking.find({
-    employer: userId,
+    ...getSupplierBookingMatch({ userId, userType }),
     // status: {
     //   $in: ["active", "inProgress", "completed"],
     // },
@@ -868,8 +895,6 @@ const getShiftsAndEarnings = async ({ userId, timezone }) => {
         : null,
 
       createdAt: booking.createdAt,
-
-      // Earnings intentionally omitted for now.
     };
   });
 };
@@ -886,11 +911,18 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
   userId = toObjectId(userId);
 
   /*
+   * An agency and a nurse supply work in different shapes, so what counts as
+   * their booking differs. Resolve it once, before anything queries.
+   */
+  const userType = await getDashboardUserType(userId);
+
+  /*
    * Which jobs are the supplier's is one question - resolve it once and
    * share it, so the stats and the recent activity can never disagree.
    */
   const jobMatch = await getSupplierJobMatch({
     userId,
+    userType,
   });
 
   const [
@@ -905,6 +937,7 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
     newJobs,
     winRateByRegion,
     shiftsAndEarnings,
+    earnings,
   ] = await Promise.all([
     getJobStats({
       userId,
@@ -912,6 +945,7 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
 
     getBookingStats({
       userId,
+      userType,
     }),
 
     getStaffStats({
@@ -924,11 +958,13 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
 
     getMonthlyActivity({
       userId,
+      userType,
     }),
 
     getRecentActivity({
       userId,
       jobMatch,
+      userType,
     }),
 
     getBranchesActivity({
@@ -950,6 +986,13 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
 
     getShiftsAndEarnings({
       userId,
+      timezone,
+      userType,
+    }),
+
+    getEarningsSummary({
+      userId,
+      userType,
       timezone,
     }),
   ]);
@@ -1006,6 +1049,8 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
     winRateByRegion,
 
     shiftsAndEarnings,
+
+    earnings,
   };
 };
 

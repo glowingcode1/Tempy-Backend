@@ -60,16 +60,20 @@ function formatStaffProfile(data, timezone) {
     const attendance = booking.attendance || {};
     const shift = booking.shift || {};
 
-    // Pending invoice: not yet paid to worker
-    if (payment.amountPayedToWorker === 0) {
+    // Pending invoice: worked but not yet settled with the worker.
+    if (payment.status !== "paid") {
       pendingInvoices += 1;
     }
 
-    // This month earning: money actually paid this month
-    if (payment.status === "paid") {
-      const paidAt = moment(payment.paidAt);
-      if (paidAt.isBetween(startOfMonth, endOfMonth, null, "[]")) {
-        thisMonthEarning += payment.amountPayedToWorker || 0;
+    /*
+     * Earned this month, by the month the shift falls in. It used to count
+     * payment.amountPayedToWorker for bookings marked paid, but nothing
+     * writes either field yet, so the figure was always zero.
+     */
+    if (booking.status === "completed" && shift.date) {
+      const shiftDate = moment.utc(shift.date);
+      if (shiftDate.isBetween(startOfMonth, endOfMonth, null, "[]")) {
+        thisMonthEarning += payment.totalAmount || 0;
       }
     }
 
