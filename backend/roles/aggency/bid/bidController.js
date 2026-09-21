@@ -114,9 +114,6 @@ const createBid = async (req, res) => {
 };
 
 const getBid = async (req, res) => {
-  // TEMP: CI/CD pipeline smoke check - remove once deployment is verified
-  console.log("[CI-CHECK] getBid reached", new Date().toISOString());
-
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user, dateFilter } = req.query;
 

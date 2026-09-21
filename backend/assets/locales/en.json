@@ -125,7 +125,7 @@
   "user_details_not_found": "User details not found",
   "complete_profile_details_required": "Please complete your profile before performing this action.",
   "cannot_check_in_or_out_after_shift_end_time": "Cannot check in or check out after shift end time.",
-  "cannot_check_in_more_than_15_minutes_before_shift_start_time": "You can only check in up to 15 minutes before the shift start time.",
+  "cannot_check_in_more_than_15_minutes_before_shift_start_time": "You can only check in up to 45 minutes before the shift start time.",
   "must_check_out_of_current_shift_before_checking_in": "You are still checked in to another shift. Please check out before checking in to a new one.",
   "cannot_check_out_after_shift_end_grace_period": "The check-out window for this shift has closed. It was checked out automatically at its end time.",
   "must_submit_check_out_proof_before_checking_in": "You did not check out of your last shift. Please upload the picture and signature for it, and tell us what happened, before checking in to a new one.",
