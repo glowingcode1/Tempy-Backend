@@ -1,10 +1,9 @@
 {
   "info": {
-    "_postman_id": "b09ee598-e86c-4fcb-b3b4-74b156f8f4c3",
+    "_postman_id": "e165708b-f549-44cc-bc1d-6107b21cbbfd",
     "name": "tempy",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "45932464",
-    "_collection_link": "https://go.postman.co/collection/45932464-b09ee598-e86c-4fcb-b3b4-74b156f8f4c3?source=collection_link"
+    "_exporter_id": "57967089"
   },
   "item": [
     {
@@ -1782,7 +1781,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"branch\":\"6a587d05da03dd8d55abcdd3\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        17,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
+                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a7b2204f6afdbc6a90b377f\",\n    \"branch\":\"6a7c17f5aa208f5a91d10600\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        17,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"Punjab\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-09-20\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2084,7 +2083,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"status\":\"\"\n}",
+                      "raw": "{\n    \"status\":\"accepted\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -2105,7 +2104,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a47cd0bfd062439af9f418e"
+                          "value": "6a882c662e8dbdc5ed2f02c1"
                         }
                       ]
                     }
@@ -2593,6 +2592,48 @@
                         {
                           "key": "id",
                           "value": "6a58749581df5d3dff3ef06b"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "customerDashboard",
+              "item": [
+                {
+                  "name": "getCustomerDashboard",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/care-home/dashboard",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "care-home",
+                        "dashboard"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
                         }
                       ]
                     }
@@ -5007,12 +5048,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/job",
+                      "raw": "{{url}}web/local-authority/job",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
-                        "care-home",
+                        "local-authority",
                         "job"
                       ]
                     }
@@ -5273,7 +5314,7 @@
                         },
                         {
                           "key": "job",
-                          "value": "6a50c8da0341ac5657c45d50",
+                          "value": "6a869b5e3e4b4b01d3275f5d",
                           "disabled": true
                         },
                         {
@@ -5304,7 +5345,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"status\":\"\"\n}",
+                      "raw": "{\n    \"status\":\"rejected\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -5325,7 +5366,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a47cd0bfd062439af9f418e"
+                          "value": "6a869b7a3e4b4b01d3275f69"
                         }
                       ]
                     }
@@ -5582,6 +5623,48 @@
                         {
                           "key": "bramch",
                           "value": "",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "customerDashboard",
+              "item": [
+                {
+                  "name": "getCustomerDashboard",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/local-authority/dashboard",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "local-authority",
+                        "dashboard"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
                           "disabled": true
                         }
                       ]
@@ -8580,6 +8663,48 @@
                   "response": []
                 }
               ]
+            },
+            {
+              "name": "customerDashboard",
+              "item": [
+                {
+                  "name": "getCustomerDashboard",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/hospital/dashboard",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "hospital",
+                        "dashboard"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
             }
           ],
           "auth": {
@@ -9092,7 +9217,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailCareHome}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// \n    \"password\": \"{{passwordCareHome}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailUser}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// \n    \"password\": \"{{passwordUser}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -10979,7 +11104,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"branch\":\"6a587d05da03dd8d55abcdd3\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        10,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
+                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    \"image\": \"jobImage.png\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a5f2140b11feeabc9ada7b0\",\n    // \"branch\":\"6a587d05da03dd8d55abcdd3\",\n    \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        31.5656822,\n        74.3141829\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-09-10\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-09-10\",\n        \"startTime\": \"18:45\",\n        \"endTime\": \"19:00\",\n        \"isBreak\":false\n    }\n]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -11205,7 +11330,7 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{url}}web/user/job/type",
+                      "raw": "{{url}}web/user/job/type?status=active",
                       "host": [
                         "{{url}}web"
                       ],
@@ -11213,6 +11338,12 @@
                         "user",
                         "job",
                         "type"
+                      ],
+                      "query": [
+                        {
+                          "key": "status",
+                          "value": "active"
+                        }
                       ]
                     }
                   },
@@ -11233,10 +11364,15 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": ""
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "text"
+                        }
+                      }
                     },
                     "url": {
-                      "raw": "{{url}}web/user/job/bids",
+                      "raw": "{{url}}web/user/job/bids?job=6a9e52330c2079dd1ebdb18c&shift=6a9e52330c2079dd1ebdb18e",
                       "host": [
                         "{{url}}web"
                       ],
@@ -11253,13 +11389,11 @@
                         },
                         {
                           "key": "job",
-                          "value": "6a50c8da0341ac5657c45d50",
-                          "disabled": true
+                          "value": "6a9e52330c2079dd1ebdb18c"
                         },
                         {
                           "key": "shift",
-                          "value": "6a4b3b352d06b75399883728",
-                          "disabled": true
+                          "value": "6a9e52330c2079dd1ebdb18e"
                         },
                         {
                           "key": "status",
@@ -11284,7 +11418,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"status\":\"\"\n}",
+                      "raw": "{\n    \"status\":\"accepted\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -11292,19 +11426,20 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/user/bids/:id",
+                      "raw": "{{url}}web/user/job/bids/:id",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
                         "user",
+                        "job",
                         "bids",
                         ":id"
                       ],
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a47cd0bfd062439af9f418e"
+                          "value": "6a8c4769fe9a2dd71a77c6e8"
                         }
                       ]
                     }
@@ -11611,6 +11746,48 @@
                       "path": [
                         "agency",
                         "availability"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "customerDashboard",
+              "item": [
+                {
+                  "name": "getCustomerDashboard",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/user/dashboard",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "user",
+                        "dashboard"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
+                        }
                       ]
                     }
                   },
@@ -13312,7 +13489,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"shift\":\"{{shiftId}}\",\n    \"job\":\"{{jobId}}\",\n    \"bid\":10,\n    \"note\":\"hello brother third bid\"\n}",
+                      "raw": "{\n    \"shift\":\"{{shiftId}}\",\n    \"job\":\"{{jobId}}\",\n    \"bid\":10,\n    \"note\":\"hello brother agency bid\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -13463,7 +13640,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n\n    // // new user \n    // \"name\": \"{{$randomUserName}}\",\n    // // \"email\": \"{{$randomExampleEmail}}\",\n    // \"email\": \"aime_gibson@example.net\",\n    // \"profileIcon\": \"image.png\",\n    // \"phoneNumber\": {\n    //     \"code\": \"+92\",\n    //     \"number\": \"3005098441\"\n    // },\n    // \"password\": \"112233\",\n    // \"dob\": \"2005-10-16\", //optional\n    // \"gender\": \"Male\", //optional\n    // \"userType\": \"nurse\",\n    // \"timezone\": \"Asia/Karachi\",\n    // \"taxNumber\": 1234,\n    // \"governmentIdentity\": [\n    //     \"image.png\"\n    // ],\n    // \"degree\": [\n    //     \"imaage.png\"\n    // ],\n    // \"certification\": [\n    //     \"image.png\"\n    // ],\n    // \"location\": {\n    //     \"coordinates\": [\n    //         1234,\n    //         3214\n    //     ], //optional\n    //     \"fullAddress\": \"{{$randomStreetAddress}}\",\n    //     \"city\": \"{{$randomCity}}\", // //optional\n    //     \"country\": \"{{$randomCountry}}\", // //optional\n    //     \"state\": \"pakistan\", //optional\n    //     \"postalCode\": 12345 //optional\n    // },\n\n\n    // select from existing\n    \"staff\":\"6a4c9304f2e273d27e49d435\",\n\n    // common \n    \"speciality\": \"generalNurse\",\n    \"ratePerHour\": 12,\n    \"platformPercent\": 10\n}",
+                      "raw": "{\n\n    // // new user \n    \"name\": \"{{$randomUserName}}\",\n    \"email\": \"{{$randomExampleEmail}}\",\n    // \"email\": \"aime_gibson@example.net\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\", //optional\n    \"gender\": \"Male\", //optional\n    \"userType\": \"nurse\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\": 1234,\n    \"governmentIdentity\": [\n        \"image.png\"\n    ],\n    \"degree\": [\n        \"imaage.png\"\n    ],\n    \"certification\": [\n        \"image.png\"\n    ],\n    \"location\": {\n        \"coordinates\": [\n            10,\n            10\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n\n\n    // select from existing\n    // \"staff\":\"6a7d9d2e209daa75f8bf6ef2\",\n    \"branch\":\"6a79ae1c553eb7412660866c\",\n\n    // common \n    \"speciality\": \"generalNurse\",\n    \"ratePerHour\": 12,\n    \"platformPercent\": 10\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -13484,13 +13661,76 @@
                   "response": []
                 },
                 {
+                  "name": "importStaff",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "file",
+                          "type": "file",
+                          "src": [
+                            "/C:/Users/glowi.PC/Downloads/staff-import-10-users (3).csv"
+                          ]
+                        },
+                        {
+                          "key": "userId",
+                          "value": "6a5f18aeceaba4ca868a1a75",
+                          "type": "text"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/staff/import",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "staff",
+                        "import"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "templateCSV",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/staff/import/template",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "staff",
+                        "import",
+                        "template"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
                   "name": "update",
                   "request": {
                     "method": "PUT",
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n\n    // \"name\": \"{{$randomUserName}}\",\n    // \"phoneNumber\": {\n    //     \"code\": \"+92\",\n    //     \"number\": \"3005098441\"\n    // },\n    // \"dob\": \"2005-10-16\", //optional\n    // \"gender\": \"Male\", //optional\n\n    // // common \n    // \"speciality\": \"generalNurse\",\n    // \"ratePerHour\": 12,\n    // \"platformPercent\": 10,\n    \"status\":\"inactive\"\n}",
+                      "raw": "{\n\n    // \"name\": \"{{$randomUserName}}\",\n    // \"phoneNumber\": {\n    //     \"code\": \"+92\",\n    //     \"number\": \"3005098441\"\n    // },\n    // \"dob\": \"2005-10-16\", //optional\n    // \"gender\": \"Male\", //optional\n\n    // // common \n    // \"speciality\": \"generalNurse\",\n    // \"ratePerHour\": 12,\n    // \"platformPercent\": 10,\n    \"status\":\"active\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -13510,7 +13750,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a4cd15952957f422a8143db"
+                          "value": "6a75cdd1c6d9a78c0d2c8c1d"
                         }
                       ]
                     }
@@ -13544,7 +13784,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a4cd15952957f422a8143db"
+                          "value": "6a79b114553eb741266086e4"
                         }
                       ]
                     }
@@ -13561,7 +13801,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    // \"email\": \"{{$randomExampleEmail}}\",\n    \"email\": \"aime_gibson@example.net\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\", //optional\n    \"gender\": \"Male\", //optional\n    \"userType\": \"nurse\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\": 1234,\n    \"governmentIdentity\": [\n        \"image.png\"\n    ],\n    \"degree\": [\n        \"imaage.png\"\n    ],\n    \"certification\": [\n        \"image.png\"\n    ],\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"speciality\": \"generalNurse\",\n    \"ratePerHour\": 12,\n    \"platformPercent\": 10\n}",
+                      "raw": "",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -13569,14 +13809,13 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/agency/staff/nurses",
+                      "raw": "{{url}}web/agency/staff",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
                         "agency",
-                        "staff",
-                        "nurses"
+                        "staff"
                       ]
                     }
                   },
@@ -13592,7 +13831,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    // \"email\": \"{{$randomExampleEmail}}\",\n    \"email\": \"aime_gibson@example.net\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\", //optional\n    \"gender\": \"Male\", //optional\n    \"userType\": \"nurse\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\": 1234,\n    \"governmentIdentity\": [\n        \"image.png\"\n    ],\n    \"degree\": [\n        \"imaage.png\"\n    ],\n    \"certification\": [\n        \"image.png\"\n    ],\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"speciality\": \"generalNurse\",\n    \"ratePerHour\": 12,\n    \"platformPercent\": 10\n}",
+                      "raw": "",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -13600,13 +13839,21 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/agency/staff",
+                      "raw": "{{url}}web/agency/staff/nurses",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
                         "agency",
-                        "staff"
+                        "staff",
+                        "nurses"
+                      ],
+                      "query": [
+                        {
+                          "key": "userType",
+                          "value": "nurse",
+                          "disabled": true
+                        }
                       ]
                     }
                   },
@@ -13846,7 +14093,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "raw": "{\n    \"name\": \"Manchester Home Care Branch\",\n    \"bio\": \"Our Manchester branch provides high-quality home care and support services to adults in the local community.\",\n    \"location\": {\n        \"address\": \"Lahore Division, Synergy Homes, Rehman Villas, Sehajpal\",\n        \"city\": \"Lahore\",\n        \"state\": \"Punjab\",\n        \"country\": \"Pakistan\",\n        \"postalCode\": \"53200\",\n        \"coordinates\": [\n            31.502423760739653,\n            74.43172829266204\n        ]\n    },\n    \"profileIcon\": \"branch-office.jpg\",\n    \"cqc\": {\n        \"registrationNumber\": \"CQC1234567890\",\n        \"certificate\": \"cqc.pdf\",\n        \"verified\": false\n    },\n    \"insurance\": {\n        \"certificate\": \"insuranceCertificate.pdf\",\n        \"verified\": false,\n        \"expiryDate\": \"2027-08-25\"\n    },\n    \"status\": \"pending\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -13997,7 +14244,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a4ca7e30a3ce96c6fbba47c\"\n}",
+                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a855fe89d3159972a865d55\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -14042,6 +14289,107 @@
                       "path": [
                         "agency",
                         "booking"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "shift",
+              "item": [
+                {
+                  "name": "calender",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-08-30&endDate=2026-09-30",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "booking",
+                        "calender"
+                      ],
+                      "query": [
+                        {
+                          "key": "latitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "0.1"
+                        },
+                        {
+                          "key": "startDate",
+                          "value": "2026-08-30"
+                        },
+                        {
+                          "key": "endDate",
+                          "value": "2026-09-30"
+                        },
+                        {
+                          "key": "bramch",
+                          "value": "",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "supplierDashboard",
+              "item": [
+                {
+                  "name": "getSupplierDashboard",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/agency/dashboard",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "agency",
+                        "dashboard"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
+                        }
                       ]
                     }
                   },
@@ -17139,6 +17487,48 @@
                   "response": []
                 }
               ]
+            },
+            {
+              "name": "supplierDashboard",
+              "item": [
+                {
+                  "name": "getSupplierDashboard",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/home-care-company/dashboard",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "home-care-company",
+                        "dashboard"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
             }
           ],
           "auth": {
@@ -19453,7 +19843,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"status\":\"cancel\" //active , cancel \n}",
+                      "raw": "{\n    \"status\":\"active\" //active , cancel \n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -19480,7 +19870,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a58b9f6f8261119ef93ba15"
+                          "value": "6a88273271a4a3d18ee88e3d"
                         }
                       ]
                     }
@@ -19494,7 +19884,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"location\": {\n        \"coordinates\": [\n            9.999,\n            9.999\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"status\":\"checkout\"//checkin checkout\n    // \"proofPicture\":\"image.png\",\n    // \"signature\":\"image.png\"\n\n}",
+                      "raw": "{\n    \"location\": {\n        \"coordinates\": [\n            31.56541732752069,\n            74.31360998021988\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"status\":\"checkin\",//checkin checkout\n    \"proofPicture\":\"image.png\",\n    \"signature\":\"image.png\"\n\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -19520,7 +19910,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a58b9f6f8261119ef93ba15"
+                          "value": "6a8c4779fe9a2dd71a77c702"
                         }
                       ]
                     }
@@ -19707,7 +20097,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"shift\":\"{{shiftId}}\",\n    \"job\":\"{{jobId}}\",\n    \"bid\":12,\n    \"note\":\"helo brotehr\"\n}",
+                      "raw": "// {\n//     \"shift\":\"{{shiftId}}\",\n//     \"job\":\"{{jobId}}\",\n//     \"bid\":12,\n//     \"note\":\"helo brotehr\"\n// }\n{\n    \"shift\":\"{{shiftId}}\",\n    \"job\":\"{{jobId}}\",\n    \"bid\":12,\n    \"note\":\"helo brotehr\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -19834,7 +20224,7 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/nurse/job",
+                      "raw": "{{url}}web/nurse/job?latitude=31&longitude=74&km=1",
                       "host": [
                         "{{url}}web"
                       ],
@@ -19845,18 +20235,15 @@
                       "query": [
                         {
                           "key": "latitude",
-                          "value": "9",
-                          "disabled": true
+                          "value": "31"
                         },
                         {
                           "key": "longitude",
-                          "value": "9",
-                          "disabled": true
+                          "value": "74"
                         },
                         {
                           "key": "km",
-                          "value": "1",
-                          "disabled": true
+                          "value": "1"
                         }
                       ]
                     }
@@ -19883,12 +20270,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/booking",
+                      "raw": "{{url}}web/nurse/booking",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "booking"
                       ]
                     }
@@ -19913,12 +20300,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/booking",
+                      "raw": "{{url}}web/nurse/booking",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "booking"
                       ]
                     }
@@ -19943,12 +20330,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/booking/earnings",
+                      "raw": "{{url}}web/nurse/booking/earnings",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "booking",
                         "earnings"
                       ]
@@ -19974,12 +20361,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/booking/shifts-calender?year=2026&month=7&date=2026-07-22",
+                      "raw": "{{url}}web/nurse/booking/shifts-calender?year=2026&month=7&date=2026-07-22",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "booking",
                         "shifts-calender"
                       ],
@@ -20019,12 +20406,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/staff/available?user=6a5f2107886bb7ced57f1c96&bid=6a609a9797cbbafcaf8374e8&job=6a6095c4b0f78d815cd55557",
+                      "raw": "{{url}}web/nurse/staff/available?user=6a5f2107886bb7ced57f1c96&bid=6a609a9797cbbafcaf8374e8&job=6a6095c4b0f78d815cd55557",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "staff",
                         "available"
                       ],
@@ -20075,12 +20462,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}web/care-home/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-12&endDate=2026-07-18",
+                      "raw": "{{url}}web/nurse/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-12&endDate=2026-07-18",
                       "host": [
                         "{{url}}web"
                       ],
                       "path": [
-                        "care-home",
+                        "nurse",
                         "booking",
                         "calender"
                       ],
@@ -20104,6 +20491,48 @@
                         {
                           "key": "bramch",
                           "value": "",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "supplierDashboard",
+              "item": [
+                {
+                  "name": "getSupplierDashboard",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    // \"name\": \"{{$randomUserName}}\",\n    \"name\":\"Lula83\",\n    \"location\": {\n        \"name\": \"Home\",\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"12345\"\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}web/nurse/dashboard",
+                      "host": [
+                        "{{url}}web"
+                      ],
+                      "path": [
+                        "nurse",
+                        "dashboard"
+                      ],
+                      "query": [
+                        {
+                          "key": "summary",
+                          "value": "true",
                           "disabled": true
                         }
                       ]
@@ -22731,7 +23160,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"branch\":\"6a587d05da03dd8d55abcdd3\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        10,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
+                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"branch\": \"6a587d05da03dd8d55abcdd3\",\n    // \"gender\": \"Female\",\n    \"location\": {\n        \"coordinates\": [\n            10,\n            10\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"notes\": \"Resident prefers quiet environment in the evenings. Two dogs on premises, both friendly.\",\n    \"instructions\": \"Enter through the side gate, code is #4471. Medication schedule is on the kitchen fridge.\",\n    \"contactDetails\": {\n        \"name\": \"Fatima Noor\",\n        \"phone\": \"+92 300 1234567\",\n        \"email\": \"fatima.noor@example.com\"\n    },\n    \"emergencyContact\": {\n        \"name\": \"Ahmed Noor\",\n        \"phone\": \"+92 321 9876543\",\n        \"relationship\": \"Son\"\n    },\n    \"documents\": [\n        \"documents01.pdf\",\n        \"documents02.pdf\"\n    ],\n    \"shift\": [\n        {\n            \"date\": \"2026-07-25\",\n            \"startTime\": \"08:00\",\n            \"endTime\": \"14:06\",\n            \"isBreak\": true,\n            \"breakMin\": 12,\n            \"isBiddingAllowed\": false\n        },\n        {\n            \"date\": \"2026-07-26\",\n            \"startTime\": \"09:00\",\n            \"endTime\": \"17:00\",\n            \"isBreak\": false\n        }\n    ]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -22769,7 +23198,7 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/job?latitude=10&longitude=10&km=1000",
+                      "raw": "{{url}}app/care-home/job",
                       "host": [
                         "{{url}}app"
                       ],
@@ -22780,15 +23209,18 @@
                       "query": [
                         {
                           "key": "latitude",
-                          "value": "10"
+                          "value": "10",
+                          "disabled": true
                         },
                         {
                           "key": "longitude",
-                          "value": "10"
+                          "value": "10",
+                          "disabled": true
                         },
                         {
                           "key": "km",
-                          "value": "1000"
+                          "value": "1000",
+                          "disabled": true
                         },
                         {
                           "key": "status",
@@ -22873,7 +23305,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a5f222db11feeabc9ada7ce"
+                          "value": "6a8fdc9ee07ced772643c61e"
                         }
                       ]
                     }
@@ -23033,7 +23465,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"status\":\"\"\n}",
+                      "raw": "{\n    \"status\":\"accepted\" // accepted, rejected\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -23054,7 +23486,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a47cd0bfd062439af9f418e"
+                          "value": "6a8fed995470b939cc148474"
                         }
                       ]
                     }
@@ -23358,6 +23790,41 @@
                           "value": "",
                           "disabled": true
                         }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "home",
+              "item": [
+                {
+                  "name": "get",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/care-home/home",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "care-home",
+                        "home"
                       ]
                     }
                   },
@@ -25771,12 +26238,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/job",
+                      "raw": "{{url}}app/local-authority/job",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "care-home",
+                        "local-authority",
                         "job"
                       ]
                     }
@@ -26348,6 +26815,41 @@
                           "value": "",
                           "disabled": true
                         }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "home",
+              "item": [
+                {
+                  "name": "get",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/local-authority/home",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "local-authority",
+                        "home"
                       ]
                     }
                   },
@@ -29472,64 +29974,19 @@
                         {
                           "listen": "test",
                           "script": {
-                            "exec": [
-                              "pm.test(\"Status code is 201\", function () {",
-                              "    pm.response.to.have.status(201);",
-                              "",
-                              "  var jsonData = pm.response.json();",
-                              "    pm.test(\"Token\", function () {",
-                              "      ",
-                              "        pm.environment.set(\"emailUser\", jsonData.data.basicInfo.email);",
-                              "",
-                              "        pm.environment.set(\"emailOtpUser\", jsonData.data.otpInfo.emailOtp.otp);",
-                              "",
-                              "        let requestBody = JSON.parse(pm.request.body.raw);",
-                              "        pm.environment.set(\"passwordUser\", requestBody.password);",
-                              "        ",
-                              "    });",
-                              "});",
-                              "",
-                              ""
-                            ],
                             "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
+                            "exec": [
+                              "pm.test(\"Status code is 201\", function () {\n    pm.response.to.have.status(201);\n\n  var jsonData = pm.response.json();\n    pm.test(\"Token\", function () {\n      \n        pm.environment.set(\"emailUser\", jsonData.data.basicInfo.email);\n\n        pm.environment.set(\"emailOtpUser\", jsonData.data.otpInfo.emailOtp.otp);\n\n        let requestBody = JSON.parse(pm.request.body.raw);\n        pm.environment.set(\"passwordUser\", requestBody.password);\n        \n    });\n});\n\n"
+                            ]
                           }
                         },
                         {
                           "listen": "prerequest",
                           "script": {
-                            "exec": [
-                              "// Generate a random 7-digit number for the phone number",
-                              "let randomPhoneNumber = Math.floor(1000000 + Math.random() * 9000000);",
-                              "",
-                              "// Choose a valid mobile network code in Pakistan",
-                              "let validMobileNetworkCode = Math.floor(300 + Math.random() * 8); // Random number between 300 and 307 (valid codes)",
-                              "",
-                              "// Set the phone number with Pakistan country code",
-                              "let internationalPhoneNumber = `+92${validMobileNetworkCode}${randomPhoneNumber}`;",
-                              "",
-                              "// Store the generated phone number in an environment variable",
-                              "pm.environment.set(\"randomPhoneNumber\", internationalPhoneNumber);",
-                              "",
-                              "console.log(\"Generated Phone Number:\", internationalPhoneNumber);",
-                              "",
-                              "",
-                              "// Generate a random number",
-                              "let randomNumber = Math.floor(Math.random() * 10000); // Generates a number between 0 and 9999",
-                              "",
-                              "// Create a random email using the random number",
-                              "let randomEmail = `testuser${randomNumber}@gmail.com`;",
-                              "",
-                              "// Store the generated email in an environment variable",
-                              "pm.environment.set(\"randomEmail\", randomEmail);",
-                              "",
-                              "console.log(\"Generated Email:\", randomEmail);",
-                              ""
-                            ],
                             "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
+                            "exec": [
+                              "// Generate a random 7-digit number for the phone number\nlet randomPhoneNumber = Math.floor(1000000 + Math.random() * 9000000);\n\n// Choose a valid mobile network code in Pakistan\nlet validMobileNetworkCode = Math.floor(300 + Math.random() * 8); // Random number between 300 and 307 (valid codes)\n\n// Set the phone number with Pakistan country code\nlet internationalPhoneNumber = `+92${validMobileNetworkCode}${randomPhoneNumber}`;\n\n// Store the generated phone number in an environment variable\npm.environment.set(\"randomPhoneNumber\", internationalPhoneNumber);\n\nconsole.log(\"Generated Phone Number:\", internationalPhoneNumber);\n\n\n// Generate a random number\nlet randomNumber = Math.floor(Math.random() * 10000); // Generates a number between 0 and 9999\n\n// Create a random email using the random number\nlet randomEmail = `testuser${randomNumber}@gmail.com`;\n\n// Store the generated email in an environment variable\npm.environment.set(\"randomEmail\", randomEmail);\n\nconsole.log(\"Generated Email:\", randomEmail);\n"
+                            ]
                           }
                         }
                       ],
@@ -29538,7 +29995,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    \"email\": \"{{$randomExampleEmail}}\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\",  //optional\n    \"gender\": \"Male\",  //optional\n    \"deviceType\": \"ios\",\n    \"userType\": \"careHome\",\n    \"deviceId\": \"test\",\n    \"timezone\": \"Asia/Karachi\",\n    \"companyName\": \"{{$randomUserName}}\",\n    \"type\": \"residentialCareHome\",\n    \"registrationNumber\":1234,\n    \"validationDocument\":[\"image.png\",\"imge2.png\"],  // optional\n\n    \"location\": {\n        \"coordinates\": [0,0],  //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",// //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\",  //optional\n        \"postalCode\": 12345 //optional\n    }\n}",
+                          "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    \"email\": \"{{$randomExampleEmail}}\",\n    \"profileIcon\": \"image.png\",\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\", //optional\n    \"deviceType\": \"ios\",\n    \"userType\": \"user\",\n    \"deviceId\": \"test\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\":1234,\n    \"governmentIdentity\":[\"image.png\",\"imge2.png\"],  // optional\n\n    \"location\": {\n        \"coordinates\": [\n            10,\n            20\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    }\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -29705,7 +30162,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"email\": \"{{emailCareHome}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// \n    \"password\": \"{{passwordCareHome}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"email\": \"{{emailUser}}\", // dayna_simonis@example.com // corrine.zulauf@example.net// \n    \"password\": \"{{passwordUser}}\",\n    \"deviceType\": \"android\", //andoird/ios\n    \"deviceId\": \"test\", //device id from firebase fcm //always pass \"test\" if not available\n    \"timezone\": \"Asia/Karachi\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -30794,7 +31251,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"profileIcon\": \"noImage1.png\",\n    \"name\": \"{{$randomUserName}}\",\n    // \"phoneNumber\": {\n    //     \"code\": \"+92\",\n    //     \"number\": \"3001122104\"\n    // },\n    \"location\": {\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"47 Innovation Street, New York, NY 10011, USA\",\n        \"country\": \"USA\",\n        \"city\": \"New York\",\n        \"state\": \"NYKaff\",\n        \"postalCode\": \"10012\"\n    }\n    // ,\n    // \"deviceType\": \"app\", //andoird/ios/app\n    // \"deviceId\": \"ciMKqgnjRiaQvxj2Q9T5_g:APA91bF3LLhH7TQoNny1mS-c2iK_PZ4vZXG8bKSavzUuAqQ8A2ipLSf6yWzMhvNCr9fH44mPVUukNytAYQtorUJGo2FYkdV4yusDDL_-fri0yKZ18THsh8w1hVlJ_5a_YWNFbXO479ci\", //device id from firebase fcm\n    // \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"taxNumber\": \"1234\",\n    \"governmentIdentity\": \"governmentIdentity.png\"\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -31592,7 +32049,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    // \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a4b2c3f8aba6e2dead717a6\",\n    \"branch\":\"6a587d05da03dd8d55abcdd3\",\n    // \"gender\": \"Female\",\n \n  \"location\": {\n        \"coordinates\": [\n        10,\n        10\n    ], \n    \"fullAddress\": \"{{$randomStreetAddress}}\",\n    \"city\": \"{{$randomCity}}\", // //optional\n    \"country\": \"{{$randomCountry}}\", // //optional\n    \"state\": \"pakistan\", //optional\n    \"postalCode\": 12345 //optional\n},\n\"shift\": [\n    {\n        \"date\": \"2026-07-25\",\n        \"startTime\": \"08:00\",\n        \"endTime\": \"14:06\",\n        \"isBreak\":true,\n        \"breakMin\":12,\n        \"isBiddingAllowed\":false\n\n    },\n    {\n        \"date\": \"2026-07-26\",\n        \"startTime\": \"09:00\",\n        \"endTime\": \"17:00\",\n        \"isBreak\":false\n    }\n]\n}",
+                      "raw": "{\n    \"name\": \"{{$randomFullName}}\",\n    \"description\": \"Looking for an experienced registered nurse for a night shift at our care home.\",\n    \"type\": \"6a5f2140b11feeabc9ada7b0\",\n    // \"branch\":\"6a587d05da03dd8d55abcdd3\",\n    // \"gender\": \"Female\",\n    \"location\": {\n        \"coordinates\": [\n            31.502423760739653,\n            74.43172829266204\n        ],\n        \"fullAddress\": \"Lahore Division, unnamed road, Chunian Tehsil, Rakh Dhaak\",\n        \"city\": \"Lahore\", // //optional\n        \"country\": \"Pakistan\", // //optional\n        \"state\": \"Punjab\", //optional\n        \"postalCode\": 53200 //optional\n    },\n    \"notes\": \"Resident prefers quiet environment in the evenings. Two dogs on premises, both friendly.\",\n    \"instructions\": \"Enter through the side gate, code is #4471. Medication schedule is on the kitchen fridge.\",\n    \"contactDetails\": {\n        \"name\": \"Fatima Noor\",\n        \"phone\": \"+92 300 1234567\",\n        \"email\": \"fatima.noor@example.com\"\n    },\n    \"emergencyContact\": {\n        \"name\": \"Ahmed Noor\",\n        \"phone\": \"+92 321 9876543\",\n        \"relationship\": \"Son\"\n    },\n    \"documents\": [\n        \"documents01.pdf\",\n        \"documents02.pdf\"\n    ],\n    \"shift\": [\n        {\n            \"date\": \"2026-09-09\",\n            \"startTime\": \"21:00\",\n            \"endTime\": \"21:06\",\n            \"isBreak\": true,\n            \"breakMin\": 12,\n            \"isBiddingAllowed\": false\n        },\n        {\n            \"date\": \"2026-09-09\",\n            \"startTime\": \"15:30\",\n            \"endTime\": \"15:35\",\n            \"isBreak\": true,\n            \"breakMin\": 10,\n            \"isBiddingAllowed\": true\n        },\n        {\n            \"date\": \"2026-09-09\",\n            \"startTime\": \"15:23\",\n            \"endTime\": \"15:29\",\n            \"isBreak\": false,\n            \"isBiddingAllowed\": true\n        }\n    ]\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -31641,12 +32098,12 @@
                       "query": [
                         {
                           "key": "latitude",
-                          "value": "89.2",
+                          "value": "31.502423760739653",
                           "disabled": true
                         },
                         {
                           "key": "longitude",
-                          "value": "89.3",
+                          "value": "74.43172829266204",
                           "disabled": true
                         },
                         {
@@ -31737,7 +32194,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": ""
+                          "value": "6a903c89e16091ed6630d7ee"
                         }
                       ]
                     }
@@ -31771,7 +32228,7 @@
                       "variable": [
                         {
                           "key": "id",
-                          "value": "{{jobId}}"
+                          "value": "6a903c89e16091ed6630d7ee"
                         }
                       ]
                     }
@@ -31846,7 +32303,12 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": ""
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "text"
+                        }
+                      }
                     },
                     "url": {
                       "raw": "{{url}}app/user/job/bids",
@@ -31866,12 +32328,12 @@
                         },
                         {
                           "key": "job",
-                          "value": "6a50c8da0341ac5657c45d50",
+                          "value": "6aa0f7f8875f5d7280295584",
                           "disabled": true
                         },
                         {
                           "key": "shift",
-                          "value": "6a4b3b352d06b75399883728",
+                          "value": "6aa0f7f9875f5d7280295586",
                           "disabled": true
                         },
                         {
@@ -31883,6 +32345,11 @@
                           "key": "dateFilter",
                           "value": "nextWeek",
                           "description": "next24h/thisWeek/nextWeek",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "deleted",
                           "disabled": true
                         }
                       ]
@@ -31897,7 +32364,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"status\":\"\"\n}",
+                      "raw": "{\n    \"status\":\"accepted\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -31905,19 +32372,20 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/user/bids/:id",
+                      "raw": "{{url}}app/user/job/bids/:id",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
                         "user",
+                        "job",
                         "bids",
                         ":id"
                       ],
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a47cd0bfd062439af9f418e"
+                          "value": "6aa13357bf619bc9828e65a6"
                         }
                       ]
                     }
@@ -31981,6 +32449,13 @@
                       "path": [
                         "user",
                         "booking"
+                      ],
+                      "query": [
+                        {
+                          "key": "status",
+                          "value": "inProgress",
+                          "disabled": true
+                        }
                       ]
                     }
                   },
@@ -32046,7 +32521,7 @@
               "name": "shift",
               "item": [
                 {
-                  "name": "calender",
+                  "name": "monthlyCalender",
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true
                   },
@@ -32063,35 +32538,27 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/user/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-12&endDate=2026-07-18",
+                      "raw": "{{url}}app/user/booking/shifts-calender?year=2026&month=9",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
                         "user",
                         "booking",
-                        "calender"
+                        "shifts-calender"
                       ],
                       "query": [
                         {
-                          "key": "latitude",
-                          "value": "0.1"
+                          "key": "year",
+                          "value": "2026"
                         },
                         {
-                          "key": "longitude",
-                          "value": "0.1"
+                          "key": "month",
+                          "value": "9"
                         },
                         {
-                          "key": "startDate",
-                          "value": "2026-07-12"
-                        },
-                        {
-                          "key": "endDate",
-                          "value": "2026-07-18"
-                        },
-                        {
-                          "key": "bramch",
-                          "value": "",
+                          "key": "date",
+                          "value": "2026-09-04",
                           "disabled": true
                         }
                       ]
@@ -32224,6 +32691,41 @@
                           "key": "id",
                           "value": "6a42104c7726dba26afe466b"
                         }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "home",
+              "item": [
+                {
+                  "name": "get",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/user/home",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "user",
+                        "home"
                       ]
                     }
                   },
@@ -34464,10 +34966,6 @@
                       "response": []
                     }
                   ]
-                },
-                {
-                  "name": "New Folder",
-                  "item": []
                 }
               ]
             },
@@ -35134,6 +35632,41 @@
                       "path": [
                         "agency",
                         "availability"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "home",
+              "item": [
+                {
+                  "name": "get",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/agency/home",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "agency",
+                        "home"
                       ]
                     }
                   },
@@ -37908,12 +38441,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/booking",
+                      "raw": "{{url}}app/home-care-company/booking",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "care-home",
+                        "home-care-company",
                         "booking"
                       ]
                     }
@@ -37938,12 +38471,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/booking",
+                      "raw": "{{url}}app/home-care-company/booking",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "care-home",
+                        "home-care-company",
                         "booking"
                       ]
                     }
@@ -37968,12 +38501,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/booking/shifts-calender?year=2026&month=7&date=2026-07-22",
+                      "raw": "{{url}}app/home-care-company/booking/shifts-calender?year=2026&month=7&date=2026-07-22",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "care-home",
+                        "home-care-company",
                         "booking",
                         "shifts-calender"
                       ],
@@ -38013,12 +38546,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/care-home/staff/available",
+                      "raw": "{{url}}app/home-care-company/staff/available",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
-                        "care-home",
+                        "home-care-company",
                         "staff",
                         "available"
                       ],
@@ -38103,6 +38636,41 @@
                           "value": "",
                           "disabled": true
                         }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "home",
+              "item": [
+                {
+                  "name": "get",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/home-care-company/home",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "home-care-company",
+                        "home"
                       ]
                     }
                   },
@@ -38237,64 +38805,19 @@
                         {
                           "listen": "test",
                           "script": {
-                            "exec": [
-                              "pm.test(\"Status code is 201\", function () {",
-                              "    pm.response.to.have.status(201);",
-                              "",
-                              "  var jsonData = pm.response.json();",
-                              "    pm.test(\"Token\", function () {",
-                              "      ",
-                              "        pm.environment.set(\"emailUser\", jsonData.data.basicInfo.email);",
-                              "",
-                              "        pm.environment.set(\"emailOtpUser\", jsonData.data.otpInfo.emailOtp.otp);",
-                              "",
-                              "        let requestBody = JSON.parse(pm.request.body.raw);",
-                              "        pm.environment.set(\"passwordUser\", requestBody.password);",
-                              "        ",
-                              "    });",
-                              "});",
-                              "",
-                              ""
-                            ],
                             "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
+                            "exec": [
+                              "pm.test(\"Status code is 201\", function () {\n    pm.response.to.have.status(201);\n\n  var jsonData = pm.response.json();\n    pm.test(\"Token\", function () {\n      \n        pm.environment.set(\"emailUser\", jsonData.data.basicInfo.email);\n\n        pm.environment.set(\"emailOtpUser\", jsonData.data.otpInfo.emailOtp.otp);\n\n        let requestBody = JSON.parse(pm.request.body.raw);\n        pm.environment.set(\"passwordUser\", requestBody.password);\n        \n    });\n});\n\n"
+                            ]
                           }
                         },
                         {
                           "listen": "prerequest",
                           "script": {
-                            "exec": [
-                              "// Generate a random 7-digit number for the phone number",
-                              "let randomPhoneNumber = Math.floor(1000000 + Math.random() * 9000000);",
-                              "",
-                              "// Choose a valid mobile network code in Pakistan",
-                              "let validMobileNetworkCode = Math.floor(300 + Math.random() * 8); // Random number between 300 and 307 (valid codes)",
-                              "",
-                              "// Set the phone number with Pakistan country code",
-                              "let internationalPhoneNumber = `+92${validMobileNetworkCode}${randomPhoneNumber}`;",
-                              "",
-                              "// Store the generated phone number in an environment variable",
-                              "pm.environment.set(\"randomPhoneNumber\", internationalPhoneNumber);",
-                              "",
-                              "console.log(\"Generated Phone Number:\", internationalPhoneNumber);",
-                              "",
-                              "",
-                              "// Generate a random number",
-                              "let randomNumber = Math.floor(Math.random() * 10000); // Generates a number between 0 and 9999",
-                              "",
-                              "// Create a random email using the random number",
-                              "let randomEmail = `testuser${randomNumber}@gmail.com`;",
-                              "",
-                              "// Store the generated email in an environment variable",
-                              "pm.environment.set(\"randomEmail\", randomEmail);",
-                              "",
-                              "console.log(\"Generated Email:\", randomEmail);",
-                              ""
-                            ],
                             "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
+                            "exec": [
+                              "// Generate a random 7-digit number for the phone number\nlet randomPhoneNumber = Math.floor(1000000 + Math.random() * 9000000);\n\n// Choose a valid mobile network code in Pakistan\nlet validMobileNetworkCode = Math.floor(300 + Math.random() * 8); // Random number between 300 and 307 (valid codes)\n\n// Set the phone number with Pakistan country code\nlet internationalPhoneNumber = `+92${validMobileNetworkCode}${randomPhoneNumber}`;\n\n// Store the generated phone number in an environment variable\npm.environment.set(\"randomPhoneNumber\", internationalPhoneNumber);\n\nconsole.log(\"Generated Phone Number:\", internationalPhoneNumber);\n\n\n// Generate a random number\nlet randomNumber = Math.floor(Math.random() * 10000); // Generates a number between 0 and 9999\n\n// Create a random email using the random number\nlet randomEmail = `testuser${randomNumber}@gmail.com`;\n\n// Store the generated email in an environment variable\npm.environment.set(\"randomEmail\", randomEmail);\n\nconsole.log(\"Generated Email:\", randomEmail);\n"
+                            ]
                           }
                         }
                       ],
@@ -38303,7 +38826,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    \"email\": \"{{$randomExampleEmail}}\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\",  //optional\n    \"gender\": \"Male\",  //optional\n    \"deviceType\": \"ios\",\n    \"userType\": \"nurse\",\n    \"deviceId\": \"test\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\":1234,\n    \"governmentIdentity\":[\"image.png\"],\n    \"degree\":[\"imaage.png\"],\n    \"certification\":[\"image.png\"],\n\n    \"location\": {\n        \"coordinates\": [0, 0],  //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",// //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\",  //optional\n        \"postalCode\": 12345 //optional\n    }\n}",
+                          "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    \"email\": \"{{$randomExampleEmail}}\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\",  //optional\n    \"gender\": \"Male\",  //optional\n    \"deviceType\": \"ios\",\n    \"userType\": \"nurse\",\n    \"deviceId\": \"test\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\":1234,\n    \"governmentIdentity\":[\"image.png\"],\n    \"degree\":[\"imaage.png\"],\n    \"certification\":[\"image.png\"],\n    \"summary\": \"I am Nurse\",\n\n    \"location\": {\n        \"coordinates\": [10, 20],  //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",// //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\",  //optional\n        \"postalCode\": 12345 //optional\n    }\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -38405,7 +38928,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"provider\": \"google\", //\"google\", \"facebook\", \"apple\",\n    \"socialId\": \"mWQZ2pYQnZbC2Zfcp5sdZ4otq0h8\",\n    // \"profileIcon\": \"noimage.png\",\n    \"firstName\": \"Ali\",\n    \"lastName\": \"Imran\",\n    \"email\": \"cwtest1@gmail.com\",\n    \"deviceType\": \"ios\", //andoird/ios/app\n    \"userType\": \"user\", //organizer, user, admin\n    \"deviceId\": \"test\", //device id from firebase fcm\n    \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"provider\": \"google\", //\"google\", \"facebook\", \"apple\",\n    \"socialId\": \"123098765349\",\n    // \"profileIcon\": \"noimage.png\",\n    \"name\": \"socialAuth\",\n    \"email\": \"socialAuthtest1@gmail.com\",\n    \"deviceType\": \"ios\", //andoird/ios/app\n    \"userType\": \"user\", //organizer, user, admin\n    \"deviceId\": \"test\", //device id from firebase fcm\n    \"timezone\": \"Asia/Karachi\",\n    \"location\": {\n        \"coordinates\": [\n            0,\n            0\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    }\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -38431,36 +38954,10 @@
                         {
                           "listen": "test",
                           "script": {
-                            "exec": [
-                              "pm.test(\"Status code is 200\", function () {",
-                              "    pm.response.to.have.status(200);",
-                              "});",
-                              "",
-                              "pm.test(\"Set Variables on Environment and Collection\", function () {",
-                              "    var jsonData = pm.response.json();",
-                              "",
-                              "    // Setting environment variables",
-                              "    pm.environment.set(\"tokennurse\", jsonData.data.token);",
-                              "",
-                              "    // Extracting password from request body",
-                              "    let requestBody = JSON.parse(pm.request.body.raw);",
-                              "    pm.environment.set(\"passwordUser\", requestBody.password);",
-                              "});"
-                            ],
                             "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
-                          }
-                        },
-                        {
-                          "listen": "prerequest",
-                          "script": {
                             "exec": [
-                              ""
-                            ],
-                            "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
+                              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Set Variables on Environment and Collection\", function () {\n    var jsonData = pm.response.json();\n\n    // Setting environment variables\n    pm.environment.set(\"tokennurse\", jsonData.data.token);\n\n    // Extracting password from request body\n    let requestBody = JSON.parse(pm.request.body.raw);\n    pm.environment.set(\"passwordUser\", requestBody.password);\n});"
+                            ]
                           }
                         }
                       ],
@@ -38477,12 +38974,11 @@
                           }
                         },
                         "url": {
-                          "raw": "{{url}}/auth/login",
+                          "raw": "{{url}}auth/login",
                           "host": [
-                            "{{url}}"
+                            "{{url}}auth"
                           ],
                           "path": [
-                            "auth",
                             "login"
                           ]
                         }
@@ -38612,6 +39108,32 @@
                           "path": [
                             "auth",
                             "login"
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "radius",
+                      "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\r\n    \"radius\": 50\r\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{url}}auth/radius",
+                          "host": [
+                            "{{url}}auth"
+                          ],
+                          "path": [
+                            "radius"
                           ]
                         }
                       },
@@ -39521,7 +40043,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "69a12e195ab07b4056ece0eb"
+                              "value": "6a7434ebb23b8cfaaa934e80"
                             }
                           ]
                         }
@@ -39559,7 +40081,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n    \"profileIcon\": \"noImage1.png\",\n    // \"firstName\": \"{{$randomUserName}}\",\n    // \"lastName\": \"M\",\n    // \"phoneNumber\": {\n    //     \"code\": \"+92\",\n    //     \"number\": \"3001122104\"\n    // },\n    \"location\": {\n        \"coordinates\": [\n            0,\n            0\n        ],\n        \"fullAddress\": \"47 Innovation Street, New York, NY 10011, USA\",\n        \"country\": \"USA\",\n        \"city\": \"New York\",\n        \"state\": \"NYKaff\",\n        \"postalCode\": \"10012\"\n    }\n    // ,\n    // \"dob\": \"2005-10-16\",\n    // \"gender\": \"Male\",\n    // \"notifications\":{\n    //     \"email\":true,\n    //     \"push\":false\n    // },\n    // \"deviceType\": \"app\", //andoird/ios/app\n    // \"deviceId\": \"ciMKqgnjRiaQvxj2Q9T5_g:APA91bF3LLhH7TQoNny1mS-c2iK_PZ4vZXG8bKSavzUuAqQ8A2ipLSf6yWzMhvNCr9fH44mPVUukNytAYQtorUJGo2FYkdV4yusDDL_-fri0yKZ18THsh8w1hVlJ_5a_YWNFbXO479ci\", //device id from firebase fcm\n    // \"timezone\": \"Asia/Karachi\"\n}",
+                          "raw": "{\n    \"taxNumber\": \"1234\",\n    \"governmentIdentity\": [\n        \"image.png\",\n        \"image02.png\"\n    ],\n    \"degree\": [\n        \"imaage56780.png\",\n        \"image02222222.png\"\n    ],\n    \"certification\": [\n        \"image.png\",\n        \"image02.png\"\n    ]\n}",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -39578,7 +40100,7 @@
                           "variable": [
                             {
                               "key": "id",
-                              "value": "6926f5f9d9366d79ebf73f72"
+                              "value": "6a7d72fb456e6dd854f494ee"
                             }
                           ]
                         },
@@ -40464,7 +40986,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"location\": {\n        \"coordinates\": [\n            9.999,\n            9.999\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"status\":\"checkout\"//checkin checkout\n    // \"proofPicture\":\"image.png\",\n    // \"signature\":\"image.png\"\n\n}",
+                      "raw": "{\n    \"location\": {\n        \"title\": \"\",\n        \"coordinates\": [\n            0, 0\n        ],\n        \"fullAddress\": \"Lahore Division, unnamed road, Chunian Tehsil, Rakh Dhaak\",\n        \"city\": \"Lahore\",\n        \"country\": \"Pakistan\",\n        \"state\": \"Punjab\",\n        \"postalCode\": \"53200\",\n        \"type\": \"Point\"\n    },\n    \"status\": \"checkin\", //checkin checkout\n    // \"proofPicture\":\"image.png\",\n    // \"signature\":\"image.png\"\n    \"proofPicture\": \"image.png\",\n    \"signature\": \"base64-or-string\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -40472,7 +40994,7 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/nurse/booking/:id?checkinCheckout=true",
+                      "raw": "{{url}}app/nurse/booking/:id?checkinCheckout=checkin",
                       "host": [
                         "{{url}}app"
                       ],
@@ -40484,13 +41006,182 @@
                       "query": [
                         {
                           "key": "checkinCheckout",
-                          "value": "true"
+                          "value": "checkin"
                         }
                       ],
                       "variable": [
                         {
                           "key": "id",
-                          "value": "6a58b9f6f8261119ef93ba15"
+                          "value": "6aabdc605a14a386a7c5289c"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "monthlyCalendar",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a4cac52a7b911fe25077c54\"//optional\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/nurse/booking/shifts-calender?year=2026&month=7&date=2026-07-22",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "nurse",
+                        "booking",
+                        "shifts-calender"
+                      ],
+                      "query": [
+                        {
+                          "key": "year",
+                          "value": "2026"
+                        },
+                        {
+                          "key": "month",
+                          "value": "7"
+                        },
+                        {
+                          "key": "date",
+                          "value": "2026-07-22"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "getEarnings",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/nurse/booking/earnings",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "nurse",
+                        "booking",
+                        "earnings"
+                      ],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": null,
+                          "disabled": true
+                        },
+                        {
+                          "key": "to",
+                          "value": null,
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "booking",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"bid\": \"{{bidID}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/nurse/booking",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "nurse",
+                        "booking"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "get available staff",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    // \"email\": \"{{$randomExampleEmail}}\",\n    \"email\": \"aime_gibson@example.net\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\", //optional\n    \"gender\": \"Male\", //optional\n    \"userType\": \"nurse\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\": 1234,\n    \"governmentIdentity\": [\n        \"image.png\"\n    ],\n    \"degree\": [\n        \"imaage.png\"\n    ],\n    \"certification\": [\n        \"image.png\"\n    ],\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"speciality\": \"generalNurse\",\n    \"ratePerHour\": 12,\n    \"platformPercent\": 10\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/nurse/staff/available",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "nurse",
+                        "staff",
+                        "available"
+                      ],
+                      "query": [
+                        {
+                          "key": "user",
+                          "value": "6a4c91fdd6052f91236364c2",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "acive",
+                          "disabled": true
+                        },
+                        {
+                          "key": "bid",
+                          "value": "6a4f7b095f6e52ef29482f9b",
+                          "description": "true/ false",
+                          "disabled": true
+                        },
+                        {
+                          "key": "job",
+                          "value": "6a50c8da0341ac5657c45d50",
+                          "disabled": true
                         }
                       ]
                     }
@@ -40630,6 +41321,72 @@
               ]
             },
             {
+              "name": "staffRequests",
+              "item": [
+                {
+                  "name": "get",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ],\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\",\n        \"country\": \"{{$randomCountry}}\",\n        \"state\": \"pakistan\",\n        \"postalCode\": 12345\n    }\n}"
+                    },
+                    "url": {
+                      "raw": "{{url}}app/nurse/staff/requests",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "nurse",
+                        "staff",
+                        "requests"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "update",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"action\":\"accept\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/nurse/staff/requests/:id",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "nurse",
+                        "staff",
+                        "requests",
+                        ":id"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "6a7ac4495074b2e2224c9f80"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
               "name": "bid",
               "item": [
                 {
@@ -40638,37 +41395,10 @@
                     {
                       "listen": "test",
                       "script": {
-                        "exec": [
-                          "// Parse the response",
-                          "const response = pm.response.json();",
-                          "",
-                          "// Rename _id to jobId at the top level of data",
-                          "if (response.data && response.data._id) {",
-                          "    response.data.jobId = response.data._id;",
-                          "    delete response.data._id;",
-                          "}",
-                          "",
-                          "// Optional: save jobId to an environment/collection variable for chaining requests",
-                          "if (response.data && response.data.jobId) {",
-                          "    pm.environment.set(\"jobId\", response.data.jobId);",
-                          "    // or: pm.collectionVariables.set(\"jobId\", response.data.jobId);",
-                          "}",
-                          ""
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    },
-                    {
-                      "listen": "prerequest",
-                      "script": {
                         "exec": [
-                          ""
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                          "// Parse the response\nconst response = pm.response.json();\n\n// Rename _id to jobId at the top level of data\nif (response.data && response.data._id) {\n    response.data.jobId = response.data._id;\n    delete response.data._id;\n}\n\n// Optional: save jobId to an environment/collection variable for chaining requests\nif (response.data && response.data.jobId) {\n    pm.environment.set(\"jobId\", response.data.jobId);\n    // or: pm.collectionVariables.set(\"jobId\", response.data.jobId);\n}\n"
+                        ]
                       }
                     }
                   ],
@@ -40677,7 +41407,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"shift\":\"{{shiftId}}\",\n    \"job\":\"{{jobId}}\",\n    \"bid\":12,\n    \"note\":\"helo brotehr\"\n}",
+                      "raw": "{\n    \"shift\":\"{{shiftId}}\",\n    \"job\":\"{{jobId}}\",\n    \"bid\":170,\n    \"note\":\"new today bid. accept it to test\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -40804,7 +41534,7 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/nurse/job",
+                      "raw": "{{url}}app/nurse/job?latitude=31.502423760739653&longitude=74.43172829266204&km=50",
                       "host": [
                         "{{url}}app"
                       ],
@@ -40814,18 +41544,71 @@
                       ],
                       "query": [
                         {
-                          "key": "latitude",
-                          "value": "9",
+                          "key": "dateFilter",
+                          "value": "nextWeek",
                           "disabled": true
+                        },
+                        {
+                          "key": "latitude",
+                          "value": "31.502423760739653"
                         },
                         {
                           "key": "longitude",
-                          "value": "9",
-                          "disabled": true
+                          "value": "74.43172829266204"
                         },
                         {
                           "key": "km",
-                          "value": "1",
+                          "value": "50"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "shift",
+              "item": [
+                {
+                  "name": "monthly Calender",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a4cac52a7b911fe25077c54\"//optional\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}app/nurse/booking/shifts-calender?year=2026&month=8",
+                      "host": [
+                        "{{url}}app"
+                      ],
+                      "path": [
+                        "nurse",
+                        "booking",
+                        "shifts-calender"
+                      ],
+                      "query": [
+                        {
+                          "key": "year",
+                          "value": "2026"
+                        },
+                        {
+                          "key": "month",
+                          "value": "8"
+                        },
+                        {
+                          "key": "date",
+                          "value": "2026-07-22",
                           "disabled": true
                         }
                       ]
@@ -40836,35 +41619,8 @@
               ]
             },
             {
-              "name": "booking",
+              "name": "home",
               "item": [
-                {
-                  "name": "booking",
-                  "request": {
-                    "method": "POST",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a4ca7e30a3ce96c6fbba47c\"\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{url}}app/nurse/booking",
-                      "host": [
-                        "{{url}}app"
-                      ],
-                      "path": [
-                        "nurse",
-                        "booking"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
                 {
                   "name": "get",
                   "protocolProfileBehavior": {
@@ -40883,212 +41639,28 @@
                       }
                     },
                     "url": {
-                      "raw": "{{url}}app/nurse/booking",
+                      "raw": "{{url}}app/nurse/home",
                       "host": [
                         "{{url}}app"
                       ],
                       "path": [
                         "nurse",
-                        "booking"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "getEarnings",
-                  "protocolProfileBehavior": {
-                    "disableBodyPruning": true
-                  },
-                  "request": {
-                    "method": "GET",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{url}}app/nurse/booking/earnings",
-                      "host": [
-                        "{{url}}app"
-                      ],
-                      "path": [
-                        "nurse",
-                        "booking",
-                        "earnings"
-                      ],
-                      "query": [
-                        {
-                          "key": "from",
-                          "value": null,
-                          "disabled": true
-                        },
-                        {
-                          "key": "to",
-                          "value": null,
-                          "disabled": true
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "monthlyCalendar",
-                  "protocolProfileBehavior": {
-                    "disableBodyPruning": true
-                  },
-                  "request": {
-                    "method": "GET",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n    \"bid\": \"{{bidID}}\",\n    \"worker\": \"6a4cac52a7b911fe25077c54\"//optional\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{url}}app/nurse/booking/shifts-calender?year=2026&month=7&date=2026-07-22",
-                      "host": [
-                        "{{url}}app"
-                      ],
-                      "path": [
-                        "nurse",
-                        "booking",
-                        "shifts-calender"
-                      ],
-                      "query": [
-                        {
-                          "key": "year",
-                          "value": "2026"
-                        },
-                        {
-                          "key": "month",
-                          "value": "7"
-                        },
-                        {
-                          "key": "date",
-                          "value": "2026-07-22"
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "get available staff",
-                  "protocolProfileBehavior": {
-                    "disableBodyPruning": true
-                  },
-                  "request": {
-                    "method": "GET",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n    \"name\": \"{{$randomUserName}}\",\n    // \"email\": \"{{$randomExampleEmail}}\",\n    \"email\": \"aime_gibson@example.net\",\n    \"profileIcon\": \"image.png\",\n    \"phoneNumber\": {\n        \"code\": \"+92\",\n        \"number\": \"3005098441\"\n    },\n    \"password\": \"112233\",\n    \"dob\": \"2005-10-16\", //optional\n    \"gender\": \"Male\", //optional\n    \"userType\": \"nurse\",\n    \"timezone\": \"Asia/Karachi\",\n    \"taxNumber\": 1234,\n    \"governmentIdentity\": [\n        \"image.png\"\n    ],\n    \"degree\": [\n        \"imaage.png\"\n    ],\n    \"certification\": [\n        \"image.png\"\n    ],\n    \"location\": {\n        \"coordinates\": [\n            1234,\n            3214\n        ], //optional\n        \"fullAddress\": \"{{$randomStreetAddress}}\",\n        \"city\": \"{{$randomCity}}\", // //optional\n        \"country\": \"{{$randomCountry}}\", // //optional\n        \"state\": \"pakistan\", //optional\n        \"postalCode\": 12345 //optional\n    },\n    \"speciality\": \"generalNurse\",\n    \"ratePerHour\": 12,\n    \"platformPercent\": 10\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{url}}app/nurse/staff/available",
-                      "host": [
-                        "{{url}}app"
-                      ],
-                      "path": [
-                        "nurse",
-                        "staff",
-                        "available"
-                      ],
-                      "query": [
-                        {
-                          "key": "user",
-                          "value": "6a4c91fdd6052f91236364c2",
-                          "disabled": true
-                        },
-                        {
-                          "key": "status",
-                          "value": "acive",
-                          "disabled": true
-                        },
-                        {
-                          "key": "bid",
-                          "value": "6a4f7b095f6e52ef29482f9b",
-                          "description": "true/ false",
-                          "disabled": true
-                        },
-                        {
-                          "key": "job",
-                          "value": "6a50c8da0341ac5657c45d50",
-                          "disabled": true
-                        }
-                      ]
-                    }
-                  },
-                  "response": []
-                }
-              ]
-            },
-            {
-              "name": "shift",
-              "item": [
-                {
-                  "name": "calender",
-                  "protocolProfileBehavior": {
-                    "disableBodyPruning": true
-                  },
-                  "request": {
-                    "method": "GET",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{url}}app/nurse/booking/calender?latitude=0.1&longitude=0.1&startDate=2026-07-12&endDate=2026-07-22",
-                      "host": [
-                        "{{url}}app"
-                      ],
-                      "path": [
-                        "nurse",
-                        "booking",
-                        "calender"
+                        "home"
                       ],
                       "query": [
                         {
                           "key": "latitude",
-                          "value": "0.1"
+                          "value": "9",
+                          "disabled": true
                         },
                         {
                           "key": "longitude",
-                          "value": "0.1"
+                          "value": "9",
+                          "disabled": true
                         },
                         {
-                          "key": "startDate",
-                          "value": "2026-07-12"
-                        },
-                        {
-                          "key": "endDate",
-                          "value": "2026-07-22"
-                        },
-                        {
-                          "key": "bramch",
-                          "value": "",
+                          "key": "km",
+                          "value": "1",
                           "disabled": true
                         }
                       ]
@@ -42169,7 +42741,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"reviewType\":\"user\",//booking,user\n    \"objectId\":\"6a5f1f89886bb7ced57f1c85\",\n    \"rating\":4,\n    \"comment\":\"Fantastic Job!\"\n}",
+                  "raw": "{\n    \"reviewType\":\"booking\",//booking,user,branch\n    \"objectId\":\"6aa13363bf619bc9828e65c6\",\n    \"rating\":4,\n    \"comment\":\"Fantastic Job!\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -42447,7 +43019,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"email\": \"{{emailAdmin}}\",\n    \"password\": \"{{passwordAdmin}}\", \n    \"deviceType\": \"web\", //andoird/ios/web\n    \"deviceId\": \"test\", //device id from firebase fcm\n    \"timezone\": \"Asia/Karachi\",\n    \"userType\": \"admin\"\n}",
+                  "raw": "{\n    \"email\": \"{{emailAdmin}}\",\n    \"password\": \"{{passwordAdmin}}\", \n    \"deviceType\": \"web\", //andoird/ios/web\n    \"deviceId\": \"test\", //device id from firebase fcm\n    \"timezone\": \"Asia/Karachi\",\n    \"userType\": \"admin\"\n}\n",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -43783,7 +44355,7 @@
                   "raw": "{\n \t\"email\": \"testuser3@gmail.com\",\n\t\"password\": \"123456\",\n\t\"deviceType\": \"android\", //andoird/ios\n\t\"deviceId\": \"ciMKqgnjRiaQvxj2Q9T5_g:APA91bF3LLhH7TQoNny1mS-c2iK_PZ4vZXG8bKSavzUuAqQ8A2ipLSf6yWzMhvNCr9fH44mPVUukNytAYQtorUJGo2FYkdV4yusDDL_-fri0yKZ18THsh8w1hVlJ_5a_YWNFbXO479ci\", //device id from firebase fcm\n\t\"timezone\": \"Asia/Karachi\"\n}"
                 },
                 "url": {
-                  "raw": "{{url}}admin/users?userType=careHome",
+                  "raw": "{{url}}admin/users?userType=nurse",
                   "host": [
                     "{{url}}admin"
                   ],
@@ -43793,7 +44365,7 @@
                   "query": [
                     {
                       "key": "userType",
-                      "value": "careHome"
+                      "value": "nurse"
                     },
                     {
                       "key": "keyword",
@@ -43846,6 +44418,35 @@
           ]
         },
         {
+          "name": "dashboard",
+          "item": [
+            {
+              "name": "adminDashboard",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": ""
+                },
+                "url": {
+                  "raw": "{{url}}admin/dashboard",
+                  "host": [
+                    "{{url}}admin"
+                  ],
+                  "path": [
+                    "dashboard"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
           "name": "admin Faqs",
           "item": [
             {
@@ -43879,7 +44480,12 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"question\": \"\",\n    \"answer\": \"\",\n    \"type\": \"\"\n}"
+                  "raw": "{\n    \"question\": \"abcd User\",\n    \"answer\": \"ksjfhkjsdfkjfdohedlk\",\n    \"type\": \"user\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{url}}admin/faqs",
@@ -44079,7 +44685,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{url}}notifications?limit=10&page=900",
+              "raw": "{{url}}notifications?limit=10&page=1",
               "host": [
                 "{{url}}notifications"
               ],
@@ -44090,7 +44696,7 @@
                 },
                 {
                   "key": "page",
-                  "value": "900"
+                  "value": "1"
                 },
                 {
                   "key": "keyword",
@@ -44107,6 +44713,15 @@
           "request": {
             "method": "PUT",
             "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{url}}notifications/:id/read",
               "host": [
@@ -44419,40 +45034,440 @@
       ]
     },
     {
-      "name": "health",
-      "event": [
+      "name": "Conversation/Messages",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              ""
-            ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
-          }
+          "name": "chats",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations?page=1&limit=10",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "chatState",
+                  "value": "default",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
         },
+        {
+          "name": "chats action",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"action\": \"default\" //\"default\", \"favorite\", \"archived\", \"blocked\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/:conversationId/action",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                ":conversationId",
+                "action"
+              ],
+              "variable": [
+                {
+                  "key": "conversationId",
+                  "value": "6a2112c5935a252e041bb09c"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "messages",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/messages?page=1&limit=10&objectId=6a27ed7740df44c0ff479a19",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "conversationId",
+                  "value": "6a28017240df44c0ff47a2a0",
+                  "description": "either this",
+                  "disabled": true
+                },
+                {
+                  "key": "objectId",
+                  "value": "6a27ed7740df44c0ff479a19",
+                  "description": "either this"
+                }
+              ]
+            },
+            "description": "/:otherUserId/messages"
+          },
+          "response": []
+        },
+        {
+          "name": "messages by objectId",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/messages/object/:objectId/messages?page=1&limit=10",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                "messages",
+                "object",
+                ":objectId",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "objectId",
+                  "value": "6a27ed7740df44c0ff479a19"
+                }
+              ]
+            },
+            "description": "used when user going to chat from other user profile (When conversation id is not present)"
+          },
+          "response": []
+        },
+        {
+          "name": "delete message",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/messages/:messageId",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                "messages",
+                ":messageId"
+              ],
+              "variable": [
+                {
+                  "key": "messageId",
+                  "value": "6715ef3463c0864b47a49021"
+                }
+              ]
+            },
+            "description": "/message/:messageId"
+          },
+          "response": []
+        },
+        {
+          "name": "delete conversation",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/:conversationId",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                ":conversationId"
+              ],
+              "variable": [
+                {
+                  "key": "conversationId",
+                  "value": "684034aaaa8755caed3592c1"
+                }
+              ]
+            },
+            "description": "/message/:messageId"
+          },
+          "response": []
+        },
+        {
+          "name": "sendMessage 1-1 new",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageType\": \"text\", //\"text\", \"audio\", \"file\"\n  \"messageContent\": \"Hello! How are you Ali\",\n  \"conversationType\": \"direct\",\n  \"participantId\": \"69dcc133f336524e3b2f3ee1\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/message",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                "message"
+              ]
+            },
+            "description": "used to send a message to user  \nyou can also use \"sendMessage 1-1 with conversationId\" when user going from chats screen as you will have conversationId"
+          },
+          "response": []
+        },
+        {
+          "name": "sendMessage 1-1 with conversationId",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageType\": \"text\",\n  \"messageContent\": \"Hello\",\n  \"conversationType\": \"direct\",\n  \"conversationId\":\"6a27f9bde8db719490180e5e\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/message",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                "message"
+              ]
+            },
+            "description": "get messages against conversation id  \nsame API for direct/group chats"
+          },
+          "response": []
+        },
+        {
+          "name": "sendMessage group start conversation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageType\": \"text\",\n  \"messageContent\": \"Welcome to the group chat!\",\n  \"conversationType\": \"group\",\n  \"groupName\": \"Tech Group\",\n  \"participantIds\": [\"6835921d77c92269db5b476d\"] //optional\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/message",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                "message"
+              ]
+            },
+            "description": "optional participants array  \nby default there will be admin as participant"
+          },
+          "response": []
+        },
+        {
+          "name": "sendMessage group",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageType\": \"text\",\n  \"messageContent\": \"Welcome to the group chat 1\",\n  \"conversationType\": \"group\",\n  \"conversationId\":\"683fe5a0b57efc82bfa07f80\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/message",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                "message"
+              ]
+            },
+            "description": "send group message against conversationId"
+          },
+          "response": []
+        },
+        {
+          "name": "addParticipant To Group",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"participants\": [\"6835921d77c92269db5b476d\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}conversations/:conversationId/participants",
+              "host": [
+                "{{url}}conversations"
+              ],
+              "path": [
+                ":conversationId",
+                "participants"
+              ],
+              "variable": [
+                {
+                  "key": "conversationId",
+                  "value": "6840357343d60445b319f5ec"
+                }
+              ]
+            },
+            "description": "/:otherUserId/message"
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{tokenUser}}",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
         {
           "listen": "prerequest",
           "script": {
-            "exec": [
-              ""
-            ],
             "type": "text/javascript",
             "packages": {},
-            "requests": {}
+            "requests": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {},
+            "exec": [
+              ""
+            ]
           }
         }
-      ],
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
+      ]
+    },
+    {
+      "name": "public Staff",
       "request": {
-        "method": "GET",
+        "method": "POST",
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "",
+          "raw": "{\n    \"location\": {\n        \"title\": \"First Test\",\n        \"coordinates\": [\n            10,\n            20\n        ],\n        \"fullAddress\": \"14384 Yost Points\",\n        \"city\": \"South Retha\",\n        \"country\": \"Morocco\",\n        \"state\": \"punjab\",\n        \"postalCode\": \"12345\",\n        \"type\": \"Point\"\n    },\n    \"speciality\": \"generalNurse\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -44460,69 +45475,13 @@
           }
         },
         "url": {
-          "raw": "http://localhost:4012/health/",
-          "protocol": "http",
+          "raw": "{{url}}public/staff/search",
           "host": [
-            "localhost"
-          ],
-          "port": "4012",
-          "path": [
-            "health",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "weither",
-      "request": {
-        "auth": {
-          "type": "noauth"
-        },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "https://api.open-meteo.com/v1/forecast?latitude=31.558&longitude=74.3507&daily=weather_code,sunrise,sunset,uv_index_clear_sky_max,uv_index_max,temperature_2m_mean,relative_humidity_2m_max,relative_humidity_2m_min,wet_bulb_temperature_2m_mean&current=temperature_2m,is_day,rain,showers,snowfall&timezone=America%2FAnchorage&start_date=2026-07-08&end_date=2026-07-22",
-          "protocol": "https",
-          "host": [
-            "api",
-            "open-meteo",
-            "com"
+            "{{url}}public"
           ],
           "path": [
-            "v1",
-            "forecast"
-          ],
-          "query": [
-            {
-              "key": "latitude",
-              "value": "31.558"
-            },
-            {
-              "key": "longitude",
-              "value": "74.3507"
-            },
-            {
-              "key": "daily",
-              "value": "weather_code,sunrise,sunset,uv_index_clear_sky_max,uv_index_max,temperature_2m_mean,relative_humidity_2m_max,relative_humidity_2m_min,wet_bulb_temperature_2m_mean"
-            },
-            {
-              "key": "current",
-              "value": "temperature_2m,is_day,rain,showers,snowfall"
-            },
-            {
-              "key": "timezone",
-              "value": "America%2FAnchorage"
-            },
-            {
-              "key": "start_date",
-              "value": "2026-07-08"
-            },
-            {
-              "key": "end_date",
-              "value": "2026-07-22"
-            }
+            "staff",
+            "search"
           ]
         }
       },
@@ -44570,7 +45529,8 @@
     },
     {
       "key": "json_web_token_0dcc",
-      "secret": true
+      "value": "",
+      "disabled": true
     }
   ]
 }
