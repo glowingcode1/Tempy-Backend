@@ -1,8 +1,7 @@
 name: CI/CD for Dev Environment
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - dev
   workflow_dispatch:
