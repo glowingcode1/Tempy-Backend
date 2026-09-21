@@ -117,6 +117,8 @@ const getBid = async (req, res) => {
   const { page, limit } = parsePaginationParams(req);
   let { keyword, status, user, dateFilter } = req.query;
 
+  const idOfBider = req.user._id;
+
   const customer = await customerTypes.includes(req.user.userType);
   const supplier = await supplierTypes.includes(req.user.userType);
   let jobCreator = req.user._id;
