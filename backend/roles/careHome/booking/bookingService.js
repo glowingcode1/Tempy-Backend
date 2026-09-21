@@ -887,13 +887,14 @@ const updateBookingCheckinCheckout = async (id, data) => {
   return Booking;
 };
 /*
- * Hand in the picture and signature for a shift the sweep closed. Only that
- * case can be missing them — a manual check-out collects both — so this is
- * the one way a worker clears the block on their next check-in.
+ * Hand in the picture, signature and reason for a shift the sweep closed.
+ * Only that case can be missing them — a manual check-out collects the pair
+ * and has nothing to explain — so this is the one way a worker clears the
+ * block on their next check-in.
  */
 const submitCheckOutProof = async (
   id,
-  { workerId, proofPicture, signature },
+  { workerId, proofPicture, signature, reason },
 ) => {
   const Booking = await BookingRepo.findBookingById_(id);
 
@@ -915,6 +916,7 @@ const submitCheckOutProof = async (
 
   Booking.attendance.checkOutProofPicture = proofPicture;
   Booking.attendance.checkOutSignature = signature;
+  Booking.attendance.checkOutReason = reason;
 
   await Booking.save();
 

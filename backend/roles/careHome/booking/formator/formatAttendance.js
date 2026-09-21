@@ -18,7 +18,7 @@ const formatAttendance = (attendance, timezone) => {
     checkOutSignature: getFullImageUrl(attendance.checkOutSignature),
     /*
      * The shift was closed by the system and the worker still owes the
-     * picture and signature for it — which is what blocks their next
+     * picture, signature and reason for it — which is what blocks their next
      * check-in, so the app needs to see it.
      */
     checkOutProofPending: Boolean(
