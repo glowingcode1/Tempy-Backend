@@ -239,8 +239,16 @@ const formatCalendar = ({
       const p = b.payment || {};
       acc.totalShifts += 1;
       acc.totalHours += p.totalHours || 0;
-      acc.totalCost += p.totalAmount || 0;
-      acc.totalPaidToWorker += p.amountPayedToWorker || 0;
+      /*
+       * A customer's figure is the gross they pay; a supplier's is the net
+       * they receive once the platform fee is taken out.
+       */
+      acc.totalCost += (customer ? p.amount : p.totalAmount) || 0;
+      /*
+       * What reaches the supply side. This read amountPayedToWorker, a payout
+       * field nothing writes yet, so it was always zero.
+       */
+      acc.totalPaidToWorker += p.totalAmount || 0;
       return acc;
     },
     { totalShifts: 0, totalHours: 0, totalCost: 0, totalPaidToWorker: 0 },

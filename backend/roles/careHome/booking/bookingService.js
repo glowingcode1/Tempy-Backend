@@ -34,7 +34,7 @@ const {
   getStaffIdsByUser,
   findStaffByUserAndStaff,
 } = require("../../../roles/aggency/staff/staffRepository");
-const { customerTypes, supplierTypes } = require("@UsersModel");
+const { customerTypes } = require("@UsersModel");
 const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
 const { recordLateCancellation } = require("./cancellationStrikes");
 const {
@@ -962,14 +962,18 @@ const getShiftPlanCalendar = async ({
   return formatShiftPlan(bookings, timezone);
 };
 
-const getEarnings = async ({ userId, userType, from, to }) => {
+/*
+ * The role flags this used to pass are resolved from userType inside the
+ * earnings module now, so customer and supplier can never be decided two
+ * different ways.
+ */
+const getEarnings = async ({ userId, userType, timezone, from, to }) => {
   return BookingRepo.getEarnings({
     userId,
     userType,
+    timezone,
     from,
     to,
-    customer: customerTypes.includes(userType),
-    supplier: supplierTypes.includes(userType),
   });
 };
 module.exports = {

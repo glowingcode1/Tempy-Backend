@@ -10,6 +10,9 @@ const {
 } = require("@helperUtils/responseUtil");
 const { DEFAULT_CURRENCY } = require("@helperUtils/constants");
 const {
+  getEarningsSummary,
+} = require("../../careHome/booking/earnings");
+const {
   withUserReviews,
 } = require("../../../commonModules/reviews/reviewRepository");
 
@@ -126,24 +129,28 @@ const getBookingUserMatch = ({ userId, userType }) => {
    EARNINGS
 ========================================================= */
 
+/*
+ * The home screen shows this month and this week; the shared summary builds
+ * both, along with the running total the header shows beside them.
+ */
 const getEarnings = async ({ userId, timezone, userType }) => {
-  const now = moment.tz(timezone);
-
-  const monthStart = now.clone().startOf("month");
-  const weekStart = now.clone().startOf("isoWeek");
+  const summary = await getEarningsSummary({
+    userId,
+    userType,
+    timezone,
+  });
 
   return {
-    thisMonth: {
-      amount: 0,
-      formatted: "$0",
-      period: monthStart.format("MMMM YYYY"),
-    },
-
-    thisWeek: {
-      amount: 0,
-      formatted: "$0",
-      period: `${weekStart.format("DD MMM")} - ${now.format("DD MMM")}`,
-    },
+    thisMonth: summary.thisMonth,
+    thisWeek: summary.thisWeek,
+    total: summary.total,
+    upcoming: summary.upcoming,
+    currency: summary.currency,
+    symbol: summary.symbol,
+    type: summary.type,
+    ...(summary.agencySupplied
+      ? { agencySupplied: summary.agencySupplied }
+      : {}),
   };
 };
 

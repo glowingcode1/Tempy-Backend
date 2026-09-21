@@ -1,6 +1,9 @@
 const moment = require("moment-timezone");
 
 const Booking = require("../../careHome/booking/Booking");
+const {
+  getEarningsSummary,
+} = require("../../careHome/booking/earnings");
 const { User } = require("../../../models/UserModel");
 const { formatUserResponse } = require("@helperUtils/userResponseUtil");
 const {
@@ -125,35 +128,25 @@ const getBookingUserMatch = ({ userId, userType }) => {
    EARNINGS
 ========================================================= */
 
+/*
+ * The home screen shows this month and this week; the shared summary builds
+ * both, along with the running total the header shows beside them.
+ */
 const getEarnings = async ({ userId, timezone, userType }) => {
-  const now = moment.tz(timezone);
-
-  const monthStart = now.clone().startOf("month");
-  const weekStart = now.clone().startOf("isoWeek");
-
-  /*
-   * Earnings calculation can be connected to the actual
-   * payment records when payment processing is implemented.
-   *
-   * For now the structure follows the dashboard design:
-   *
-   * earnings:
-   *   thisMonth
-   *   thisWeek
-   */
+  const summary = await getEarningsSummary({
+    userId,
+    userType,
+    timezone,
+  });
 
   return {
-    thisMonth: {
-      amount: 0,
-      formatted: "$0",
-      period: monthStart.format("MMMM YYYY"),
-    },
-
-    thisWeek: {
-      amount: 0,
-      formatted: "$0",
-      period: `${weekStart.format("DD MMM")} - ${now.format("DD MMM")}`,
-    },
+    thisMonth: summary.thisMonth,
+    thisWeek: summary.thisWeek,
+    total: summary.total,
+    upcoming: summary.upcoming,
+    currency: summary.currency,
+    symbol: summary.symbol,
+    type: summary.type,
   };
 };
 

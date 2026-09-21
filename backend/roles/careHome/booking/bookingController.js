@@ -734,6 +734,7 @@ const getEarnings = async (req, res) => {
     const data = await BookingService.getEarnings({
       userId: req.user._id,
       userType: req.user.userType,
+      timezone: req.user.timezone,
       from: req.query.from,
       to: req.query.to,
     });

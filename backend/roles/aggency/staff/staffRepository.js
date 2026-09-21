@@ -256,8 +256,13 @@ const getStaffCustomer = async ({
               year: { $isoWeekYear: "$shift.date" },
               week: { $isoWeek: "$shift.date" },
             },
+            /*
+             * payment.totalAmount is what the shift is worth to the supply
+             * side. amountPayedToWorker is a payout field nothing writes yet,
+             * so summing it reported every worker as earning nothing.
+             */
             weekEarning: {
-              $sum: { $ifNull: ["$payment.amountPayedToWorker", 0] },
+              $sum: { $ifNull: ["$payment.totalAmount", 0] },
             },
           },
         },
