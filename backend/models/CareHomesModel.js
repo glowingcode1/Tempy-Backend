@@ -18,7 +18,7 @@ const careHomeSchema = new mongoose.Schema({
   },
   registrationNumber: {
     type: String,
-    required: true,
+    required: true, 
   },
   validationDocument: [
     {
