@@ -273,12 +273,16 @@ const updateBooking = async (req, res) => {
   if (checkinCheckout) {
     const isNurse = req.user.userType === "nurse";
     /*
-     * checkOutProof is the late hand-in of the picture and signature for a
-     * shift the auto-checkout sweep closed, so it needs neither a status
-     * change nor a location — the shift is already over.
+     * checkOutProof is the late hand-in of the picture, signature and reason
+     * for a shift the auto-checkout sweep closed, so it needs neither a
+     * status change nor a location — the shift is already over.
      */
     const allowedStatuses = ["checkin", "checkout", "checkOutProof"];
     const { status, location, proofPicture, signature } = req.body;
+    // The reason is free text the worker writes, so it is trimmed before it
+    // is judged present — a field of spaces is an empty one.
+    const reason =
+      typeof req.body.reason === "string" ? req.body.reason.trim() : "";
     if (!isNurse) {
       return sendResponse({
         res,
@@ -310,6 +314,18 @@ const updateBooking = async (req, res) => {
             : "proofPicture_and_signature_required_for_checkout",
       });
     }
+    /*
+     * A shift the system closed has an unexplained gap in it: the worker was
+     * there and never checked out. The reason is what the timesheet is
+     * corrected from, so it is collected with the proof rather than after.
+     */
+    if (status === "checkOutProof" && !reason) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "reason_required_for_check_out_proof",
+      });
+    }
     try {
       const updated =
         status === "checkOutProof"
@@ -317,6 +333,7 @@ const updateBooking = async (req, res) => {
               workerId: req.user._id,
               proofPicture,
               signature,
+              reason,
             })
           : await BookingService.updateBookingCheckinCheckout(id, {
               status,

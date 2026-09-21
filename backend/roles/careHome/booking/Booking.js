@@ -137,6 +137,14 @@ const attendanceSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Why the worker never checked out, given with the late picture and
+    // signature. Only an auto-closed shift can carry one — a manual
+    // check-out has nothing to explain.
+    checkOutReason: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     checkInLocation: {
       type: {
         type: String,
