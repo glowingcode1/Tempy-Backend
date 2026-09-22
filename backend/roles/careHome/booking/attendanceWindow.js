@@ -10,7 +10,7 @@
 // Staff arrive a little early, so check-in opens shortly before the shift
 // does — but no earlier, or the timesheet starts before the shift exists.
 const CHECK_IN_EARLY_WINDOW_MIN =
-  Number(process.env.CHECK_IN_EARLY_WINDOW_MINUTES) || 15;
+  Number(process.env.CHECK_IN_EARLY_WINDOW_MINUTES) || 30;
 
 /*
  * How long after the end of a shift a worker may still check out by hand.
@@ -18,7 +18,7 @@ const CHECK_IN_EARLY_WINDOW_MIN =
  * age at which a forgotten check-out is written automatically.
  */
 const CHECK_OUT_GRACE_MIN =
-  Number(process.env.AUTO_CHECKOUT_GRACE_MINUTES) || 15;
+  Number(process.env.AUTO_CHECKOUT_GRACE_MINUTES) || 30;
 
 const toMinutes = (time) => {
   if (typeof time !== "string") return null;

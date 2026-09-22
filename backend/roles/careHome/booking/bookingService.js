@@ -737,7 +737,7 @@ const hasShiftPassed = ({ date, endTime }) => {
   return Date.now() > shiftEnd.getTime();
 };
 // Application locations are represented as [latitude, longitude].
-const isWithinRadius = (location1, location2, radiusInKm = 1) => {
+const isWithinRadius = (location1, location2, radiusInKm = 2) => {
   const [lat1, lng1] = location1.coordinates;
   const [lat2, lng2] = location2.coordinates;
 
@@ -763,7 +763,7 @@ const updateBookingCheckinCheckout = async (id, data) => {
   if (!Booking) {
     return { error: "Booking_not_found" };
   }
-  if (!isWithinRadius(Booking.snapshot.location, data.location, 1)) {
+  if (!isWithinRadius(Booking.snapshot.location, data.location, 2)) {
     return {
       error: "location_outside_allowed_radius",
     };
