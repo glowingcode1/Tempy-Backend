@@ -3,53 +3,53 @@ const {
   createAgreedRate,
   getAgreedRates,
   updateAgreedRate,
-  deleteAgreedRate,
-} = require("./agreedRatesController"); // Assuming you have a separate controller for promo codes
+  withdrawAgreedRate,
+  acceptAgreedRate,
+  rejectAgreedRate,
+  requestAgreedRateReview,
+} = require("./agreedRatesController");
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
+const roleMiddleware = require("../../../middlewares/roleMiddleware");
+const requireTermsAccepted = require("../../../middlewares/requireTermsAccepted");
 const {
   getUsersByType,
 } = require("../../admin/usersManagement/usersController");
-// const roleMiddleware = require("../../../middlewares/roleMiddleware");
+const { SUPPLIER_TYPES, CUSTOMER_TYPES } = require("./AgreedRates");
 
 const router = express.Router();
 
 router.use(auth);
 
-// Create a rate limiter for Promo Codes
-const JobRateLimiter = createRateLimiter("Jobs");
+const AgreedRateLimiter = createRateLimiter("AgreedRates");
 
-// Routes for Job Management
-// Create a new Job
-router.post(
-  "/",
-  // roleMiddleware(["admin", "careHome", "localAuthority"]),
-  JobRateLimiter,
-  createAgreedRate,
-);
+const supplierOnly = roleMiddleware(SUPPLIER_TYPES);
+const customerOnly = roleMiddleware(CUSTOMER_TYPES);
 
-// Get all Jobs with pagination
+// Both sides (and admin) can see the rates between them.
 router.get(
   "/",
-  // roleMiddleware(["admin", "careHome", "agency", "nurse", "localAuthority"]),
-  JobRateLimiter,
+  roleMiddleware(["admin", ...SUPPLIER_TYPES, ...CUSTOMER_TYPES]),
+  AgreedRateLimiter,
   getAgreedRates,
 );
 
 router.get("/users", getUsersByType);
 
-// Update an existing Job
-router.put(
-  "/:id",
-  // roleMiddleware(["admin", "careHome", "localAuthority"]),
-  updateAgreedRate,
+// The supplier sets the rate and can change it until the customer agrees.
+router.post(
+  "/",
+  supplierOnly,
+  requireTermsAccepted,
+  AgreedRateLimiter,
+  createAgreedRate,
 );
+router.put("/:id", supplierOnly, updateAgreedRate);
+router.put("/:id/withdraw", supplierOnly, withdrawAgreedRate);
 
-// Delete a Job
-router.delete(
-  "/:id",
-  // roleMiddleware(["admin", "careHome", "localAuthority"]),
-  deleteAgreedRate,
-);
+// The customer accepts, rejects or asks for a lower rate.
+router.put("/:id/accept", customerOnly, acceptAgreedRate);
+router.put("/:id/reject", customerOnly, rejectAgreedRate);
+router.put("/:id/review", customerOnly, requestAgreedRateReview);
 
 module.exports = router;

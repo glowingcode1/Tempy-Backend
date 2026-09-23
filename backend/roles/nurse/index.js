@@ -22,5 +22,8 @@ router.use(
   "/dashboard",
   require("../aggency/supplierDashboard/supplierDashboardRoutes"),
 );
+router.use("/agreed-rates", require("../careHome/agreedRates/agreedRatesRoutes"));
+router.use("/contracts", require("../../commonModules/supplierRelationship/supplierRelationshipRoutes"));
+router.use("/permanent-hires", require("../../commonModules/permanentHire/permanentHireRoutes"));
 
 module.exports = router;

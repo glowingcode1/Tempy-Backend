@@ -11,6 +11,7 @@ const createRateLimiter = require("../../../helperUtils/rateLimiter");
 const auth = require("../../../middlewares/authMiddleware");
 const roleMiddleware = require("../../../middlewares/roleMiddleware");
 const requireVerifiedAccount = require("../../../middlewares/requireVerifiedAccount");
+const requireTermsAccepted = require("../../../middlewares/requireTermsAccepted");
 
 const router = express.Router();
 
@@ -33,6 +34,7 @@ router.post(
     "user",
   ]),
   requireVerifiedAccount,
+  requireTermsAccepted,
   BidRateLimiter,
   createBid,
 );

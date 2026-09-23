@@ -1,27 +1,23 @@
-const { getFullImageUrl } = require("@helperUtils/imageHelper.js");
+const { withFullProfileIcon } = require("@helperUtils/imageHelper.js");
 
 const responseUtil = require("../../../../helperUtils/responseUtil.js");
 
 const { convertUtcToTimezone } = responseUtil;
+
+const toTimezone = (date, timezone) =>
+  date ? convertUtcToTimezone(date, timezone) : date;
 
 const formatAgreedRateToTimezone = (agreedRate, timezone) => {
   if (!agreedRate) return agreedRate;
 
   return {
     ...agreedRate,
-    objectId:
-      agreedRate.objectId && typeof agreedRate.objectId === "object"
-        ? {
-            ...agreedRate.objectId,
-            profileIcon: getFullImageUrl(agreedRate.objectId?.profileIcon),
-          }
-        : agreedRate.objectId,
-    createdAt: agreedRate.createdAt
-      ? convertUtcToTimezone(agreedRate.createdAt, timezone)
-      : agreedRate.createdAt,
-    updatedAt: agreedRate.updatedAt
-      ? convertUtcToTimezone(agreedRate.updatedAt, timezone)
-      : agreedRate.updatedAt,
+    supplier: withFullProfileIcon(agreedRate.supplier),
+    customer: withFullProfileIcon(agreedRate.customer),
+    effectiveFrom: toTimezone(agreedRate.effectiveFrom, timezone),
+    respondedAt: toTimezone(agreedRate.respondedAt, timezone),
+    createdAt: toTimezone(agreedRate.createdAt, timezone),
+    updatedAt: toTimezone(agreedRate.updatedAt, timezone),
   };
 };
 

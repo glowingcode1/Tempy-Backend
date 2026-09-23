@@ -25,4 +25,7 @@ router.use(
   "/home",
   require("../../localAuthority/customerHome/customerHomeRoutes"),
 );
+router.use("/contracts", require("../../../commonModules/supplierRelationship/supplierRelationshipRoutes"));
+router.use("/permanent-hires", require("../../../commonModules/permanentHire/permanentHireRoutes"));
+
 module.exports = router;

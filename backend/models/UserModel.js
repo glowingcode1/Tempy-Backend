@@ -370,6 +370,12 @@ const userSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    // Suppliers only: the terms version they accepted and when. When admin
+    // publishes a new version they have to accept again.
+    termsAccepted: {
+      version: { type: Number, default: 0 },
+      acceptedAt: { type: Date, default: null },
+    },
     //last signed in
     lastSignedIn: {
       type: Date,

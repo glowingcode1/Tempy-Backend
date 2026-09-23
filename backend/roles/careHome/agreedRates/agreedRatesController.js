@@ -1,264 +1,148 @@
-const {
-  sendResponse,
-  parsePaginationParams,
-  validateParams,
-  getReadableErrorMessage,
-} = require("../../../helperUtils/responseUtil");
-
+const { isValidObjectId } = require("mongoose");
+const { parsePaginationParams } = require("@helperUtils/responseUtil");
+const sendServiceResult = require("@helperUtils/sendServiceResult");
 const AgreedRateService = require("./agreedRatesService");
+const { notifyAgreedRate } = require("./agreedRateNotifications");
 
-const RATE_TYPES = ["hourly", "fixed"];
-
-const createAgreedRate = async (req, res) => {
-  let { objectType, objectId, jobType, rateType, rate, autoAssign } =
-    req.body;
-  let user = req.user._id;
-
-  if (req.user.userType === "admin") {
-    if (!req.body.userId) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "userId_required",
-      });
-    }
-    user = req.body.userId;
-  }
-
-  if (
-    !validateParams(req, res, {
-      rawData: ["objectType", "objectId", "jobType", "rateType", "rate"],
-      objectIdFields: ["objectId", "jobType"],
-    })
-  )
-    return;
-
-  if (!RATE_TYPES.includes(rateType)) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "rateType_must_be_hourly_or_fixed",
-    });
-  }
-
-  if (!(Number(rate) > 0)) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "rate_must_be_greater_than_zero",
-    });
-  }
-
-  const data = {
-    user,
-    objectType,
-    objectId,
-    jobType,
-    rateType,
-    rate,
-    autoAssign,
-  };
-
-  try {
-    const agreedRate = await AgreedRateService.createAgreedRate(data);
-
-    if (agreedRate && agreedRate.error) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: agreedRate.error,
-      });
-    }
-
-    if (!agreedRate) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: "AgreedRate_creation_failed",
-      });
-    }
-
-    return sendResponse({
-      res,
-      statusCode: 201,
-      translationKey: "AgreedRate_created_successfully",
-      data: agreedRate,
-    });
-  } catch (error) {
-    const readableError = getReadableErrorMessage(error);
-    return sendResponse({
-      res,
-      statusCode: readableError.statusCode,
-      translationKey: readableError.message,
-      error,
-    });
-  }
+// Runs the handler, then tells the other side if it succeeded.
+const withNotification = (action, handler) => async (req) => {
+  const result = await handler(req);
+  if (result?.data) notifyAgreedRate(action, result.data, req.user);
+  return result;
 };
 
-const getAgreedRates = async (req, res) => {
-  const { page, limit } = parsePaginationParams(req);
-  let { keyword, status, objectType, objectId, jobType, user } =
-    req.query;
+const RATE_KEYS = ["day", "night", "weekend"];
 
-  // non-admins only ever see their own agreed rates
-  if (req.user.userType !== "admin") {
-    user = req.user._id;
+// Day, night and weekend rates, all above zero. Returns null if invalid.
+const parseRates = (rates) => {
+  if (!rates) return null;
+  const parsed = {};
+  for (const key of RATE_KEYS) {
+    const value = Number(rates[key]);
+    if (!(value > 0)) return null;
+    parsed[key] = value;
   }
+  return parsed;
+};
 
-  try {
-    const timezone = req.user.timezone;
-    const { AgreedRates, meta } = await AgreedRateService.getAgreedRates({
-      timezone,
-      page,
-      limit,
-      keyword,
-      status,
-      user,
-      objectType,
-      objectId,
+// undefined when not sent, null when sent but not a date.
+const parseDate = (value) => {
+  if (value === undefined || value === null || value === "") return undefined;
+  const date = new Date(value);
+  return isNaN(date) ? null : date;
+};
+
+const createAgreedRate = sendServiceResult(
+  withNotification("created", async (req) => {
+    const { customer, jobType } = req.body;
+    const rates = parseRates(req.body.rates);
+    const effectiveFrom = parseDate(req.body.effectiveFrom);
+
+    if (!isValidObjectId(customer) || !isValidObjectId(jobType)) {
+      return { error: "customer_and_jobType_required" };
+    }
+    if (!rates) return { error: "day_night_weekend_rates_required" };
+    if (effectiveFrom === null) return { error: "invalid_effectiveFrom" };
+
+    return AgreedRateService.createAgreedRate({
+      supplier: req.user._id,
+      supplierType: req.user.userType,
+      customer,
       jobType,
+      rates,
+      effectiveFrom,
+      timezone: req.user.timezone,
     });
+  }),
+  "AgreedRate_created_successfully",
+  201,
+);
 
-    return sendResponse({
-      res,
-      statusCode: 200,
-      translationKey: "AgreedRates_fetched_successfully",
-      data: AgreedRates,
-      meta,
-    });
-  } catch (error) {
-    const readableError = getReadableErrorMessage(error);
-    return sendResponse({
-      res,
-      statusCode: readableError.statusCode,
-      translationKey: readableError.message,
-      error,
-    });
-  }
-};
+const getAgreedRates = sendServiceResult(async (req) => {
+  const { page, limit } = parsePaginationParams(req);
+  const { status, supplier, customer, jobType } = req.query;
 
-const updateAgreedRate = async (req, res) => {
-  const { id } = req.params;
-  const {
-    objectType,
-    objectId,
-    jobType,
-    rateType,
-    rate,
-    autoAssign,
+  return AgreedRateService.getAgreedRates({
+    userId: req.user._id,
+    userType: req.user.userType,
+    timezone: req.user.timezone,
+    page,
+    limit,
     status,
-  } = req.body;
-
-  if (
-    !validateParams(req, res, {
-      pathParams: ["id"],
-      objectIdFields: ["id"],
-    })
-  )
-    return;
-
-  if (rateType && !RATE_TYPES.includes(rateType)) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "rateType_must_be_hourly_or_fixed",
-    });
-  }
-
-  if (rate !== undefined && !(Number(rate) > 0)) {
-    return sendResponse({
-      res,
-      statusCode: 400,
-      translationKey: "rate_must_be_greater_than_zero",
-    });
-  }
-
-  const data = {
-    objectType,
-    objectId,
+    supplier,
+    customer,
     jobType,
-    rateType,
-    rate,
-    autoAssign,
-    status,
-  };
+  });
+}, "AgreedRates_fetched_successfully");
 
-  try {
-    const updated = await AgreedRateService.updateAgreedRate(id, data);
+const updateAgreedRate = sendServiceResult(
+  withNotification("updated", async (req) => {
+    const rates = req.body.rates ? parseRates(req.body.rates) : undefined;
+    const effectiveFrom = parseDate(req.body.effectiveFrom);
 
-    if (updated && updated.error) {
-      return sendResponse({
-        res,
-        statusCode: 400,
-        translationKey: updated.error,
+    if (rates === null) return { error: "day_night_weekend_rates_required" };
+    if (effectiveFrom === null) return { error: "invalid_effectiveFrom" };
+
+    return AgreedRateService.updateAgreedRate({
+      id: req.params.id,
+      supplier: req.user._id,
+      rates,
+      effectiveFrom,
+      timezone: req.user.timezone,
+    });
+  }),
+  "AgreedRate_updated_successfully",
+);
+
+const withdrawAgreedRate = sendServiceResult(
+  withNotification("withdrawn", async (req) =>
+    AgreedRateService.withdrawAgreedRate({
+      id: req.params.id,
+      supplier: req.user._id,
+      timezone: req.user.timezone,
+    }),
+  ),
+  "AgreedRate_withdrawn_successfully",
+);
+
+// accept / reject / review, taken from the route.
+const respondToAgreedRate = (action, successKey) =>
+  sendServiceResult(
+    withNotification(action, async (req) => {
+      let requestedRates;
+      if (action === "review" && req.body.requestedRates) {
+        requestedRates = parseRates(req.body.requestedRates);
+        if (!requestedRates)
+          return { error: "day_night_weekend_rates_required" };
+      }
+
+      return AgreedRateService.respondToAgreedRate({
+        id: req.params.id,
+        customer: req.user._id,
+        action,
+        note: req.body.note,
+        requestedRates,
+        timezone: req.user.timezone,
       });
-    }
-
-    if (!updated) {
-      return sendResponse({
-        res,
-        statusCode: 404,
-        translationKey: "AgreedRate_not_found",
-      });
-    }
-
-    return sendResponse({
-      res,
-      statusCode: 200,
-      translationKey: "AgreedRate_updated_successfully",
-      data: updated,
-    });
-  } catch (error) {
-    const readableError = getReadableErrorMessage(error);
-    return sendResponse({
-      res,
-      statusCode: readableError.statusCode,
-      translationKey: readableError.message,
-      error,
-    });
-  }
-};
-
-const deleteAgreedRate = async (req, res) => {
-  const { id } = req.params;
-
-  if (
-    !validateParams(req, res, {
-      pathParams: ["id"],
-      objectIdFields: ["id"],
-    })
-  )
-    return;
-
-  try {
-    const deleted = await AgreedRateService.deleteAgreedRate(id);
-    if (!deleted) {
-      return sendResponse({
-        res,
-        statusCode: 404,
-        translationKey: "AgreedRate_not_found",
-      });
-    }
-
-    return sendResponse({
-      res,
-      statusCode: 200,
-      translationKey: "AgreedRate_deleted_successfully",
-    });
-  } catch (error) {
-    const readableError = getReadableErrorMessage(error);
-    return sendResponse({
-      res,
-      statusCode: readableError.statusCode,
-      translationKey: readableError.message,
-      error,
-    });
-  }
-};
+    }),
+    successKey,
+  );
 
 module.exports = {
   createAgreedRate,
   getAgreedRates,
   updateAgreedRate,
-  deleteAgreedRate,
+  withdrawAgreedRate,
+  acceptAgreedRate: respondToAgreedRate(
+    "accept",
+    "AgreedRate_accepted_successfully",
+  ),
+  rejectAgreedRate: respondToAgreedRate(
+    "reject",
+    "AgreedRate_rejected_successfully",
+  ),
+  requestAgreedRateReview: respondToAgreedRate(
+    "review",
+    "AgreedRate_review_requested_successfully",
+  ),
 };

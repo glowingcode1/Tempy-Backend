@@ -16,5 +16,8 @@ router.use("/staff", require("../../aggency/staff/staffRoutes"));
 router.use("/address", require("../../nurse/address/addressRoutes"));
 router.use("/branches", require("../../aggency/branches/branchesRoutes"));
 router.use("/booking", require("../../careHome/booking/bookingRoutes"));
+router.use("/agreed-rates", require("../../careHome/agreedRates/agreedRatesRoutes"));
+router.use("/contracts", require("../../../commonModules/supplierRelationship/supplierRelationshipRoutes"));
+router.use("/permanent-hires", require("../../../commonModules/permanentHire/permanentHireRoutes"));
 
 module.exports = router;

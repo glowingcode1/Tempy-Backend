@@ -22,6 +22,9 @@ const {
   getReviewsForObjects,
 } = require("../../../commonModules/reviews/reviewRepository");
 const moment = require("moment-timezone");
+const {
+  hasSignedContract,
+} = require("../../../commonModules/supplierRelationship/supplierRelationshipService");
 
 // Application locations are represented as [latitude, longitude].
 /*
@@ -115,6 +118,11 @@ const updateJobBidStatus = async (id, status, user) => {
      */
     if (JobBid.status !== "pending") {
       return { error: "Bid_not_available" };
+    }
+
+    // The supplier's contract must be signed before the first shift.
+    if (!(await hasSignedContract(JobBid.user, JobBid.jobCreator))) {
+      return { error: "Contract_must_be_signed_before_first_shift" };
     }
 
     /*
