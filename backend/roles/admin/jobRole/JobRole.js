@@ -29,7 +29,10 @@ const JobRoleSchema = new mongoose.Schema(
 
 JobRoleSchema.index(
   { department: 1, title: 1 },
-  { unique: true, partialFilterExpression: { status: { $ne: "deleted" } } }
+  {
+    unique: true,
+    partialFilterExpression: { status: { $in: ["active", "inactive"] } },
+  }
 );
 
 const JobRole = mongoose.model("JobRole", JobRoleSchema);

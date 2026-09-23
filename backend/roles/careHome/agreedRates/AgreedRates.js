@@ -61,25 +61,10 @@ const AgreedRateSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-// Partial indexes do not accept $ne, so the live statuses are listed instead.
 AgreedRateSchema.index(
-  { user: 1, objectId: 1, jobType: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { status: { $in: ["active", "inactive"] } },
-  },
+  { user: 1, objectId: 1, JobType: 1 },
+  { unique: true, partialFilterExpression: { status: { $ne: "deleted" } } },
 );
 const AgreedRate = mongoose.model("AgreedRate", AgreedRateSchema);
-
-/*
- * The index used to be declared on "JobType", a field that does not exist, so
- * if it was ever built it indexed every rate as null and allowed only one rate
- * per partner. Mongoose never drops old indexes, so it is removed here; when
- * it does not exist the error is ignored.
- */
-mongoose.connection
-  .asPromise()
-  .then(() => AgreedRate.collection.dropIndex("user_1_objectId_1_JobType_1"))
-  .catch(() => {});
 
 module.exports = AgreedRate;

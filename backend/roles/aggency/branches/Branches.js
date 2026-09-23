@@ -64,7 +64,7 @@ BranchesSchema.index(
   {
     unique: true,
     partialFilterExpression: {
-      status: { $ne: "deleted" },
+      status: { $in: ["active", "inactive", "pending"] },
     },
   },
 );
