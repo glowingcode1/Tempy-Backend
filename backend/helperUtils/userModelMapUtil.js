@@ -1,7 +1,7 @@
 const USER_MODEL_MAP = {
   careHome: require("../models/CareHomesModel"),
   nurse: require("../models/Nurse"),
-  HomeCareCompany: require("../models/HomeCareCompanyModel"),
+  homeCareCompany: require("../models/HomeCareCompanyModel"),
   localAuthority: require("../models/LocalAuthority"),
   hospital: require("../models/HospitalModel"),
   agency: require("../models/AgencyModel"),

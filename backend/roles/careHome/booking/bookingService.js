@@ -84,10 +84,19 @@ const getWeather = async ({
   }
 };
 
+/*
+ * The money fields of a booking. A bid is an hourly rate, so the shift is
+ * worth rate x hours worked (shift length minus the break):
+ *
+ *   amount       rate x hours, the gross the customer pays
+ *   perHour      the agreed hourly rate
+ *   platformFee  amount x PLATFORM_FEE
+ *   totalAmount  amount - platformFee, what the supply side receives
+ */
 const calculatePayment = (
   startTime,
   endTime,
-  amount,
+  hourlyRate,
   breakMin,
   platformFee,
 ) => {
@@ -101,15 +110,17 @@ const calculatePayment = (
   if (end < start) {
     end += 24 * 60;
   }
-  const platformAmount = amount * platformFee;
-  const totalMinutes = end - start - breakMin;
-  const totalHours = totalMinutes / 60;
-  const perHourRate = (amount - platformAmount) / totalHours;
+  const totalMinutes = Math.max(0, end - start - (breakMin || 0));
+  const totalHours = +(totalMinutes / 60).toFixed(2);
+  const amount = +(hourlyRate * totalHours).toFixed(2);
+  const platformAmount = +(amount * platformFee).toFixed(2);
 
   return {
-    totalHours: +totalHours.toFixed(2),
-    perHourRate: +perHourRate.toFixed(2),
-    platformAmount: +platformAmount.toFixed(2),
+    amount,
+    perHour: hourlyRate,
+    totalHours,
+    platformFee: platformAmount,
+    totalAmount: +(amount - platformAmount).toFixed(2),
   };
 };
 
@@ -213,11 +224,7 @@ const createBooking = async (data) => {
       job: bid.job,
 
       payment: {
-        amount: bid.bid,
-        perHour: payment.perHourRate,
-        totalHours: payment.totalHours,
-        platformFee: payment.platformAmount,
-        totalAmount: +(bid.bid - payment.platformAmount).toFixed(2),
+        ...payment,
 
         // Keep these ready for future payment processing.
         amountPayedToWorker: 0,
@@ -357,11 +364,7 @@ const createBooking = async (data) => {
     job: bid.job,
 
     payment: {
-      amount: bid.bid,
-      perHour: payment.perHourRate,
-      totalHours: payment.totalHours,
-      platformFee: payment.platformAmount,
-      totalAmount: +(bid.bid - payment.platformAmount).toFixed(2),
+      ...payment,
 
       amountPayedToWorker: 0,
       amountPayedToEmployer: 0,
@@ -969,13 +972,23 @@ const getShiftPlanCalendar = async ({
  * earnings module now, so customer and supplier can never be decided two
  * different ways.
  */
-const getEarnings = async ({ userId, userType, timezone, from, to }) => {
+const getEarnings = async ({
+  userId,
+  userType,
+  timezone,
+  from,
+  to,
+  page,
+  limit,
+}) => {
   return BookingRepo.getEarnings({
     userId,
     userType,
     timezone,
     from,
     to,
+    page,
+    limit,
   });
 };
 module.exports = {
@@ -990,4 +1003,5 @@ module.exports = {
   getBookingCheckInLogs,
   getShiftPlanCalendar,
   getEarnings,
+  calculatePayment,
 };

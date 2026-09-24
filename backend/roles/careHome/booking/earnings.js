@@ -7,6 +7,11 @@ const {
   DEFAULT_CURRENCY_SYMBOL,
 } = require("@helperUtils/constants");
 const { customerTypes } = require("../../../models/UserModel");
+const { formatShiftToTimezone } = require("@helperUtils/responseUtil");
+const {
+  getFullImageUrl,
+  withFullProfileIcon,
+} = require("@helperUtils/imageHelper");
 
 /*
  * What a booking is worth, and to whom.
@@ -322,10 +327,88 @@ const getEarningsSummary = async ({
   return summary;
 };
 
+const PARTY_FIELDS = "name profileIcon companyName accountState.userType";
+
+/*
+ * The bookings behind the earned total, newest shift first: the same
+ * account, statuses and from/to range, so the rows add up to `total`.
+ * Each row carries this account's side of the money, like the totals do.
+ */
+const getEarningsHistory = async ({
+  userId,
+  userType,
+  role: roleOverride,
+  timezone = "UTC",
+  from,
+  to,
+  page = 1,
+  limit = 10,
+}) => {
+  const resolved = resolveRole(userType, roleOverride);
+
+  if (!resolved) return { history: [], total: 0 };
+
+  const { role, ownerField } = resolved;
+  const range = shiftDateRange(from, to);
+
+  const match = {
+    [ownerField]: toObjectId(userId),
+    ...directOnly(role),
+    status: { $in: EARNED_STATUSES },
+    ...(range ? { "shift.date": range } : {}),
+  };
+
+  const [bookings, total] = await Promise.all([
+    Booking.find(match)
+      .select(
+        "status shift snapshot.name snapshot.image payment user worker employer",
+      )
+      .sort({ "shift.date": -1, "shift.startTime": -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate([
+        { path: "user", select: PARTY_FIELDS },
+        { path: "worker", select: PARTY_FIELDS },
+        { path: "employer", select: PARTY_FIELDS },
+      ])
+      .lean(),
+    Booking.countDocuments(match),
+  ]);
+
+  const history = bookings.map((booking) => {
+    const payment = booking.payment || {};
+    const amount =
+      role === "customer" ? payment.amount : payment.totalAmount;
+
+    return {
+      _id: booking._id,
+      status: booking.status,
+      jobName: booking.snapshot?.name || "",
+      jobImage: booking.snapshot?.image
+        ? getFullImageUrl(booking.snapshot.image)
+        : "",
+      shift: formatShiftToTimezone(booking.shift, timezone),
+      hours: round(payment.totalHours),
+      rate: round(payment.perHour),
+      amount: round(amount),
+      formatted: formatMoney(amount),
+      platformFee: round(payment.platformFee),
+      paymentStatus: payment.status || "pending",
+      customer: withFullProfileIcon(booking.user),
+      worker: withFullProfileIcon(booking.worker),
+      // The agency or home care company, or null for a nurse's own booking.
+      employer: withFullProfileIcon(booking.employer),
+    };
+  });
+
+  return { history, total };
+};
+
 module.exports = {
   EARNED_STATUSES,
   UPCOMING_STATUSES,
   formatMoney,
   resolveRole,
   getEarningsSummary,
+  getEarningsHistory,
 };

@@ -747,13 +747,17 @@ const getShiftPlanCalendar = async (req, res) => {
 };
 
 const getEarnings = async (req, res) => {
+  const { page, limit } = parsePaginationParams(req);
+
   try {
-    const data = await BookingService.getEarnings({
+    const { data, meta } = await BookingService.getEarnings({
       userId: req.user._id,
       userType: req.user.userType,
       timezone: req.user.timezone,
       from: req.query.from,
       to: req.query.to,
+      page,
+      limit,
     });
 
     return sendResponse({
@@ -761,6 +765,7 @@ const getEarnings = async (req, res) => {
       statusCode: 200,
       translationKey: "Earnings_fetched_successfully",
       data,
+      meta,
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);
