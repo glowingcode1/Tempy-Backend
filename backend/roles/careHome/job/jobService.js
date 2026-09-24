@@ -22,9 +22,6 @@ const {
   getReviewsForObjects,
 } = require("../../../commonModules/reviews/reviewRepository");
 const moment = require("moment-timezone");
-const {
-  hasSignedContract,
-} = require("../../../commonModules/supplierRelationship/supplierRelationshipService");
 
 // Application locations are represented as [latitude, longitude].
 /*
@@ -120,9 +117,20 @@ const updateJobBidStatus = async (id, status, user) => {
       return { error: "Bid_not_available" };
     }
 
-    // The supplier's contract must be signed before the first shift.
-    if (!(await hasSignedContract(JobBid.user, JobBid.jobCreator))) {
-      return { error: "Contract_must_be_signed_before_first_shift" };
+    const bidder = await findUserById(JobBid.user);
+    const isNurse = bidder?.accountState?.userType === "nurse";
+
+    /*
+     * A nurse already booked at this time cannot win the shift. Checked before
+     * the claim, so the shift and the competing bids stay exactly as they
+     * were - only this bid is closed.
+     */
+    if (
+      isNurse &&
+      (await BookingRepo.findConflictingBooking(JobBid.user, JobBid.shift))
+    ) {
+      await findBidByIdAndUpdate(JobBid._id, { status: "rejected" });
+      return { error: "Bid_rejected_due_to_nurse_unavailability" };
     }
 
     /*
@@ -143,9 +151,6 @@ const updateJobBidStatus = async (id, status, user) => {
     // accept this bid, reject the rest for the same shift
     await updateBidStatuses(JobBid._id, "accepted", "rejected");
 
-    const bidder = await findUserById(JobBid.user);
-    const isNurse = bidder?.accountState?.userType === "nurse";
-
     if (!isNurse) {
       /*
        * Agency bid: stop here - the agency still has to pick a worker via
@@ -155,24 +160,7 @@ const updateJobBidStatus = async (id, status, user) => {
       return { updatedBid, booking: null, isNurse: false };
     }
 
-    // Direct nurse bid: same-day conflict check, then book immediately
-    const conflict = await BookingRepo.findConflictingBooking(
-      JobBid.user,
-      JobBid.shift,
-    );
-    if (conflict) {
-      await findBidByIdAndUpdate(JobBid._id, { status: "rejected" });
-
-      // The nurse cannot work it after all, so give the shift back.
-      await JobRepo.updateShiftStatus(
-        JobBid.job.toString(),
-        JobBid.shift._id.toString(),
-        "pending",
-      );
-
-      return { error: "Bid_rejected_due_to_nurse_unavailability" };
-    }
-
+    // Direct nurse bid: book immediately
     const booking = await BookingService.createBooking({
       bid: JobBid._id,
       worker: JobBid.user,
@@ -181,7 +169,11 @@ const updateJobBidStatus = async (id, status, user) => {
     });
 
     if (booking?.error) {
-      await findBidByIdAndUpdate(JobBid._id, { status: "pending" });
+      /*
+       * Undo the award in full: this bid and the competitors it just rejected
+       * all go back to pending, then the shift returns to the market.
+       */
+      await updateBidStatuses(JobBid._id, "pending", "pending");
 
       await JobRepo.updateShiftStatus(
         JobBid.job.toString(),

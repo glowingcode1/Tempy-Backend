@@ -24,6 +24,7 @@ const uploadContract = sendServiceResult(
     }
     return Service.uploadContract({
       supplier: req.user._id,
+      supplierType: req.user.userType,
       customer,
       document,
     });
@@ -59,10 +60,11 @@ const countersignContract = sendServiceResult(
 
 const getRelationships = sendServiceResult(async (req) => {
   const { page, limit } = parsePaginationParams(req);
-  const { status, supplier, customer } = req.query;
+  const { kind, status, supplier, customer } = req.query;
   return Service.getRelationships({
     userId: req.user._id,
     userType: req.user.userType,
+    kind,
     status,
     supplier,
     customer,

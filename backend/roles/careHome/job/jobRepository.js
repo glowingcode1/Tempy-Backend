@@ -31,6 +31,9 @@ const {
  */
 const LIVE_BOOKING_STATUSES = ["pending", "active", "inProgress"];
 
+// A bid still in play: waiting on the customer, or won.
+const OPEN_BID_STATUSES = ["pending", "accepted"];
+
 const CANCELLED_BOOKING_STATUSES = [
   "cancelledByWorker",
   "cancelledByEmployer",
@@ -111,9 +114,11 @@ const shiftEndExpr = (v) => {
 };
 
 /*
- * A job only counts as past for a supplier one day after its shift has
- * ended (PAST_JOB_GRACE_HOURS, default 24). Until then it stays where it was
- * - in the Active tab - although bidding still closes when the shift starts.
+ * A supplier's own work (a booking, a won bid, a job handed to it) only
+ * counts as past one day after its shift has ended (PAST_JOB_GRACE_HOURS,
+ * default 24), so it can still check out and settle it from the Active tab.
+ * The market has no such grace: a shift nobody took leaves the Active tab
+ * once it starts, the moment bidding on it closes.
  */
 const PAST_JOB_GRACE_MS =
   (Number(process.env.PAST_JOB_GRACE_HOURS) || 24) * 60 * 60 * 1000;
@@ -125,16 +130,8 @@ const recentShiftExpr = (v, now) => ({
   $gt: [shiftEndExpr(v), staleBefore(now)],
 });
 
-// Still on the market for suppliers to see: unclaimed, biddable, not past.
-const listedShiftExpr = (v, now) => ({
-  $and: [
-    { $eq: [`$$${v}.status`, "pending"] },
-    { $ne: [`$$${v}.isBiddingAllowed`, false] },
-    recentShiftExpr(v, now),
-  ],
-});
-
-// A shift a supplier can still bid on: unclaimed, biddable, not started.
+// On the market, i.e. a shift a supplier can still bid on: unclaimed,
+// biddable, not started.
 const openShiftExpr = (v, now) => ({
   $and: [
     { $eq: [`$$${v}.status`, "pending"] },
@@ -273,6 +270,9 @@ const listingFilterStages = ({ dateRange, jobRoles } = {}) => {
  *   completedJobIds - its own finished work, whenever it was
  *   involvedJobIds  - every job it was booked on or won, past included, so
  *                     that its past work still shows (as inactive)
+ *   closedBidShiftIds - shifts it bid on where that bid is over (rejected,
+ *                     withdrawn, released) with none still open. It cannot
+ *                     bid on them again, so they are no opportunity for it.
  */
 const getSupplierBookedJobIds = async (supplierId, now = new Date()) => {
   // An agency holds the booking as employer; its staff (and a nurse booked
@@ -281,43 +281,60 @@ const getSupplierBookedJobIds = async (supplierId, now = new Date()) => {
     $or: [{ employer: supplierId }, { worker: supplierId }],
   };
 
-  const [liveBookings, completedJobIds, awardedBids, staffedShiftIds] =
-    await Promise.all([
-      Booking.find({
-        ...mine,
-        status: { $in: LIVE_BOOKING_STATUSES },
-      })
-        .select("job shift")
-        .lean(),
+  const [
+    liveBookings,
+    completedJobIds,
+    awardedBids,
+    staffedShiftIds,
+    closedBidShifts,
+    openBidShifts,
+  ] = await Promise.all([
+    Booking.find({
+      ...mine,
+      status: { $in: LIVE_BOOKING_STATUSES },
+    })
+      .select("job shift")
+      .lean(),
 
-      Booking.distinct("job", {
-        ...mine,
-        status: "completed",
-      }),
+    Booking.distinct("job", {
+      ...mine,
+      status: "completed",
+    }),
 
-      /*
-       * Won at the bid stage but not staffed yet. Accepting a bid rejects
-       * every competing one and closes the shift, so the job is nobody
-       * else's - it has to sit in this supplier's Active tab until a worker
-       * is assigned.
-       */
-      Bid.find({ user: supplierId, status: "accepted" })
-        .select("job shift")
-        .lean(),
+    /*
+     * Won at the bid stage but not staffed yet. Accepting a bid rejects
+     * every competing one and closes the shift, so the job is nobody
+     * else's - it has to sit in this supplier's Active tab until a worker
+     * is assigned.
+     */
+    Bid.find({ user: supplierId, status: "accepted" })
+      .select("job shift")
+      .lean(),
 
-      /*
-       * An accepted bid stays accepted after its booking is made, so match
-       * on the shift to tell "still to staff" from "already staffed".
-       *
-       * Cancelled bookings are excluded on purpose: when an assigned staff
-       * member declines, the shift counts as unstaffed again so the job stays
-       * in this supplier's Active tab while it assigns somebody else.
-       */
-      Booking.distinct("shift._id", {
-        ...mine,
-        status: { $nin: CANCELLED_BOOKING_STATUSES },
-      }),
-    ]);
+    /*
+     * An accepted bid stays accepted after its booking is made, so match
+     * on the shift to tell "still to staff" from "already staffed".
+     *
+     * Cancelled bookings are excluded on purpose: when an assigned staff
+     * member declines, the shift counts as unstaffed again so the job stays
+     * in this supplier's Active tab while it assigns somebody else.
+     */
+    Booking.distinct("shift._id", {
+      ...mine,
+      status: { $nin: CANCELLED_BOOKING_STATUSES },
+    }),
+
+    Bid.distinct("shift._id", {
+      user: supplierId,
+      status: { $nin: OPEN_BID_STATUSES },
+    }),
+    Bid.distinct("shift._id", {
+      user: supplierId,
+      status: { $in: OPEN_BID_STATUSES },
+    }),
+  ]);
+
+  const stillBidding = new Set(openBidShifts.map(String));
 
   const staffed = new Set(staffedShiftIds.map(String));
 
@@ -339,6 +356,9 @@ const getSupplierBookedJobIds = async (supplierId, now = new Date()) => {
       ...liveBookings.map((booking) => booking.job),
       ...awardedBids.map((bid) => bid.job),
     ],
+    closedBidShiftIds: closedBidShifts.filter(
+      (id) => !stillBidding.has(String(id)),
+    ),
   };
 };
 
@@ -351,10 +371,11 @@ const SUPPLIER_TABS = ["active", "completed", "inactive"];
  *   completed - it (or its staff) finished work on the job, and has nothing
  *               still ahead there. Shown whatever the date.
  *   active    - its own work not past yet, or a job still on the market:
- *               open to everyone with a shift unclaimed and biddable, or
- *               handed to it when the job was created. "Past" means the
- *               shift ended more than a day ago (PAST_JOB_GRACE_MS); bidding
- *               itself still closes when the shift starts (canBid).
+ *               open to everyone with a shift unclaimed, biddable and not
+ *               started, which this supplier has not already bid on and
+ *               lost, or handed to it when the job was created. "Past" for
+ *               its own work means the shift ended more than a day ago
+ *               (PAST_JOB_GRACE_MS).
  *   inactive  - everything else it can see: jobs booked by somebody else,
  *               past jobs, jobs the customer deactivated or finished, and its
  *               own past work. Nothing is hidden for being past.
@@ -370,6 +391,7 @@ const getSupplierTabMatches = ({
   liveJobIds,
   completedJobIds,
   involvedJobIds = [],
+  closedBidShiftIds = [],
   now = new Date(),
 }) => {
   const live = new Map(liveJobIds.map((id) => [String(id), id]));
@@ -401,6 +423,14 @@ const getSupplierTabMatches = ({
 
   const isCompleted = { $and: [notDeleted, inIds(completedOnlyIds)] };
 
+  // An open shift, unless my bid on it already lost: I cannot bid again.
+  const openToMe = {
+    $and: [
+      openShiftExpr("s", now),
+      { $not: [{ $in: ["$$s._id", closedBidShiftIds] }] },
+    ],
+  };
+
   const isActive = {
     $and: [
       notDeleted,
@@ -413,7 +443,7 @@ const getSupplierTabMatches = ({
               { $eq: ["$status", "active"] },
               {
                 $or: [
-                  { $and: [isPublic, anyShiftExpr(listedShiftExpr("s", now))] },
+                  { $and: [isPublic, anyShiftExpr(openToMe)] },
                   {
                     $and: [
                       assignedToMe,
@@ -478,7 +508,7 @@ const getSupplierTabMatches = ({
  *   shift[].status    - likewise per shift: "pending" only while this
  *                       supplier can still take it, "booked" / "completed"
  *                       for its own work, "inactive" for everything else
- *                       (booked by somebody else, or past). The stored value
+ *                       (booked by somebody else, started, or past). The stored value
  *                       is kept as shift[].originalStatus
  *   shift[].canBid    - a bid can be placed on it. A shift already bid on
  *                       cannot take a second bid from the same supplier,
@@ -637,7 +667,7 @@ const supplierViewStages = (supplierId, now, statusExpr) => [
                           },
                           {
                             case: {
-                              $and: ["$$onMarket", listedShiftExpr("s", now)],
+                              $and: ["$$onMarket", openShiftExpr("s", now)],
                             },
                             then: "pending",
                           },
@@ -1692,4 +1722,6 @@ module.exports = {
   updateJobAndShifts,
   hasLiveBookings,
   shiftStartsAt,
+  anyShiftExpr,
+  openShiftExpr,
 };

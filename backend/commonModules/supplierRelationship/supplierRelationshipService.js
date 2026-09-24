@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const SupplierRelationship = require("./SupplierRelationship");
-const { User, customerTypes, supplierTypes } = require("@UsersModel");
+const { contractKindFor } = SupplierRelationship;
+const Staff = require("../../roles/aggency/staff/Staff");
+const { User } = require("@UsersModel");
 const { generateMeta } = require("@helperUtils/responseUtil");
 const {
   getFullFileUrl,
@@ -46,11 +48,36 @@ const hasSignedContract = async (supplier, customer) => {
   return Boolean(relationship);
 };
 
+// A staff contract only comes with a staff request (or existing staff).
+const hasStaffRecord = (employer, nurse) =>
+  Staff.exists({
+    user: employer,
+    staff: nurse,
+    status: { $in: ["pending", "active"] },
+  });
+
 // Supplier uploads (or replaces) its contract for a customer.
-const uploadContract = async ({ supplier, customer, document }) => {
+const uploadContract = async ({
+  supplier,
+  supplierType,
+  customer,
+  document,
+}) => {
   const customerUser = await User.findById(customer, "accountState").lean();
-  if (!customerTypes.includes(customerUser?.accountState?.userType)) {
+  if (!customerUser) {
     return { error: "Customer_not_found", statusCode: 404 };
+  }
+
+  // Only agreed rate parties, and an employer with its staff, have contracts.
+  const kind = contractKindFor(
+    supplierType,
+    customerUser.accountState?.userType,
+  );
+  if (!kind) {
+    return { error: "Contract_not_allowed_between_parties" };
+  }
+  if (kind === "staff" && !(await hasStaffRecord(supplier, customer))) {
+    return { error: "Contract_requires_staff_request" };
   }
 
   let relationship = await findRelationship(supplier, customer);
@@ -65,6 +92,7 @@ const uploadContract = async ({ supplier, customer, document }) => {
   }
 
   // A new upload starts the signing over.
+  relationship.kind = kind;
   relationship.contract = { document, status: "awaitingCustomer" };
   await relationship.save();
 
@@ -112,20 +140,20 @@ const countersignContract = async ({
   return { data: format(relationship) };
 };
 
-// Scopes a query to the side of the relationship the requester is on.
+/*
+ * Scopes a query to the relationships the requester is a party to. Either
+ * side: a nurse supplies care homes but is the customer of its employer.
+ */
 const partyFilter = ({ userId, userType }) => {
-  if (supplierTypes.includes(userType)) {
-    return { supplier: new mongoose.Types.ObjectId(userId) };
-  }
-  if (customerTypes.includes(userType)) {
-    return { customer: new mongoose.Types.ObjectId(userId) };
-  }
-  return {}; // admin
+  if (userType === "admin") return {};
+  const id = new mongoose.Types.ObjectId(userId);
+  return { $or: [{ supplier: id }, { customer: id }] };
 };
 
 const getRelationships = async ({
   userId,
   userType,
+  kind,
   status,
   supplier,
   customer,
@@ -133,6 +161,7 @@ const getRelationships = async ({
   limit,
 }) => {
   const filter = {
+    ...(kind && { kind }),
     ...(supplier && { supplier }),
     ...(customer && { customer }),
     ...(status && { "contract.status": status }),

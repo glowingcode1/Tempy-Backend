@@ -36,9 +36,6 @@ const {
 } = require("../../../roles/aggency/staff/staffRepository");
 const { customerTypes } = require("@UsersModel");
 const { resolveInitialBookingStatus } = require("./bookingStatusHelper");
-const {
-  hasSignedContract,
-} = require("../../../commonModules/supplierRelationship/supplierRelationshipService");
 const { recordLateCancellation } = require("./cancellationStrikes");
 const {
   getReviewsForObjects,
@@ -125,11 +122,6 @@ const createBooking = async (data) => {
 
   if (bid.status !== "accepted") {
     return { error: "Bid_not_available" };
-  }
-
-  // No shift between a supplier and a customer until both signed the contract.
-  if (!(await hasSignedContract(bid.user, bid.jobCreator))) {
-    return { error: "Contract_must_be_signed_before_first_shift" };
   }
 
   const bidder = await findUserById(bid.user);

@@ -11,6 +11,9 @@ const mongoose = require("mongoose");
 const {
   getSupplierBookedJobIds,
   getSupplierTabMatches,
+  anyShiftExpr,
+  openShiftExpr,
+  shiftStartsAt,
 } = require("../../careHome/job/jobRepository");
 const { formatShiftToTimezone } = require("@helperUtils/responseUtil");
 
@@ -644,13 +647,14 @@ const getRecentActivity = async ({ userId, jobMatch, userType }) => {
 
 /*
  * A "new" job for a supplier is an open opportunity: somebody else's active
- * job that nobody has been assigned to yet and that still has a pending
- * shift - not a job the supplier already owns.
+ * job that nobody has been assigned to yet and that still has a shift open
+ * for bidding (unclaimed, biddable, not started) - not a job the supplier
+ * already owns, and not one whose shifts are all in the past.
  *
  * The count and the list share this one filter, so the number shown above
  * the list can never disagree with the list itself.
  */
-const getOpenJobMatch = ({ userId }) => ({
+const getOpenJobMatch = ({ userId, now = new Date() }) => ({
   user: {
     $ne: userId,
   },
@@ -662,6 +666,8 @@ const getOpenJobMatch = ({ userId }) => ({
   employer: null,
 
   "shift.status": "pending",
+
+  $expr: anyShiftExpr(openShiftExpr("s", now)),
 });
 
 const getNewJobsCount = async ({ userId }) =>
@@ -672,9 +678,12 @@ const getNewJobsCount = async ({ userId }) =>
   );
 
 const getOpenJobs = async ({ userId, timezone }) => {
+  const now = new Date();
+
   const jobs = await Job.find(
     getOpenJobMatch({
       userId,
+      now,
     }),
   )
     .sort({
@@ -687,8 +696,13 @@ const getOpenJobs = async ({ userId, timezone }) => {
   return jobs.map((job) => {
     const pendingShifts = Array.isArray(job.shift)
       ? job.shift
-          .filter((shift) => shift?.status === "pending" && shift?.date)
-          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .filter(
+            (shift) =>
+              shift?.status === "pending" &&
+              shift?.isBiddingAllowed !== false &&
+              shiftStartsAt(shift) > now,
+          )
+          .sort((a, b) => shiftStartsAt(a) - shiftStartsAt(b))
       : [];
 
     const nextShift = pendingShifts[0] || null;
