@@ -62,7 +62,7 @@ jobs:
       - name: Write .env.dev on EC2
         run: |
           printf '%s\n' "${{ secrets.ENV_DEV }}" | ssh -i ~/.ssh/ec2_key.pem -o StrictHostKeyChecking=no \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'cat > ~/backend-dev/.env.dev && chmod 600 ~/backend-dev/.env.dev'
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'cat > ~/backend-dev/backend/.env.dev && chmod 600 ~/backend-dev/backend/.env.dev'
 
       - name: Start or Restart PM2 Service
         run: |
@@ -76,7 +76,7 @@ jobs:
             pm2 save
             pm2 list
           '
-          
+
 
       - name: Cleanup PEM file
         if: always()
