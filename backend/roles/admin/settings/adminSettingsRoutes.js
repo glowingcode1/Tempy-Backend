@@ -8,7 +8,9 @@ const {
   getCustomerTermsAndConditions,
   getReviewTermsAndConditions,
   getFaqs,
-  getSupport
+  getSupport,
+  getTermsStatus,
+  acceptTerms,
 } = require("./controllers/adminSettingsController");
 const auth = require("../../../middlewares/authMiddleware");
 const createRateLimiter = require("../../../helperUtils/rateLimiter");
@@ -23,6 +25,10 @@ const apiRateLimiter = createRateLimiter("AdminSettings");
 router.get("/terms-conditions", apiRateLimiter, getTermsAndConditions);
 router.get("/review-terms-conditions", apiRateLimiter, getReviewTermsAndConditions);
 router.get("/customer-terms-conditions", apiRateLimiter, getCustomerTermsAndConditions);
+
+// Suppliers accept the terms once; again whenever admin publishes a new version.
+router.get("/terms-conditions/status", auth, apiRateLimiter, getTermsStatus);
+router.post("/terms-conditions/accept", auth, apiRateLimiter, acceptTerms);
 
 // Route to fetch about us with rate limiting
 router.get("/about-us", apiRateLimiter, getAboutUs);

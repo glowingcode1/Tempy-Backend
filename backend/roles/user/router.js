@@ -17,5 +17,7 @@ router.use(
   "/dashboard",
   require("../careHome/customerDashboard/customerDashboardRoutes"),
 );
+router.use("/agreed-rates", require("../careHome/agreedRates/agreedRatesRoutes"));
+router.use("/contracts", require("../../commonModules/supplierRelationship/supplierRelationshipRoutes"));
 
 module.exports = router;

@@ -3,7 +3,9 @@ const {
   parsePaginationParams,
   generateMeta,
 } = require("@helperUtils/responseUtil");
-const { User } = require("../../../../models/UserModel");
+const { User, supplierTypes } = require("../../../../models/UserModel");
+const { sendUserNotifications } = require("@notificationsUtil");
+const { NotificationTypes } = require("@NotificationsModel");
 const AdminSettings = require("../models/AdminSettings");
 const Faq = require("../models/Faq");
 const { cache, invalidate } = require("@redisCache");
@@ -40,7 +42,7 @@ const getTermsAndConditions = async (req, res) => {
       ttl: 86400, // 1 day
 
       fetchFn: async () => {
-        return AdminSettings.findOne({}, "terms_and_conditions");
+        return AdminSettings.findOne({}, "terms_and_conditions terms_version");
       },
     });
 
@@ -358,6 +360,34 @@ const createAdminSettings = async (req, res) => {
   }
 };
 
+// Every supplier has to accept new terms, so tell them all.
+const notifySuppliersOfNewTerms = async (version, adminId) => {
+  try {
+    const suppliers = await User.find(
+      {
+        "accountState.userType": { $in: supplierTypes },
+        "accountState.status": { $ne: "deleted" },
+      },
+      "_id",
+    ).lean();
+    if (!suppliers.length) return;
+
+    await sendUserNotifications({
+      recipientIds: suppliers.map((supplier) => supplier._id),
+      title: "Terms And Conditions Updated",
+      body: "Our terms and conditions have changed. Please accept the new version to keep bidding and sending rate offers.",
+      data: {
+        type: NotificationTypes.TERMS_UPDATED,
+        objectType: "AdminSettings",
+        version,
+      },
+      sender: adminId,
+    });
+  } catch (error) {
+    console.error("Error notifying suppliers of new terms:", error);
+  }
+};
+
 // Update Admin Settings (Optional: To update multiple fields at once)
 const updateAdminSettings = async (req, res) => {
   const { id } = req.params;
@@ -391,6 +421,16 @@ const updateAdminSettings = async (req, res) => {
     invalidations.push("privacy_policy");
   }
 
+  for (const key of ["temp_to_perm_min_shifts", "temp_to_perm_fee"]) {
+    if (req.body[key] !== undefined) updateData[key] = Number(req.body[key]);
+  }
+
+  // New terms mean everyone has to accept again.
+  const update = { $set: updateData };
+  if (req.body.terms_and_conditions) {
+    update.$inc = { terms_version: 1 };
+  }
+
   // invalidate only touched scopes
   await Promise.all([
     invalidateAdminSettingsScope(ADMIN_SETTING_SCOPES.TERMS),
@@ -401,11 +441,10 @@ const updateAdminSettings = async (req, res) => {
   ]);
 
   try {
-    const settings = await AdminSettings.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true },
-    );
+    const settings = await AdminSettings.findByIdAndUpdate(id, update, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!settings) {
       return sendResponse({
@@ -416,10 +455,7 @@ const updateAdminSettings = async (req, res) => {
     }
 
     if (req.body.terms_and_conditions) {
-      await User.updateMany(
-        { "accountState.userType": "organizer" },
-        { $set: { termsAccepted: req.body.termsAccepted || false } },
-      );
+      void notifySuppliersOfNewTerms(settings.terms_version, req.user._id);
     }
 
     return sendResponse({
@@ -479,7 +515,69 @@ const getCustomerTermsAndConditions = async (req, res) => {
   }
 };
 
+const getCurrentTermsVersion = async () => {
+  const settings = await AdminSettings.findOne({}, "terms_version").lean();
+  return settings?.terms_version || 1;
+};
+
+// Whether the signed-in user has accepted the current terms.
+const getTermsStatus = async (req, res) => {
+  try {
+    const [currentVersion, user] = await Promise.all([
+      getCurrentTermsVersion(),
+      User.findById(req.user._id, "termsAccepted").lean(),
+    ]);
+    const accepted = user?.termsAccepted || { version: 0, acceptedAt: null };
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "terms_status_fetched",
+      data: {
+        currentVersion,
+        acceptedVersion: accepted.version,
+        acceptedAt: accepted.acceptedAt,
+        needsAcceptance: accepted.version !== currentVersion,
+      },
+    });
+  } catch (error) {
+    return sendResponse({
+      res,
+      statusCode: 500,
+      translationKey: error.message,
+      error,
+    });
+  }
+};
+
+// Records that the signed-in user accepted the current terms version.
+const acceptTerms = async (req, res) => {
+  try {
+    const version = await getCurrentTermsVersion();
+    const termsAccepted = { version, acceptedAt: new Date() };
+
+    await User.updateOne({ _id: req.user._id }, { $set: { termsAccepted } });
+
+    return sendResponse({
+      res,
+      statusCode: 200,
+      translationKey: "terms_accepted_successfully",
+      data: termsAccepted,
+    });
+  } catch (error) {
+    return sendResponse({
+      res,
+      statusCode: 500,
+      translationKey: error.message,
+      error,
+    });
+  }
+};
+
 module.exports = {
+  getCurrentTermsVersion,
+  getTermsStatus,
+  acceptTerms,
   getTermsAndConditions,
   getAboutUs,
   getPrivacyPolicy,

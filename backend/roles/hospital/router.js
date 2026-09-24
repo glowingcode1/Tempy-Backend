@@ -20,5 +20,6 @@ router.use(
   require("../localAuthority/customerHome/customerHomeRoutes"),
 );
 router.use("/address", require("../nurse/address/addressRoutes"));
+router.use("/contracts", require("../../commonModules/supplierRelationship/supplierRelationshipRoutes"));
 
 module.exports = router;

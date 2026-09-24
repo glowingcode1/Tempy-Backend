@@ -29,6 +29,24 @@ const NotificationTypes = {
   SHIFT_ALERT: "shift_alert",
   CANCELLATION_STRIKE: "cancellation_strike",
   NEW_BOOKING: "new_booking",
+  // terms and conditions
+  TERMS_UPDATED: "terms_updated",
+  // agreed rates
+  AGREED_RATE_OFFERED: "agreed_rate_offered",
+  AGREED_RATE_UPDATED: "agreed_rate_updated",
+  AGREED_RATE_WITHDRAWN: "agreed_rate_withdrawn",
+  AGREED_RATE_ACCEPTED: "agreed_rate_accepted",
+  AGREED_RATE_REJECTED: "agreed_rate_rejected",
+  AGREED_RATE_REVIEW_REQUESTED: "agreed_rate_review_requested",
+  // supplier contract
+  CONTRACT_UPLOADED: "contract_uploaded",
+  CONTRACT_SIGNED: "contract_signed",
+  CONTRACT_COUNTERSIGNED: "contract_countersigned",
+  // temp to permanent
+  PERMANENT_HIRE_REQUESTED: "permanent_hire_requested",
+  PERMANENT_HIRE_ACCEPTED: "permanent_hire_accepted",
+  PERMANENT_HIRE_REJECTED: "permanent_hire_rejected",
+  PERMANENT_HIRE_CANCELLED: "permanent_hire_cancelled",
 };
 
 // Define the NotificationSchema
