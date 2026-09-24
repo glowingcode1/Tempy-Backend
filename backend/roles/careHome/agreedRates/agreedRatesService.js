@@ -4,6 +4,9 @@ const { CUSTOMER_TYPES, SUPPLIER_TYPES, OPEN_STATUSES } = AgreedRate;
 const { User } = require("@UsersModel");
 const { generateMeta } = require("@helperUtils/responseUtil");
 const formatAgreedRateToTimezone = require("./formator/formatAgreedRatesToTimezone");
+const {
+  hasSignedContract,
+} = require("../../../commonModules/supplierRelationship/supplierRelationshipService");
 
 const PARTY_FIELDS = "name email profileIcon accountState.userType";
 
@@ -182,6 +185,14 @@ const respondToAgreedRate = async ({
 
   if (rate.status !== "pending") {
     return { error: "AgreedRate_not_awaiting_response" };
+  }
+
+  // A rate can't be agreed until both sides signed the supplier's contract.
+  if (
+    action === "accept" &&
+    !(await hasSignedContract(rate.supplier, rate.customer))
+  ) {
+    return { error: "Contract_must_be_signed_before_accepting_rate" };
   }
 
   if (action === "review") {

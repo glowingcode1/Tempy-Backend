@@ -3,14 +3,20 @@ const { NotificationTypes } = require("@NotificationsModel");
 
 const idOf = (party) => party?._id || party;
 
+// What the signed contract unlocks for the customer side.
+const SIGN_BEFORE = {
+  agreedRate: "accepting their rates",
+  staff: "joining their staff",
+};
+
 // Each signing step tells the side that has to act (or read) next.
 const MESSAGES = {
   uploaded: {
     to: "customer",
     type: NotificationTypes.CONTRACT_UPLOADED,
     title: "Contract To Sign",
-    body: (name) =>
-      `${name} sent you their contract. Please sign it before your first shift together.`,
+    body: (name, kind) =>
+      `${name} sent you their contract. Please sign it before ${SIGN_BEFORE[kind] || "working together"}.`,
   },
   signed: {
     to: "supplier",
@@ -35,10 +41,11 @@ const notifyContract = (action, relationship, actor) => {
   void sendUserNotifications({
     recipientIds: [idOf(relationship[message.to])],
     title: message.title,
-    body: message.body(actor.name || "Someone"),
+    body: message.body(actor.name || "Someone", relationship.kind),
     data: {
       type: message.type,
       objectType: "SupplierRelationship",
+      kind: relationship.kind,
       status: relationship.contract?.status,
     },
     sender: actor._id,

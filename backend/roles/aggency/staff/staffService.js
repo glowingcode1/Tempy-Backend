@@ -46,6 +46,9 @@ const {
   getWeeklyHours,
 } = require("../../../roles/careHome/booking/bookingRepository");
 const { formatStaffList } = require("./formator/formatStaffList");
+const {
+  hasSignedContract,
+} = require("../../../commonModules/supplierRelationship/supplierRelationshipService");
 // Newest reviews inlined per row on list endpoints; the full set is paginated
 // through GET /reviews/all/:userId.
 const LIST_REVIEW_LIMIT = 5;
@@ -802,6 +805,10 @@ const respondToStaffRequest = async ({ staffRecordId, nurseId, action }) => {
   }
 
   if (action === "accept") {
+    // The nurse joins only once both sides signed the employer's contract.
+    if (!(await hasSignedContract(staffRecord.user, staffRecord.staff))) {
+      return { error: "Contract_must_be_signed_before_joining_staff" };
+    }
     staffRecord.status = "active";
   }
 

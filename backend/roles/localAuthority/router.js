@@ -17,6 +17,5 @@ router.use(
   require("../careHome/customerDashboard/customerDashboardRoutes"),
 );
 router.use("/address", require("../nurse/address/addressRoutes"));
-router.use("/contracts", require("../../commonModules/supplierRelationship/supplierRelationshipRoutes"));
 
 module.exports = router;
