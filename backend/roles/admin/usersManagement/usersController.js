@@ -380,6 +380,10 @@ const getUserDetails = async (req, res) => {
 
     userObject.completeDetails = isUserProfileComplete(userObject);
 
+    // toObject() skips the model's toJSON, which is what adds the base URL
+    // elsewhere. An empty icon stays empty rather than a placeholder URL.
+    userObject.profileIcon = getFullFileUrl(userObject.profileIcon);
+
     // Uploaded documents are stored as paths; hand them out as URLs.
     for (const field of DOCUMENT_FIELDS) {
       if (Array.isArray(userObject[field])) {

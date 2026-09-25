@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const { User } = require("../models/UserModel");
 const { sendResponse } = require("../helperUtils/responseUtil");
 const { i18nConfig } = require("../config/i18nConfig");
@@ -9,6 +10,35 @@ const hasField = (obj, path) => {
     path.split(".").reduce((o, key) => (o ? o[key] : undefined), obj) !==
     undefined
   );
+};
+
+// The admin panel's own APIs, where ?userId= is an admin filter, not a view-as.
+const ADMIN_API_PREFIXES = [
+  "/api/v1/admin",
+  "/api/v1/users",
+  "/api/v1/dashboard",
+];
+
+/*
+ * An admin viewing someone's account from the admin panel sends that
+ * account's id as ?userId=. Reads then run as that account, so every
+ * endpoint scopes its data exactly as it would for them. Writes never do:
+ * they stay the admin's own.
+ */
+const getViewedAccountId = (req, user) => {
+  const { userId } = req.query;
+
+  if (
+    user.userType !== "admin" ||
+    req.method !== "GET" ||
+    !userId ||
+    String(userId) === String(user._id) ||
+    ADMIN_API_PREFIXES.some((prefix) => req.originalUrl.startsWith(prefix))
+  ) {
+    return null;
+  }
+
+  return String(userId);
 };
 
 const auth = async (req, res, next) => {
@@ -107,6 +137,42 @@ const auth = async (req, res, next) => {
     i18nConfig.setLocale(req, user.language || "en");
     req.token = token;
     req.user = user;
+
+    const viewedAccountId = getViewedAccountId(req, user);
+
+    if (viewedAccountId) {
+      if (!mongoose.Types.ObjectId.isValid(viewedAccountId)) {
+        return sendResponse({
+          res,
+          statusCode: 400,
+          translationKey: "Invalid_user_id",
+        });
+      }
+
+      // Not cached: the account's own session may be caching a different view
+      // of it, and an admin may view a suspended account.
+      const viewed = await User.findById(viewedAccountId)
+        .select(
+          "name profileIcon email timezone language location accountState verificationStatus",
+        )
+        .lean();
+
+      if (!viewed) {
+        return sendResponse({
+          res,
+          statusCode: 404,
+          translationKey: "User_not_found",
+        });
+      }
+
+      viewed.userType = viewed.accountState?.userType;
+      viewed.accountStatus = viewed.accountState?.status;
+      viewed.personaVerified = viewed.verificationStatus?.persona === true;
+      delete viewed.accountState;
+
+      req.adminUser = user;
+      req.user = viewed;
+    }
 
     // Override timezone with client-sent header if provided
     const clientTimezone = req.header("X-Timezone");

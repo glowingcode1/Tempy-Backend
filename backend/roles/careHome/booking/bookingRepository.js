@@ -1,5 +1,9 @@
 const Booking = require("./Booking");
-const { getEarningsSummary, getEarningsHistory } = require("./earnings");
+const {
+  getEarningsSummary,
+  getEarningsHistory,
+  getEarningsBreakdown,
+} = require("./earnings");
 const mongoose = require("mongoose");
 const {
   buildKeywordQueryFromModels,
@@ -1032,16 +1036,29 @@ const getEarnings = async ({
   timezone,
   from,
   to,
+  workerId,
+  paymentStatus,
   page,
   limit,
 }) => {
-  const [summary, { history, total }] = await Promise.all([
+  const [summary, breakdown, { history, total }] = await Promise.all([
     getEarningsSummary({ userId, userType, timezone, from, to }),
-    getEarningsHistory({ userId, userType, timezone, from, to, page, limit }),
+    getEarningsBreakdown({ userId, userType, timezone, from, to }),
+    getEarningsHistory({
+      userId,
+      userType,
+      timezone,
+      from,
+      to,
+      workerId,
+      paymentStatus,
+      page,
+      limit,
+    }),
   ]);
 
   return {
-    data: { ...summary, history },
+    data: { ...summary, ...breakdown, history },
     meta: generateMeta(page, limit, total),
   };
 };

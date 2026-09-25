@@ -290,5 +290,11 @@
   "Permanent_hire_rejected_successfully": "Permanent hire rejected.",
   "Permanent_hire_cancelled_successfully": "Permanent hire request cancelled.",
   "Temp_to_perm_settings_fetched_successfully": "Temp to permanent settings fetched successfully.",
-  "Eligible_workers_fetched_successfully": "Eligible workers fetched successfully."
+  "Eligible_workers_fetched_successfully": "Eligible workers fetched successfully.",
+  "Earnings_fetched_successfully": "Earnings fetched successfully.",
+  "User_not_found": "User not found.",
+  "Invalid_earnings_date_range": "from and to must be dates in YYYY-MM-DD format, with from on or before to.",
+  "Invalid_worker_id": "Invalid worker id.",
+  "Invalid_user_id": "Invalid user id.",
+  "Invalid_payment_status": "Invalid payment status."
 }

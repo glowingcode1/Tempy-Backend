@@ -978,6 +978,8 @@ const getEarnings = async ({
   timezone,
   from,
   to,
+  workerId,
+  paymentStatus,
   page,
   limit,
 }) => {
@@ -987,6 +989,8 @@ const getEarnings = async ({
     timezone,
     from,
     to,
+    workerId,
+    paymentStatus,
     page,
     limit,
   });
