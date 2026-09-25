@@ -150,7 +150,13 @@ const updateAgreedRate = async ({
     return { error: "AgreedRate_not_editable" };
   }
 
-  if (rates) rate.rates = rates;
+  // Special days left out of the update keep the ones the offer has.
+  if (rates) {
+    rate.rates = {
+      ...rates,
+      specialDays: rates.specialDays ?? rate.rates?.specialDays ?? [],
+    };
+  }
   if (effectiveFrom) rate.effectiveFrom = effectiveFrom;
 
   // Back to the customer with the new numbers.

@@ -22,11 +22,29 @@ const STATUSES = [
 // Offers the supplier can still change or withdraw.
 const OPEN_STATUSES = ["pending", "reviewRequested"];
 
+const MAX_SPECIAL_DAYS = 30;
+
+/*
+ * A supplier-named day (Christmas Day, a local holiday, ...) with its own
+ * hourly rate. `date` is a calendar day, kept as "YYYY-MM-DD" so no timezone
+ * can move it; a yearly one applies on that month and day every year.
+ */
+const specialDaySchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true, maxlength: 60 },
+    date: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
+    repeatsYearly: { type: Boolean, default: false },
+    rate: { type: Number, required: true, min: 0 },
+  },
+  { _id: false },
+);
+
 const ratesSchema = new mongoose.Schema(
   {
     day: { type: Number, required: true, min: 0 },
     night: { type: Number, required: true, min: 0 },
     weekend: { type: Number, required: true, min: 0 },
+    specialDays: { type: [specialDaySchema], default: [] },
   },
   { _id: false },
 );
@@ -101,3 +119,4 @@ module.exports = AgreedRate;
 module.exports.SUPPLIER_TYPES = SUPPLIER_TYPES;
 module.exports.CUSTOMER_TYPES = CUSTOMER_TYPES;
 module.exports.OPEN_STATUSES = OPEN_STATUSES;
+module.exports.MAX_SPECIAL_DAYS = MAX_SPECIAL_DAYS;

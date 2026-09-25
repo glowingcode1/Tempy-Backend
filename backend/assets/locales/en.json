@@ -299,5 +299,7 @@
   "Sidebar_counts_fetched_successfully": "Sidebar counts fetched successfully.",
   "Sidebar_section_marked_seen": "Sidebar section marked as seen.",
   "Invalid_sidebar_section": "Unknown sidebar section for this account.",
+  "Invalid_special_days": "Special days need a name of up to 60 characters, a YYYY-MM-DD date and a rate above zero, with at most 30 of them.",
+  "Duplicate_special_day": "Two special days fall on the same day. A yearly one covers its month and day every year.",
   "Invalid_payment_status": "Invalid payment status."
 }

@@ -1,4 +1,6 @@
 const { isValidObjectId } = require("mongoose");
+const moment = require("moment");
+const { MAX_SPECIAL_DAYS } = require("./AgreedRates");
 const { parsePaginationParams } = require("@helperUtils/responseUtil");
 const sendServiceResult = require("@helperUtils/sendServiceResult");
 const AgreedRateService = require("./agreedRatesService");
@@ -13,16 +15,76 @@ const withNotification = (action, handler) => async (req) => {
 
 const RATE_KEYS = ["day", "night", "weekend"];
 
-// Day, night and weekend rates, all above zero. Returns null if invalid.
+const isCalendarDay = (value) =>
+  typeof value === "string" && moment(value, "YYYY-MM-DD", true).isValid();
+
+/*
+ * Special days: undefined when not sent, so an update keeps the ones it has.
+ * Two entries may not fall on the same day; a yearly one covers its month and
+ * day in every year, a one-off only its date.
+ */
+const parseSpecialDays = (specialDays) => {
+  if (specialDays === undefined) return { specialDays: undefined };
+
+  if (!Array.isArray(specialDays) || specialDays.length > MAX_SPECIAL_DAYS) {
+    return { error: "Invalid_special_days" };
+  }
+
+  const parsed = [];
+
+  for (const entry of specialDays) {
+    const name = typeof entry?.name === "string" ? entry.name.trim() : "";
+    const rate = Number(entry?.rate);
+
+    if (
+      !name ||
+      name.length > 60 ||
+      !isCalendarDay(entry?.date) ||
+      !(rate > 0)
+    ) {
+      return { error: "Invalid_special_days" };
+    }
+
+    parsed.push({
+      name,
+      date: entry.date,
+      repeatsYearly: entry.repeatsYearly === true,
+      rate,
+    });
+  }
+
+  const clash = parsed.some((a, i) =>
+    parsed
+      .slice(i + 1)
+      .some((b) =>
+        a.repeatsYearly || b.repeatsYearly
+          ? a.date.slice(5) === b.date.slice(5)
+          : a.date === b.date,
+      ),
+  );
+
+  if (clash) return { error: "Duplicate_special_day" };
+
+  return { specialDays: parsed };
+};
+
+// Day, night and weekend rates, all above zero, and any special days.
 const parseRates = (rates) => {
-  if (!rates) return null;
+  if (!rates) return { error: "day_night_weekend_rates_required" };
+
   const parsed = {};
+
   for (const key of RATE_KEYS) {
     const value = Number(rates[key]);
-    if (!(value > 0)) return null;
+    if (!(value > 0)) return { error: "day_night_weekend_rates_required" };
     parsed[key] = value;
   }
-  return parsed;
+
+  const { specialDays, error } = parseSpecialDays(rates.specialDays);
+  if (error) return { error };
+  if (specialDays) parsed.specialDays = specialDays;
+
+  return { rates: parsed };
 };
 
 // undefined when not sent, null when sent but not a date.
@@ -35,13 +97,13 @@ const parseDate = (value) => {
 const createAgreedRate = sendServiceResult(
   withNotification("created", async (req) => {
     const { customer, jobType } = req.body;
-    const rates = parseRates(req.body.rates);
+    const { rates, error } = parseRates(req.body.rates);
     const effectiveFrom = parseDate(req.body.effectiveFrom);
 
     if (!isValidObjectId(customer) || !isValidObjectId(jobType)) {
       return { error: "customer_and_jobType_required" };
     }
-    if (!rates) return { error: "day_night_weekend_rates_required" };
+    if (error) return { error };
     if (effectiveFrom === null) return { error: "invalid_effectiveFrom" };
 
     return AgreedRateService.createAgreedRate({
@@ -77,10 +139,12 @@ const getAgreedRates = sendServiceResult(async (req) => {
 
 const updateAgreedRate = sendServiceResult(
   withNotification("updated", async (req) => {
-    const rates = req.body.rates ? parseRates(req.body.rates) : undefined;
+    const { rates, error } = req.body.rates
+      ? parseRates(req.body.rates)
+      : {};
     const effectiveFrom = parseDate(req.body.effectiveFrom);
 
-    if (rates === null) return { error: "day_night_weekend_rates_required" };
+    if (error) return { error };
     if (effectiveFrom === null) return { error: "invalid_effectiveFrom" };
 
     return AgreedRateService.updateAgreedRate({
@@ -111,9 +175,9 @@ const respondToAgreedRate = (action, successKey) =>
     withNotification(action, async (req) => {
       let requestedRates;
       if (action === "review" && req.body.requestedRates) {
-        requestedRates = parseRates(req.body.requestedRates);
-        if (!requestedRates)
-          return { error: "day_night_weekend_rates_required" };
+        const parsed = parseRates(req.body.requestedRates);
+        if (parsed.error) return { error: parsed.error };
+        requestedRates = parsed.rates;
       }
 
       return AgreedRateService.respondToAgreedRate({
