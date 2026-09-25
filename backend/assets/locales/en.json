@@ -296,5 +296,8 @@
   "Invalid_earnings_date_range": "from and to must be dates in YYYY-MM-DD format, with from on or before to.",
   "Invalid_worker_id": "Invalid worker id.",
   "Invalid_user_id": "Invalid user id.",
+  "Sidebar_counts_fetched_successfully": "Sidebar counts fetched successfully.",
+  "Sidebar_section_marked_seen": "Sidebar section marked as seen.",
+  "Invalid_sidebar_section": "Unknown sidebar section for this account.",
   "Invalid_payment_status": "Invalid payment status."
 }

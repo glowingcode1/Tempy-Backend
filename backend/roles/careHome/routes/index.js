@@ -28,4 +28,6 @@ router.use(
 router.use("/contracts", require("../../../commonModules/supplierRelationship/supplierRelationshipRoutes"));
 router.use("/permanent-hires", require("../../../commonModules/permanentHire/permanentHireRoutes"));
 
+router.use("/sidebar", require("../../../commonModules/sidebar/sidebarRoutes"));
+
 module.exports = router;

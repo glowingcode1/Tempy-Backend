@@ -25,4 +25,6 @@ router.use("/address", require("../nurse/address/addressRoutes"));
 router.use("/agreed-rates", require("../careHome/agreedRates/agreedRatesRoutes"));
 router.use("/contracts", require("../../commonModules/supplierRelationship/supplierRelationshipRoutes"));
 
+router.use("/sidebar", require("../../commonModules/sidebar/sidebarRoutes"));
+
 module.exports = router;

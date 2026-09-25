@@ -21,4 +21,6 @@ router.use(
 );
 router.use("/address", require("../nurse/address/addressRoutes"));
 
+router.use("/sidebar", require("../../commonModules/sidebar/sidebarRoutes"));
+
 module.exports = router;
