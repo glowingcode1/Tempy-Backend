@@ -44,7 +44,7 @@ const shiftSnapshotSchema = new mongoose.Schema(
 const paymentSchema = new mongoose.Schema(
   {
     amount: {
-      type: Number, // agreed hourly rate (from the approved bid)
+      type: Number, // gross for the shift: the bid's hourly rate x totalHours
       required: true,
     },
     type: {

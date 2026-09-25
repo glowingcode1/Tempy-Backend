@@ -38,6 +38,12 @@ const {
   isUserProfileComplete,
 } = require("@helperUtils/completeDetailsUtil");
 const { USER_MODEL_MAP } = require("@helperUtils/userModelMapUtil");
+const { getUserActivityStats } = require("./userActivityStats");
+const Branches = require("../../aggency/branches/Branches");
+const formatBranchToTimezone = require(
+  "../../aggency/branches/formator/formatBranchToTimezone",
+);
+const Address = require("../../nurse/address/Address");
 
 const APP_NAME = "CoachCritic App";
 const getAllUsers = async ({ page, limit, keyword, status, userType }) => {
@@ -110,6 +116,8 @@ const getAllUsers = async ({ page, limit, keyword, status, userType }) => {
               _id: 1,
               name: 1,
               email: 1,
+              phoneNumber: 1,
+              verificationStatus: 1,
               accountState: 1,
               profileIcon: 1,
               location: 1,
@@ -208,8 +216,13 @@ const getAllUsers = async ({ page, limit, keyword, status, userType }) => {
     suspended,
   };
 
+  const stats = await getUserActivityStats(users);
+
   return {
-    users: formatAthletes(users),
+    users: formatAthletes(users).map((user) => ({
+      ...user,
+      stats: stats.get(String(user._id)) ?? null,
+    })),
     meta,
   };
 };
@@ -462,6 +475,29 @@ const getUserDetails = async (id) => {
   return user;
 };
 
+/*
+ * What the details screen needs beyond the user document. An organisation's
+ * bio and CQC/insurance certificates live on its branches, and saved
+ * addresses stand in for branches for individuals.
+ */
+const getUserDetailsExtras = async (user, timezone) => {
+  const notDeleted = { user: user._id, status: { $ne: "deleted" } };
+
+  const [stats, branches, addresses] = await Promise.all([
+    getUserActivityStats([user]),
+    Branches.find(notDeleted).sort({ createdAt: -1 }).lean(),
+    Address.find(notDeleted).sort({ createdAt: -1 }).lean(),
+  ]);
+
+  return {
+    stats: stats.get(String(user._id)) ?? null,
+    branches: branches.map((branch) =>
+      formatBranchToTimezone(branch, timezone),
+    ),
+    addresses,
+  };
+};
+
 const getUserDetailsForQRService = async (id) => {
   let data = await userRepo.getUserDetailsForQRRepo(id);
   // let formattedData = data?.toObject?.() ?? data;
@@ -706,6 +742,7 @@ module.exports = {
   updateUser,
   deleteUser,
   getUserDetails,
+  getUserDetailsExtras,
   setupTwoFA,
   confirmTwoFA,
   disableTwoFA,

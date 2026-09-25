@@ -10,6 +10,7 @@ const mongoose = require("mongoose");
 const moment = require("moment");
 const BookingService = require("./bookingService");
 const { customerTypes, supplierTypes } = require("@UsersModel");
+const { PAYMENT_STATUSES } = require("./earnings");
 const {
   findUserById,
 } = require("../../../roles/admin/usersManagement/usersRepository");
@@ -746,14 +747,74 @@ const getShiftPlanCalendar = async (req, res) => {
   }
 };
 
+// High enough for the web page to export a whole range as CSV in one call.
+const EARNINGS_MAX_LIMIT = 1000;
+
+const isShiftDate = (value) => moment(value, "YYYY-MM-DD", true).isValid();
+
 const getEarnings = async (req, res) => {
+  const { page } = parsePaginationParams(req);
+  const limit = Math.min(
+    Math.max(parseInt(req.query.limit, 10) || 10, 1),
+    EARNINGS_MAX_LIMIT,
+  );
+  const { from, to, userId, workerId, paymentStatus } = req.query;
+
+  const badRequest = (translationKey, statusCode = 400) =>
+    sendResponse({ res, statusCode, translationKey });
+
+  if (
+    (from && !isShiftDate(from)) ||
+    (to && !isShiftDate(to)) ||
+    (from && to && from > to)
+  ) {
+    return badRequest("Invalid_earnings_date_range");
+  }
+
+  if (workerId && !mongoose.Types.ObjectId.isValid(workerId)) {
+    return badRequest("Invalid_worker_id");
+  }
+
+  if (paymentStatus && !PAYMENT_STATUSES.includes(paymentStatus)) {
+    return badRequest("Invalid_payment_status");
+  }
+
   try {
-    const data = await BookingService.getEarnings({
+    let target = {
       userId: req.user._id,
       userType: req.user.userType,
       timezone: req.user.timezone,
-      from: req.query.from,
-      to: req.query.to,
+    };
+
+    // Only an admin may open someone else's earnings (view-only).
+    if (userId && String(userId) !== String(req.user._id)) {
+      if (req.user.userType !== "admin") {
+        return badRequest("forbidden", 403);
+      }
+
+      const targetUser = mongoose.Types.ObjectId.isValid(userId)
+        ? await findUserById(userId)
+        : null;
+
+      if (!targetUser) {
+        return badRequest("User_not_found", 404);
+      }
+
+      target = {
+        userId: targetUser._id,
+        userType: targetUser.accountState?.userType || targetUser.userType,
+        timezone: targetUser.timezone || req.user.timezone,
+      };
+    }
+
+    const { data, meta } = await BookingService.getEarnings({
+      ...target,
+      from,
+      to,
+      workerId,
+      paymentStatus,
+      page,
+      limit,
     });
 
     return sendResponse({
@@ -761,6 +822,7 @@ const getEarnings = async (req, res) => {
       statusCode: 200,
       translationKey: "Earnings_fetched_successfully",
       data,
+      meta,
     });
   } catch (error) {
     const readableError = getReadableErrorMessage(error);

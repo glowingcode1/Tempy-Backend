@@ -16,6 +16,15 @@ const { isUserProfileComplete } = require("@helperUtils/completeDetailsUtil.js")
 const {
   withUserReviews,
 } = require("../../../commonModules/reviews/reviewRepository.js");
+const { getFullFileUrl } = require("@helperUtils/imageHelper");
+
+// Upload fields on the role models (Nurse, Agency, CareHome, ...).
+const DOCUMENT_FIELDS = [
+  "validationDocument",
+  "governmentIdentity",
+  "degree",
+  "certification",
+];
 
 const createUser = async (req, res) => {
   const result = await registerUserUtility(req, res, {
@@ -159,10 +168,11 @@ const getUsers = async (req, res) => {
         userType,
       });
       // Ensure toJSON method is applied to strip out sensitive data
-      const sanitizedUsers = users.map((user) => {
+      const sanitizedUsers = users.map((user) => ({
         // Use your updated toJSON (works for docs and plain objects)
-        return formatUserResponse(User.prototype.toJSON(user));
-      });
+        ...formatUserResponse(User.prototype.toJSON(user)),
+        stats: user.stats,
+      }));
 
       return sendResponse({
         res,
@@ -369,6 +379,22 @@ const getUserDetails = async (req, res) => {
     }
 
     userObject.completeDetails = isUserProfileComplete(userObject);
+
+    // toObject() skips the model's toJSON, which is what adds the base URL
+    // elsewhere. An empty icon stays empty rather than a placeholder URL.
+    userObject.profileIcon = getFullFileUrl(userObject.profileIcon);
+
+    // Uploaded documents are stored as paths; hand them out as URLs.
+    for (const field of DOCUMENT_FIELDS) {
+      if (Array.isArray(userObject[field])) {
+        userObject[field] = userObject[field].map(getFullFileUrl);
+      }
+    }
+
+    Object.assign(
+      userObject,
+      await usersService.getUserDetailsExtras(userObject, req.user?.timezone),
+    );
 
     // Same "<department> <title>" label the shift calendar uses for its rows.
     if (Array.isArray(userObject.jobRoles)) {

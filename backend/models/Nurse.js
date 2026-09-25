@@ -7,10 +7,6 @@ const nurseSchema = new mongoose.Schema({
     type: LocationSchema,
     default: {},
   },
-  summary: {
-    type: String,
-    default: "",
-  },
   taxNumber: {
     type: String,
     required: true,

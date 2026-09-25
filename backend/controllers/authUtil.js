@@ -215,7 +215,7 @@ const registerUserUtility = async (req, res, staff, options = {}) => {
       governmentIdentity,
       degree,
       certification,
-      // nurse-only field; left untouched when the caller does not send it
+      // left untouched when the caller does not send it
       ...(summary !== undefined ? { summary } : {}),
       accountState: { userType, status: verificationStatus },
       verificationStatus: {

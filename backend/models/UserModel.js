@@ -41,6 +41,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Short "about" text shown on the profile. Every user type has one.
+    summary: {
+      type: String,
+      default: "",
+    },
     gender: {
       type: String,
       enum: GENDER_TYPES,

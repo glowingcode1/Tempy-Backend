@@ -4,6 +4,7 @@ const {
   validateParams,
   getReadableErrorMessage,
 } = require("../../../helperUtils/responseUtil");
+const mongoose = require("mongoose");
 const BranchService = require("./branchesService");
 
 const BRANCH_OWNER_TYPES = [
@@ -89,7 +90,16 @@ const getBranch = async (req, res) => {
   if (isBranchOwner) {
     user = req.user._id;
   } else if (req.user.userType === "admin") {
-    user = null;
+    // An admin sees every branch, or one account's when viewing that account.
+    user = user || req.query.userId || null;
+
+    if (user && !mongoose.Types.ObjectId.isValid(user)) {
+      return sendResponse({
+        res,
+        statusCode: 400,
+        translationKey: "Invalid_user_id",
+      });
+    }
   } else {
     return sendResponse({
       res,

@@ -4,6 +4,7 @@ const Staff = require("../staff/Staff");
 const Booking = require("../../careHome/booking/Booking");
 const {
   getEarningsSummary,
+  getEarningsGraph,
 } = require("../../careHome/booking/earnings");
 const Branches = require("../../aggency/branches/Branches");
 const { User } = require("../../../models/UserModel");
@@ -952,6 +953,7 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
     winRateByRegion,
     shiftsAndEarnings,
     earnings,
+    earningsGraph,
   ] = await Promise.all([
     getJobStats({
       userId,
@@ -1005,6 +1007,12 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
     }),
 
     getEarningsSummary({
+      userId,
+      userType,
+      timezone,
+    }),
+
+    getEarningsGraph({
       userId,
       userType,
       timezone,
@@ -1065,6 +1073,8 @@ const getSupplierDashboardStats = async ({ userId, timezone }) => {
     shiftsAndEarnings,
 
     earnings,
+
+    earningsGraph,
   };
 };
 

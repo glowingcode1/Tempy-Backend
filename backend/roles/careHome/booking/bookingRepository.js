@@ -1,5 +1,9 @@
 const Booking = require("./Booking");
-const { getEarningsSummary } = require("./earnings");
+const {
+  getEarningsSummary,
+  getEarningsHistory,
+  getEarningsBreakdown,
+} = require("./earnings");
 const mongoose = require("mongoose");
 const {
   buildKeywordQueryFromModels,
@@ -1026,8 +1030,38 @@ const getBookingsByDateRangeForUser = async ({
  * Earnings/spend for one account. The arithmetic and the role rules live in
  * ./earnings so every screen that shows money reads the same numbers.
  */
-const getEarnings = async ({ userId, userType, timezone, from, to }) =>
-  getEarningsSummary({ userId, userType, timezone, from, to });
+const getEarnings = async ({
+  userId,
+  userType,
+  timezone,
+  from,
+  to,
+  workerId,
+  paymentStatus,
+  page,
+  limit,
+}) => {
+  const [summary, breakdown, { history, total }] = await Promise.all([
+    getEarningsSummary({ userId, userType, timezone, from, to }),
+    getEarningsBreakdown({ userId, userType, timezone, from, to }),
+    getEarningsHistory({
+      userId,
+      userType,
+      timezone,
+      from,
+      to,
+      workerId,
+      paymentStatus,
+      page,
+      limit,
+    }),
+  ]);
+
+  return {
+    data: { ...summary, ...breakdown, history },
+    meta: generateMeta(page, limit, total),
+  };
+};
 
 module.exports = {
   findReviewedBookingsByJobs,
