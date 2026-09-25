@@ -112,7 +112,7 @@
   "invalid_or_expired_link": "Invalid or expired link",
   "password_reset_successful": "Password reset successful",
   "missing_email": "Missing email",
-  "email_check_success": "Email check success",
+  "email_check_success": "Email already exist",
   "incorrect_old_password": "Incorrect old password",
   "password_changed_successfully": "Password changed successfully",
   "an_error_occurred": "An error occurred",
